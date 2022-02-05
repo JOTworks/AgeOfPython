@@ -1,6 +1,7 @@
 from data import TokenType
 from AOEscanner import Scanner
 from AOEparser import Parcer
+from AOEasserter import Asserter
 from termcolor import colored
 
 
@@ -34,3 +35,6 @@ print("\n")
 for myObject in myParcer.main:
 #  print(myObject)
   pprint(myObject, indent=2, width=20)
+
+myAsserter = Asserter(myParcer.main)
+myAsserter.check()

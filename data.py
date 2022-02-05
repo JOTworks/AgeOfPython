@@ -83,6 +83,10 @@ class Line:
   pass
 class condition:
   pass
+
+class ContainesLineList(PrettyPrinter):
+  pass
+
 class LineListObject(PrettyPrinter):
   def __init__(self, lineList):
     self.lineList = lineList
@@ -109,17 +113,17 @@ class commandObject(PrettyPrinter):
   def __repr__(self):
     return ("COMMAND name:"+str(self.commandName)+" args:"+str(self.argList))
 
-class IfObject(PrettyPrinter):
+class IfObject(ContainesLineList):
   def __init__(self, conditionals, lineList):
     self.conditionals = LineListObject(conditionals)
     self.lineList = LineListObject(lineList)
 
-class WhileLoopObject(PrettyPrinter):
+class WhileLoopObject(ContainesLineList):
   def __init__(self, conditionals, lineList):
     self.conditionals = conditionals
     self.lineList = LineListObject(lineList)
 
-class ForLoopObject(PrettyPrinter):
+class ForLoopObject(ContainesLineList):
   def __init__(self, lineList, interator, itrStartValue, itrEndValue, itrJumpValue):
     self.interator = interator
     self.itrStartValue = itrStartValue
@@ -127,7 +131,7 @@ class ForLoopObject(PrettyPrinter):
     self.itrJumpValue = itrJumpValue
     self.lineList = LineListObject(lineList)
 
-class DefFuncObject(PrettyPrinter):
+class DefFuncObject(ContainesLineList):
   def __init__(self, functionName, argList, lineList):
     self.functionName = functionName
     self.argList = argList

@@ -1,3 +1,4 @@
+from termcolor import colored
 from data import *
 
 class Parcer:
