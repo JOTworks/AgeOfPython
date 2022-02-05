@@ -1,7 +1,7 @@
 from termcolor import colored
 from data import *
 
-class Parcer:
+class Parcer: #REFACTOR spell it parser
   def __init__(self, tokens):
     self.tokens = tokens
     self.main = []
@@ -12,6 +12,7 @@ class Parcer:
     #print("consumed:"+str(self.tokens[:self.tokPtr]))
     self.tokens = self.tokens[self.tokPtr:]
     self.tokPtr = 0
+
     #print(self.tokens)
   
   def compareTokenTypes(self, tokens, throwable = False):
@@ -91,7 +92,7 @@ class Parcer:
       argList = []
       if self.argumentphraseState(argList):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
-          openObject.append(commandObject(commandName, argList))
+          openObject.append(CommandObject(commandName, argList))
           return True
     return False
 
@@ -139,7 +140,6 @@ class Parcer:
       openObject.append(self.tokens[0])
       self.consumeTokens()
       return True
-
     return False
 
   def ifState(self, openObject, tabValue):
@@ -230,10 +230,13 @@ class Parcer:
     #print(self.tokens[self.tokPtr])
     #print("tabValue: "+str(tabValue))
     anotherLine = True
+    anotherlineCounter = 0
     while(anotherLine):
+      anotherlineCounter += 1
+      print(anotherlineCounter)
+      anotherLine = False
       if self.tokPtr > len(self.tokens)-1:
         return True
-      anotherLine = False
       if tabValue > 0: 
         if self.tokens[self.tokPtr].tokenType != TokenType.TABS:
           return True
@@ -247,12 +250,24 @@ class Parcer:
         if self.compareTokenTypes([TokenType.TABS]):
           print("TAB FOUND WHEN TABS=0 FAIL STATE")
           return False
-      if self.ifState( openObject, tabValue): anotherLine = True
-      elif self.whileState( openObject, tabValue): anotherLine = True
-      elif self.forState( openObject, tabValue): anotherLine = True
-      elif self.funccallState( openObject, tabValue): anotherLine = True
-      elif self.varasignState( openObject, tabValue): anotherLine = True
-      elif self.commandState(openObject): anotherLine = True
+      if self.ifState( openObject, tabValue): 
+        print("IF")
+        anotherLine = True
+      elif self.whileState( openObject, tabValue): 
+        print("while")
+        anotherLine = True
+      elif self.forState( openObject, tabValue): 
+        print("for")
+        anotherLine = True
+      elif self.funccallState( openObject, tabValue): 
+        print("funccal")
+        anotherLine = True
+      elif self.varasignState( openObject, tabValue): 
+        print("arasign")
+        anotherLine = True
+      elif self.commandState(openObject): 
+        print("command")
+        anotherLine = True
       self.consumeTokens()  
         
     return True
@@ -262,9 +277,13 @@ class Parcer:
     if self.defconstState(openObject): return
     if self.defruleState(openObject): return
     if self.deffuncState(openObject): return
-    if self.lineState(openObject, 0): return
+    
+    curLen = len(self.main)
+    if self.lineState(openObject, 0): 
+      if curLen != len(self.main):
+        return
 
-    print(colored("Parce failed at "+str(self.tokens[self.tokPtr])+" !","red"))
+    raise Exception(str("Parce failed at "+str(self.tokens[self.tokPtr])))
     self.tokens = self.tokens[1:]
     self.tokPtr = 0
 

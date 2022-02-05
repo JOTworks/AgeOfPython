@@ -11,7 +11,7 @@ class Asserter:
             if isinstance(item, ContainesLineList):
                 self.checkUnsuported(item.lineList.lineList)
             
-            if isinstance(item,VarAsignObject): raise Exception("variable asignment is currently UNSUPORTED!")
+            if isinstance(item,VarAsignObject): raise Exception("Variable asignment is currently UNSUPORTED!")
             if isinstance(item,FuncCallObject): raise Exception("Functions are currently UNSUPORTED!")
             if isinstance(item,DefFuncObject): raise Exception("Functions are currently UNSUPORTED!")
             if isinstance(item,ForLoopObject): raise Exception("For Loops are currently UNSUPORTED!")

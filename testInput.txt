@@ -8,7 +8,7 @@
 (defconst loop-reset-house 495)
 (defconst house-timer 49)
 
-
+(set-goal gl-temp-2 0)
 
 if (True):
     (set-goal loop-reset-house 1)
@@ -48,6 +48,3 @@ if (can-build-house) (houseing-headroom < 4) (goal loop-rest-house 0) #finds woo
 if (up-compare-goal gl-temp-2 g:!= gl-temp-1) (goal loop-reset-house 0):
     (set-goal loop-reset-house 1)
     (up-chat-data-to-player my-player-number "houses: %d" g: gl-temp-2)
-
-while (true)(true):
-   (set-goal loop-reset-house 1)

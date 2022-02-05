@@ -1,0 +1,6 @@
+(set-goal gl-temp-2 0)
+
+if ((True)):
+    (set-goal loop-reset-house 1)
+    (enable-timer house-timer 1)
+    (disable-self)

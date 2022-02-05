@@ -106,7 +106,7 @@ class defruleObject(PrettyPrinter):
     self.conditionList = conditionList
     self.executeList = executeList
 
-class commandObject(PrettyPrinter):
+class CommandObject(PrettyPrinter):
   def __init__(self, commandName, argList):
     self.commandName = commandName
     self.argList = argList
@@ -114,8 +114,8 @@ class commandObject(PrettyPrinter):
     return ("COMMAND name:"+str(self.commandName)+" args:"+str(self.argList))
 
 class IfObject(ContainesLineList):
-  def __init__(self, conditionals, lineList):
-    self.conditionals = LineListObject(conditionals)
+  def __init__(self, conditionList, lineList):
+    self.conditionList = LineListObject(conditionList)
     self.lineList = LineListObject(lineList)
 
 class WhileLoopObject(ContainesLineList):
