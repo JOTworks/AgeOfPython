@@ -126,14 +126,14 @@ class Parcer: #REFACTOR spell it parser
           executeCammandList = []
           if self.commandphraseState(executeCammandList):
             if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
-              openObject.append(defruleObject(conditionalCammandList, executeCammandList))
+              openObject.append(defruleObject(LineListObject(conditionalCammandList), LineListObject(executeCammandList)))
               self.consumeTokens()
               return True
     return False
 
   def loadState(self, openObject): #need to refactor LOAD_IF into ones w/wo identifier
     if self.compareTokenTypes([TokenType.LOAD_IF, TokenType.IDENTIFIER]):
-      openObject.append([self.tokens[0],self.tokens[1]])
+      openObject.append( LoadIfObject(self.tokens[0].value ,self.tokens[1].value) )
       self.consumeTokens()
       return True
     if self.compareTokenTypes([TokenType.LOAD_IF]):
@@ -230,10 +230,7 @@ class Parcer: #REFACTOR spell it parser
     #print(self.tokens[self.tokPtr])
     #print("tabValue: "+str(tabValue))
     anotherLine = True
-    anotherlineCounter = 0
     while(anotherLine):
-      anotherlineCounter += 1
-      print(anotherlineCounter)
       anotherLine = False
       if self.tokPtr > len(self.tokens)-1:
         return True
@@ -250,24 +247,12 @@ class Parcer: #REFACTOR spell it parser
         if self.compareTokenTypes([TokenType.TABS]):
           print("TAB FOUND WHEN TABS=0 FAIL STATE")
           return False
-      if self.ifState( openObject, tabValue): 
-        print("IF")
-        anotherLine = True
-      elif self.whileState( openObject, tabValue): 
-        print("while")
-        anotherLine = True
-      elif self.forState( openObject, tabValue): 
-        print("for")
-        anotherLine = True
-      elif self.funccallState( openObject, tabValue): 
-        print("funccal")
-        anotherLine = True
-      elif self.varasignState( openObject, tabValue): 
-        print("arasign")
-        anotherLine = True
-      elif self.commandState(openObject): 
-        print("command")
-        anotherLine = True
+      if self.ifState( openObject, tabValue):  anotherLine = True
+      elif self.whileState( openObject, tabValue):  anotherLine = True
+      elif self.forState( openObject, tabValue):  anotherLine = True
+      elif self.funccallState( openObject, tabValue):  anotherLine = True
+      elif self.varasignState( openObject, tabValue):  anotherLine = True
+      elif self.commandState(openObject):  anotherLine = True
       self.consumeTokens()  
         
     return True

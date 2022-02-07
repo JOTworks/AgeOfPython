@@ -17,7 +17,6 @@ class Asserter:
             if isinstance(item,ForLoopObject): raise Exception("For Loops are currently UNSUPORTED!")
             if isinstance(item,WhileLoopObject): raise Exception("While Loops currently UNSUPORTED!")
             
-            print(str(item.__class__))
 
 
     def check(self):

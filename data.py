@@ -62,7 +62,8 @@ class Token(PrettyPrinter):
     tempValue = self.value
     if self.value == '\n':
       tempValue = '/n'
-    return("("+str(self.tokenType)+" "+ tempValue +" "+ str(self.line)+")")
+    #return("("+str(self.tokenType)+" "+ tempValue +" "+ str(self.line)+")")
+    return("( "+ tempValue +" "+ str(self.line)+" )")
 
   def print(self,setting = ""):
     tempValue = self.value
@@ -79,10 +80,13 @@ class Token(PrettyPrinter):
     elif setting != "errors" and setting != "full errors":
       print("["+ tempValue +"]", end =" ")
 
-class Line:
-  pass
-class condition:
-  pass
+
+class LoadIfObject():
+  def __init__(self, name, arg = ""):
+    self.name = name
+    self.arg = arg
+  def __repr__(self):
+    return ("LOADIF name:"+str(self.name)+" args:"+str(self.arg))
 
 class ContainesLineList(PrettyPrinter):
   pass
@@ -107,11 +111,11 @@ class defruleObject(PrettyPrinter):
     self.executeList = executeList
 
 class CommandObject(PrettyPrinter):
-  def __init__(self, commandName, argList):
-    self.commandName = commandName
+  def __init__(self, name, argList):
+    self.name = name
     self.argList = argList
   def __repr__(self):
-    return ("COMMAND name:"+str(self.commandName)+" args:"+str(self.argList))
+    return ("COMMAND name:"+str(self.name)+" args:"+str(self.argList))
 
 class IfObject(ContainesLineList):
   def __init__(self, conditionList, lineList):
