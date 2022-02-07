@@ -33,6 +33,8 @@ class TokenType(enum.Enum):
     EQUALS = 29
     MATHOP = 30
     RETURN = 31
+    LOAD = 32
+    LOAD_RANDOM = 33
 
 from os import name
 # Data Classes

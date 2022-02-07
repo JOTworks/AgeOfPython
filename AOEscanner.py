@@ -1,9 +1,9 @@
 from data import TokenType, Token
 
 class Scanner:
-  def __init__(self, input):
-    self.input = input
-    self.Line = ""
+  def __init__(self, fileName):
+    self.fileName = fileName
+    self.line = ""
     self.lineIndent = [] #position is line number, value is number of spaces
     self.tokens = []
   
@@ -16,56 +16,56 @@ class Scanner:
     return strippedTokens
 
   def popToken(self,line,length,type):
-    newToken = Token(type,self.Line[:length],line)
+    newToken = Token(type,self.line[:length],line)
     self.tokens.append(newToken)
-    self.Line = self.Line[length:]
+    self.line = self.line[length:]
 
   def basicState(self):
-    if self.Line[:2] == '=>':
+    if self.line[:2] == '=>':
       self.popToken(self.lineNum,2,TokenType.ARROW)
       return True
-    elif self.Line[:2] in {'<=', '>=', '!=', '=='}:
+    elif self.line[:2] in {'<=', '>=', '!=', '=='}:
       self.popToken(self.lineNum,2,TokenType.OPERATOR)
       return True
-    elif self.Line[:1] == ')':
+    elif self.line[:1] == ')':
       self.popToken(self.lineNum,1,TokenType.RIGHT_PAREN)
       return True
-    elif self.Line[:1] == '(':
+    elif self.line[:1] == '(':
       self.popToken(self.lineNum,1,TokenType.LEFT_PAREN)
       return True
-    elif self.Line[:1] == ':':
+    elif self.line[:1] == ':':
       self.popToken(self.lineNum,1,TokenType.COLON)
       return True
-    elif self.Line[:1] == ',':
+    elif self.line[:1] == ',':
       self.popToken(self.lineNum,1,TokenType.COMMA)
       return True
-    elif self.Line[:1] == '=':
+    elif self.line[:1] == '=':
       self.popToken(self.lineNum,1,TokenType.EQUALS)
       return True
-    elif self.Line[:1] in {'<', '>', '='}:
+    elif self.line[:1] in {'<', '>', '='}:
       self.popToken(self.lineNum,1,TokenType.OPERATOR)
       return True
-    elif self.Line[:1] in {'/', '*', '-', '+'}:
+    elif self.line[:1] in {'/', '*', '-', '+'}:
       self.popToken(self.lineNum,1,TokenType.MATHOP)
       return True
     return False
 
   def commentState(self):
-    if self.Line[:1] in {';' , '#'}:
-      self.popToken(self.lineNum,len(self.Line),TokenType.COMMENT)
+    if self.line[:1] in {';' , '#'}:
+      self.popToken(self.lineNum,len(self.line),TokenType.COMMENT)
       return True
     return False
 
   def loadState(self):
-    if self.Line[:1] == '#':
+    if self.line[:1] == '#':
       number =  1
-      if self.Line[:7] == '#end-if':
+      if self.line[:7] == '#end-if':
         number =  7
-      elif self.Line[:16] == '#load-if-defined':
+      elif self.line[:16] == '#load-if-defined':
         number =  16
-      elif self.Line[:20] == '#load-if-not-defined':
+      elif self.line[:20] == '#load-if-not-defined':
         number =  20
-      elif self.Line[:5] == '#else':
+      elif self.line[:5] == '#else':
         number =  5
       else:
         return False
@@ -75,28 +75,28 @@ class Scanner:
 
   def whiteSpaceState(self):
     length = 0
-    while(self.Line[:length+1].isspace()):
+    while(self.line[:length+1].isspace()):
         length = length + 1
-        if(length == len(self.Line)):
+        if(length == len(self.line)):
           self.popToken(self.lineNum,length,TokenType.WHITE_SPACE)
           return True
     if length == 0:
       return False
-    if length > len(self.Line):
+    if length > len(self.line):
       print("error")
     self.popToken(self.lineNum,length,TokenType.WHITE_SPACE)
     return True
 
   def tabState(self):
     length = 0
-    while(self.Line[:length+1].isspace()):
+    while(self.line[:length+1].isspace()):
         length = length + 1
-        if(length == len(self.Line)):
+        if(length == len(self.line)):
           self.popToken(self.lineNum,length,TokenType.TABS)
           return True
     if length == 0:
       return False
-    if length > len(self.Line):
+    if length > len(self.line):
       print("error")
     self.popToken(self.lineNum,length,TokenType.TABS)
     return True
@@ -111,59 +111,66 @@ class Scanner:
     return False
 
   def stringState(self):
-    if self.Line[:1] == '"':
+    if self.line[:1] == '"':
       length = 1
-      while(self.Line[length] != '"'):
+      while(self.line[length] != '"'):
         length = length + 1
-        if length == len(self.Line):
+        if length == len(self.line):
           self.popToken(self.lineNum,length-1,TokenType.UNIDENTIFIED)
           return True
       length = length + 1
-      self.popToken(self.lineNum,length,TokenType.STRING)
+      self.line = self.line[1:] #gets rid of the leading "
+      self.popToken(self.lineNum,length-2,TokenType.STRING)
+      self.line = self.line[1:] #gets rid of the lagging ""
       return True
     return False
 
   def identifierState(self):
     length = 0
-    if self.Line[length].isalpha():
+    if self.line[length].isalpha():
       length += 1 
-    while(self.identifierSymbol(self.Line[length])):
+    while(self.identifierSymbol(self.line[length])):
       length += 1 
-        #print("input: "+self.Line)
-        #print("inputlen: "+str(len(self.Line)))
+        #print("input: "+self.line)
+        #print("inputlen: "+str(len(self.line)))
         #print("length: "+ str(length))
     if length == 0:
       return False
-    if length > len(self.Line):
+    if length > len(self.line):
       print("error")
     identifierType = TokenType.IDENTIFIER
-    if self.Line[:length] == "if":
+
+    if self.line[:length] == "if":
       identifierType = TokenType.IF
-    elif self.Line[:length] == "while":
+    elif self.line[:length] == "while":
       identifierType = TokenType.WHILE
-    elif self.Line[:length] == "for":
+    elif self.line[:length] == "for":
       identifierType = TokenType.FOR
-    elif self.Line[:length] == "in":
+    elif self.line[:length] == "in":
       identifierType = TokenType.IN
-    elif self.Line[:length] == "range":
+    elif self.line[:length] == "range":
       identifierType = TokenType.RANGE
-    elif self.Line[:length] == "else":
+    elif self.line[:length] == "else":
       identifierType = TokenType.ELSE
-    elif self.Line[:length] == "elif":
+    elif self.line[:length] == "elif":
       identifierType = TokenType.ELIF
-    elif self.Line[:length] == "for":
+    elif self.line[:length] == "for":
       identifierType = TokenType.FOR
-    elif self.Line[:length] == "while":
+    elif self.line[:length] == "while":
       identifierType = TokenType.WHILE
-    elif self.Line[:length] == "def":
+    elif self.line[:length] == "def":
       identifierType = TokenType.DEF
-    elif self.Line[:length] == "defconst":
+    elif self.line[:length] == "defconst":
       identifierType = TokenType.DEFCONST
-    elif self.Line[:length] == "defrule":
+    elif self.line[:length] == "defrule":
       identifierType = TokenType.DEFRULE
-    elif self.Line[:length] == "return":
+    elif self.line[:length] == "return":
       identifierType = TokenType.RETURN
-    elif self.Line[:length] in {'or','and','not','nor','xor','nand', 'xnor'}:
+    elif self.line[:length] == "load-random":
+      identifierType = TokenType.LOAD_RANDOM
+    elif self.line[:length] == "load":
+      identifierType = TokenType.LOAD
+    elif self.line[:length] in {'or','and','not','nor','xor','nand', 'xnor'}:
       identifierType = TokenType.LOGIC_OP
 
 
@@ -172,15 +179,15 @@ class Scanner:
 
   def numberState(self):
     length = 0
-    if(self.Line[0] == '-'):
+    if(self.line[0] == '-'):
       length += 1
-    while(self.Line[length].isnumeric()):
+    while(self.line[length].isnumeric()):
       length += 1
     if length == 0:
       return False
-    if length > len(self.Line):
+    if length > len(self.line):
       print("error")
-    if self.Line[length].isalpha():
+    if self.line[length].isalpha():
       self.popToken(self.lineNum,length,TokenType.UNIDENTIFIED)
       return True
     self.popToken(self.lineNum,length,TokenType.NUMBER)
@@ -197,7 +204,7 @@ class Scanner:
     self.popToken(self.lineNum,1,TokenType.UNCAUGHT)
 
   def scanLine(self, line, lineNum):
-    self.Line = line
+    self.line = line
     self.lineNum = lineNum
     if line.isspace(): #strips empty lines
       return
@@ -206,13 +213,19 @@ class Scanner:
         if self.tokens[len(self.tokens)-2].tokenType == TokenType.TABS:
           del self.tokens[len(self.tokens)-2]
         else: print("ERROR in SCAN, tried to delete tabs but was different tokenType")
-    while(len(self.Line)>0):
+    while(len(self.line)>0):
       self.mainState()
-      #print(self.Line)
-    #print(self.Line)
+      #print(self.line)
+    #print(self.line)
   
   def scan(self):
+    f = open(self.fileName,"r")
+    lines = f.readlines()
+
     lineNum = 0
-    for line in self.input: #REFACTOR accept multiline strings and comments
+    for line in lines: #REFACTOR accept multiline strings and comments
       lineNum = lineNum + 1
       self.scanLine(line, lineNum)
+
+    self.stripTokens(TokenType.WHITE_SPACE)
+    self.stripTokens(TokenType.COMMENT)

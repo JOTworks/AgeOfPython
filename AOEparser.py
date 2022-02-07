@@ -1,4 +1,6 @@
 from termcolor import colored
+from AOEscanner import Scanner
+import random
 from data import *
 
 class Parcer: #REFACTOR spell it parser
@@ -7,7 +9,8 @@ class Parcer: #REFACTOR spell it parser
     self.main = []
     self.tokPtr = 0
     self.tabSize = 4
-
+    self.loadLimit = 1000
+    self.loadCount = 0
   def consumeTokens(self):
     #print("consumed:"+str(self.tokens[:self.tokPtr]))
     self.tokens = self.tokens[self.tokPtr:]
@@ -131,7 +134,7 @@ class Parcer: #REFACTOR spell it parser
               return True
     return False
 
-  def loadState(self, openObject): #need to refactor LOAD_IF into ones w/wo identifier
+  def loadIfState(self, openObject): #need to refactor LOAD_IF into ones w/wo identifier
     if self.compareTokenTypes([TokenType.LOAD_IF, TokenType.IDENTIFIER]):
       openObject.append( LoadIfObject(self.tokens[0].value ,self.tokens[1].value) )
       self.consumeTokens()
@@ -254,11 +257,57 @@ class Parcer: #REFACTOR spell it parser
       elif self.varasignState( openObject, tabValue):  anotherLine = True
       elif self.commandState(openObject):  anotherLine = True
       self.consumeTokens()  
-        
     return True
+
+  def loadRandomPhrase(self, openObject):
+    fileNameList = []
+    while self.compareTokenTypes([TokenType.NUMBER, TokenType.STRING]):
+      for i in range(int(self.tokens[self.tokPtr-2].value)):
+        fileNameList.append(self.tokens[self.tokPtr-1].value)
+    if self.compareTokenTypes([TokenType.STRING]):
+      for i in range(100):
+        fileNameList.append(self.tokens[self.tokPtr-1].value)
+    else: 
+      for i in range(100):
+        fileNameList.append("")
+    self.consumeTokens()
+    return fileNameList[random.randint(0, 99)]
+    
+
+  def loadState(self, openObject): #REFACTOR this is just a weird fucntion.
+    fileName = ""
+    if self.compareTokenTypes([TokenType.LEFT_PAREN, TokenType.LOAD, TokenType.STRING, TokenType.RIGHT_PAREN]):
+      self.loadCount += 1
+      if self.loadCount > self.loadLimit:
+        raise Exception("Loaded over "+str(self.loadLimit)+" times. You probably have a load circle.")
+      fileName = self.tokens[self.tokPtr-2].value
+      newScanner = Scanner(fileName) 
+      newScanner.scan()
+      self.consumeTokens() 
+      self.tokens = newScanner.tokens + self.tokens
+      return True
+
+    elif self.compareTokenTypes([TokenType.LEFT_PAREN, TokenType.LOAD_RANDOM]):  
+      self.loadCount += 1
+      if self.loadCount > self.loadLimit:
+        raise Exception("Loaded over "+str(self.loadLimit)+" times. You probably have a load circle.")
+      fileName = self.loadRandomPhrase(openObject)
+      if not self.compareTokenTypes([TokenType.RIGHT_PAREN]):
+        raise Exception("expected RIGHT_PERAN at the end of Load-random Statment")
+      if fileName != "":
+        newScanner = Scanner(fileName) 
+        newScanner.scan()
+        self.consumeTokens() 
+        self.tokens = newScanner.tokens + self.tokens
+      else:
+        self.consumeTokens() 
+      return True
+    return False
+
 
   def mainState(self, openObject):
     if self.loadState(openObject): return
+    if self.loadIfState(openObject): return
     if self.defconstState(openObject): return
     if self.defruleState(openObject): return
     if self.deffuncState(openObject): return

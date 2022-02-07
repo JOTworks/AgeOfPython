@@ -19,14 +19,9 @@ if not '.' in fileName:
 
 
 
-f = open(fileName,"r")
-lines = f.readlines()
-
-myScanner = Scanner(lines)
+myScanner = Scanner(str(fileName))
 myScanner.scan()
 
-myScanner.stripTokens(TokenType.WHITE_SPACE)
-myScanner.stripTokens(TokenType.COMMENT)
 
 strippedTokens = myScanner.tokens
 
