@@ -1,7 +1,8 @@
 from data import TokenType, Token
 
 class Scanner:
-  def __init__(self, fileName):
+  def __init__(self, fileName, aiFolder):
+    self.aiFolder = aiFolder
     self.fileName = fileName
     self.line = ""
     self.lineIndent = [] #position is line number, value is number of spaces
@@ -16,7 +17,7 @@ class Scanner:
     return strippedTokens
 
   def popToken(self,line,length,type):
-    newToken = Token(type,self.line[:length],line)
+    newToken = Token(type,self.line[:length],line,self.fileName)
     self.tokens.append(newToken)
     self.line = self.line[length:]
 
@@ -106,7 +107,7 @@ class Scanner:
       return False
     if symbol.isalnum():
       return True
-    if symbol in {'-', '_', ':', '+', '*', '/'}: #Refactor for expressions to work without spaces. needed now for c:+ case
+    if symbol in {'-', '_', ':', '+', '*', '/', '='}: #Refactor for expressions to work without spaces. needed now for c:+ case
       return True
     return False
 
@@ -219,7 +220,21 @@ class Scanner:
     #print(self.line)
   
   def scan(self):
-    f = open(self.fileName,"r")
+    fullPath = "FILE NOT FOUND"
+    for file in list(self.aiFolder.glob('**/*.per')):
+      if file.name == self.fileName + ".per" or file.name == self.fileName:
+        fullPath = file
+    for file in list(self.aiFolder.glob('**/*.aop')): #prioritizes aop files because it is last
+      print(file.name)
+      if file.name == self.fileName + ".aop" or file.name == self.fileName:
+        fullPath = file
+    if fullPath == "FILE NOT FOUND":
+      raise Exception(self.fileName+" is not found")
+   # infile = open(os.path.join(os.path.dirname(sys.argv[0]), "folder2/test.txt"), "r+")
+    try:
+      f = open(fullPath,"r")
+    except IOError:
+      raise Exception ("Unable to open file:"+fullPath+", make sure you are not using paths")
     lines = f.readlines()
 
     lineNum = 0

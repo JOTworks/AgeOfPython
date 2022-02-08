@@ -7,19 +7,30 @@ from AOEprinter import Printer
 from termcolor import colored
 import sys
 from pprint import pprint
+import os.path
+from pathlib import Path
+
+
+
 
 #refactor have it look for the first aop file and throw warning
 if len(sys.argv) < 2:
   raise Exception("needs argument of ai file name")
 if len(sys.argv) > 2:
   raise Exception("aditional arguments are not currently supported!")
-fileName = sys.argv[1]
-if not '.' in fileName:
-  fileName += ".aop"
+fileName = sys.argv[1].split('.')[0] #gets rid of anything after the first '.'
 
+#############################################################
+aiFolder = Path(__file__)
+limit = 0
+while (aiFolder.name != "ai"):
+  aiFolder = aiFolder.parent
+  print(aiFolder.name)
+  limit += 1
+  if limit > 100:
+    raise Exception("AgeOfPython needs to be in the ai folder AoE2DE/reasources/_common/ai/")
 
-
-myScanner = Scanner(str(fileName))
+myScanner = Scanner(str(fileName), aiFolder)
 myScanner.scan()
 
 
@@ -30,7 +41,7 @@ for token in strippedTokens:
     print(str(token.tokenType) + str(token))
     #token.print()
 
-myParcer = Parcer(strippedTokens)
+myParcer = Parcer(strippedTokens, aiFolder)
 myParcer.parce()
 
 print(len(myParcer.main))
@@ -59,5 +70,7 @@ print(myPrinter.finalString)
 #if ai file dosnt exist make it
 #write over per file
 fileName = fileName.split(".")
-f = open("../"+fileName[0]+".per","w")
+#raise Exception (aiFolder)
+f = open(str(aiFolder)+'\\'+fileName[0]+".per","w")
+print(fileName[0]+".per")
 f.write(myPrinter.finalString)

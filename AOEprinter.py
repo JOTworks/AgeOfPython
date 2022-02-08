@@ -10,7 +10,10 @@ class Printer:
         defruleStr = '(defrule '
         for item in rule.conditionList.lineList:
             defruleStr += "  "
-            defruleStr += self.printCommand(item)
+            if isinstance(item, CommandObject):
+                defruleStr += self.printCommand(item)
+            elif isinstance(item, logicCommandObject):
+                defruleStr += self.printLogicCommand(item)
         defruleStr += '=>'
         for item in rule.executeList.lineList:
             defruleStr += "  "
@@ -18,8 +21,21 @@ class Printer:
         defruleStr = defruleStr[:-1]
         defruleStr += ')\n\n'
         return defruleStr
+    
+    def printLogicCommand(self, logicCommand):
+        logicStr = "("
+        logicStr += logicCommand.logicOp.value
+        logicStr += " "
+        for item in logicCommand.commands:
+            if isinstance(item, defruleObject):
+                logicStr += self.printDefrule(item)
+            elif isinstance(item, defconstObject):
+                logicStr += self.printDefconst(item)
+        logicStr += ")"
+        return logicStr
 
     def printCommand(self, command):
+        #logicCommandObject
         commandStr = "("
         commandStr += command.name
         for item in command.argList:

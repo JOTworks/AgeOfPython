@@ -4,13 +4,15 @@ import random
 from data import *
 
 class Parcer: #REFACTOR spell it parser
-  def __init__(self, tokens):
+  def __init__(self, tokens, aiFolder):
     self.tokens = tokens
     self.main = []
     self.tokPtr = 0
     self.tabSize = 4
     self.loadLimit = 1000
     self.loadCount = 0
+    self.aiFolder = aiFolder
+
   def consumeTokens(self):
     #print("consumed:"+str(self.tokens[:self.tokPtr]))
     self.tokens = self.tokens[self.tokPtr:]
@@ -281,7 +283,7 @@ class Parcer: #REFACTOR spell it parser
       if self.loadCount > self.loadLimit:
         raise Exception("Loaded over "+str(self.loadLimit)+" times. You probably have a load circle.")
       fileName = self.tokens[self.tokPtr-2].value
-      newScanner = Scanner(fileName) 
+      newScanner = Scanner(fileName, self.aiFolder) 
       newScanner.scan()
       self.consumeTokens() 
       self.tokens = newScanner.tokens + self.tokens
@@ -317,7 +319,7 @@ class Parcer: #REFACTOR spell it parser
       if curLen != len(self.main):
         return
 
-    raise Exception(str("Parce failed at "+str(self.tokens[self.tokPtr])))
+    raise Exception(str( "Parce failed at "+str(self.tokens[self.tokPtr])))
     self.tokens = self.tokens[1:]
     self.tokPtr = 0
 

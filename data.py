@@ -55,17 +55,18 @@ class PrettyPrinter(object):
           return ( '\n|    '.join(lines) )
 
 class Token(PrettyPrinter):
-  def __init__(self, tokenType, value, line):
+  def __init__(self, tokenType, value, line, fileName):
     self.tokenType = tokenType
     self.value = value
     self.line = line
+    self.fileName = fileName
     self.lineNum = 0
   def __repr__(self):
     tempValue = self.value
     if self.value == '\n':
       tempValue = '/n'
     #return("("+str(self.tokenType)+" "+ tempValue +" "+ str(self.line)+")")
-    return("( "+ tempValue +" "+ str(self.line)+" )")
+    return("( "+ tempValue +" "+ str(self.line)+" "+ self.fileName +" )")
 
   def print(self,setting = ""):
     tempValue = self.value
