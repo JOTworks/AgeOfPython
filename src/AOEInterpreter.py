@@ -147,13 +147,15 @@ class Interpreter:
         if not self.memory.isUsed(varAsign.variable.value):
             if isinstance(varAsign.expression[0], FuncCallObject):
                 if varAsign.expression[0].name == "Point":
+                    print(varAsign.variable.value)
                     self.memory.mallocPoint(varAsign.variable.value)
                     return 
                 if varAsign.expression[0].name == "State":
                     self.memory.mallocState(varAsign.variable.value)
                     return               
             self.memory.mallocInt(varAsign.variable.value)
-        AsignCommands.append(self.createAsignCommand(varAsign.variable, "=", varAsign.expression[0]))
+        if not isinstance(varAsign.expression[0], FuncCallObject):
+            AsignCommands.append(self.createAsignCommand(varAsign.variable, "=", varAsign.expression[0]))
         if len(varAsign.expression) == 3:
             AsignCommands.append(self.createAsignCommand(varAsign.variable, varAsign.expression[1], varAsign.expression[2]))
         return AsignCommands
