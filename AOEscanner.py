@@ -107,7 +107,7 @@ class Scanner:
       return False
     if symbol.isalnum():
       return True
-    if symbol in {'-', '_', ':', '+', '*', '/', '='}: #Refactor for expressions to work without spaces. needed now for c:+ case
+    if symbol in {'-', '_', '!', '<', '>', ':', '+', '*', '/', '=', '.'}: #Refactor for expressions to work without spaces. needed now for c:+ case
       return True
     return False
 
@@ -173,6 +173,10 @@ class Scanner:
       identifierType = TokenType.LOAD
     elif self.line[:length] in {'or','and','not','nor','xor','nand', 'xnor'}:
       identifierType = TokenType.LOGIC_OP
+    elif self.line[:length] == "else:":
+      raise Exception("Sorry you need a space beteen else and : at line"+str(self.lineNum)+str(self.fileName))  
+
+
 
 
     self.popToken(self.lineNum,length,identifierType)
@@ -225,7 +229,6 @@ class Scanner:
       if file.name == self.fileName + ".per" or file.name == self.fileName:
         fullPath = file
     for file in list(self.aiFolder.glob('**/*.aop')): #prioritizes aop files because it is last
-      print(file.name)
       if file.name == self.fileName + ".aop" or file.name == self.fileName:
         fullPath = file
     if fullPath == "FILE NOT FOUND":

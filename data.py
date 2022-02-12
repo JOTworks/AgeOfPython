@@ -1,4 +1,9 @@
 import enum
+from pdb import line_prefix
+class Structure(enum.Enum):
+    POINT = 2
+    STATE = 4
+
 class TokenType(enum.Enum):
     LEFT_PAREN = 1      #length: 1
     RIGHT_PAREN = 2     #length: 1
@@ -55,18 +60,18 @@ class PrettyPrinter(object):
           return ( '\n|    '.join(lines) )
 
 class Token(PrettyPrinter):
-  def __init__(self, tokenType, value, line, fileName):
+  def __init__(self, tokenType, value, line, file):
     self.tokenType = tokenType
     self.value = value
     self.line = line
-    self.fileName = fileName
+    self.file = file
     self.lineNum = 0
   def __repr__(self):
     tempValue = self.value
     if self.value == '\n':
       tempValue = '/n'
     #return("("+str(self.tokenType)+" "+ tempValue +" "+ str(self.line)+")")
-    return("( "+ tempValue +" "+ str(self.line)+" "+ self.fileName +" )")
+    return("( "+ tempValue +" "+ str(self.line)+" "+ self.file +" )")
 
   def print(self,setting = ""):
     tempValue = self.value
@@ -104,9 +109,11 @@ class logicCommandObject(PrettyPrinter):
     self.commands = commands
 
 class defconstObject(PrettyPrinter):
-  def __init__(self, name, value):
+  def __init__(self, name, value, line, file):
     self.name = name
     self.value = value
+    self.line = line
+    self.file = file
 
 class defruleObject(PrettyPrinter):
   def __init__(self, conditionList, executeList):
@@ -114,13 +121,24 @@ class defruleObject(PrettyPrinter):
     self.executeList = executeList
 
 class CommandObject(PrettyPrinter):
-  def __init__(self, name, argList):
+  def __init__(self, name, argList, line, file):
+    self.line = line
+    self.file = file
     self.name = name
     self.argList = argList
   def __repr__(self):
     return ("COMMAND name:"+str(self.name)+" args:"+str(self.argList))
 
+class ReturnObject(PrettyPrinter):
+  def __init__(self, arg):
+    self.arg = arg
+
 class IfObject(ContainesLineList):
+  def __init__(self, conditionList, lineList):
+    self.conditionList = LineListObject(conditionList)
+    self.lineList = LineListObject(lineList)
+
+class ElseObject(ContainesLineList):
   def __init__(self, conditionList, lineList):
     self.conditionList = LineListObject(conditionList)
     self.lineList = LineListObject(lineList)
@@ -139,17 +157,27 @@ class ForLoopObject(ContainesLineList):
     self.lineList = LineListObject(lineList)
 
 class DefFuncObject(ContainesLineList):
-  def __init__(self, functionName, argList, lineList):
-    self.functionName = functionName
+  def __init__(self, name, argList, lineList):
+    self.name = name
     self.argList = argList
     self.lineList = LineListObject(lineList)
+
+class DefFuncContainer(ContainesLineList):
+  def __init__(self, defFunc, memory):
+    self.defFunc = defFunc
+    self.argMemLoc = []
+    for arg in self.defFunc.argList:
+      self.argMemLoc.append(memory.mallocInt(arg))
+    self.returnMemLoc = (memory.mallocInt(arg))
   #def __repr__(self):
   #  return("FUNCDEF name: "+self.functionName+" arg:"+str(self.argList)+" lines:"+ str(self.lineList))
 
 class VarAsignObject(PrettyPrinter):
-  def __init__(self, variable, expression):
+  def __init__(self, variable, expression, line, file):
     self.variable = variable
     self.expression = expression
+    self.line = line
+    self.file = file
 
 class FuncCallObject(PrettyPrinter):
   def __init__(self, name, args):

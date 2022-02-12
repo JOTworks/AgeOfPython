@@ -7,16 +7,24 @@ class Asserter:
 
 
     def checkUnsuported(self, inList):
+        useDefConst = False
+        useVarAsign = False
         for item in inList:
             if isinstance(item, ContainesLineList):
                 self.checkUnsuported(item.lineList.lineList)
             
-            if isinstance(item,VarAsignObject): raise Exception("Variable asignment is currently UNSUPORTED!")
-            if isinstance(item,FuncCallObject): raise Exception("Functions are currently UNSUPORTED!")
-            if isinstance(item,DefFuncObject): raise Exception("Functions are currently UNSUPORTED!")
+            #if isinstance(item,VarAsignObject): raise Exception("Variable asignment is currently UNSUPORTED!")
+            if isinstance(item,VarAsignObject): 
+                useVarAsign = True
+                if len(item.expression) > 3:
+                    raise Exception("variable asignments can only do one operation at a time. example x = y + 2") 
+            if isinstance(item,defconstObject): useDefConst = True
+            #if isinstance(item,FuncCallObject): raise Exception("Functions are currently UNSUPORTED!")
+            #if isinstance(item,DefFuncObject): raise Exception("Functions are currently UNSUPORTED!")
             if isinstance(item,ForLoopObject): raise Exception("For Loops are currently UNSUPORTED!")
             if isinstance(item,WhileLoopObject): raise Exception("While Loops currently UNSUPORTED!")
-            
+        
+        if useDefConst and useVarAsign: raise Exception("Defconst and variables canot both be used!")
 
 
     def check(self):

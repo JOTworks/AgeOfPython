@@ -8,7 +8,7 @@ class Parcer: #REFACTOR spell it parser
     self.tokens = tokens
     self.main = []
     self.tokPtr = 0
-    self.tabSize = 4
+    self.tabSize = 2
     self.loadLimit = 1000
     self.loadCount = 0
     self.aiFolder = aiFolder
@@ -53,7 +53,7 @@ class Parcer: #REFACTOR spell it parser
                                TokenType.IDENTIFIER, 
                                TokenType.NUMBER, 
                                TokenType.RIGHT_PAREN]):
-      openObject.append(defconstObject(self.tokens[2].value,self.tokens[3].value))
+      openObject.append( defconstObject(self.tokens[2].value,self.tokens[3].value,self.tokens[2].line,self.tokens[2].file) )
       self.consumeTokens() 
       return True
     return False
@@ -91,13 +91,23 @@ class Parcer: #REFACTOR spell it parser
           return False
     return True
 
+  def returnState(self, openObject):
+    if self.compareTokenTypes([TokenType.RETURN]):
+      if self.compareTokenTypes([TokenType.NUMBER]) or self.compareTokenTypes([TokenType.IDENTIFIER]):
+        openObject.append(ReturnObject(self.tokens[self.tokPtr - 1].value))
+      else:
+        openObject.append(ReturnObject(""))
+      return True
+
   def commandState(self, openObject):
     if self.compareTokenTypes([TokenType.LEFT_PAREN, TokenType.IDENTIFIER]):
       commandName = self.tokens[self.tokPtr - 1].value
+      commandLine = self.tokens[self.tokPtr - 1].line
+      commandFile = self.tokens[self.tokPtr - 1].file
       argList = []
       if self.argumentphraseState(argList):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
-          openObject.append(CommandObject(commandName, argList))
+          openObject.append(CommandObject(commandName, argList, commandLine, commandFile))
           return True
     return False
 
@@ -148,6 +158,7 @@ class Parcer: #REFACTOR spell it parser
     return False
 
   def ifState(self, openObject, tabValue):
+    exist = False
     if self.compareTokenTypes([TokenType.IF]):
       conditionals = []
       lines = []
@@ -157,7 +168,24 @@ class Parcer: #REFACTOR spell it parser
             openObject.append(IfObject(conditionals,lines))
             self.consumeTokens()
             return True
+          else: raise Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
+        else: raise Exception("expected : got TOK:"+str(self.tokens[self.tokPtr]))  
+      else: raise Exception("expected commandPhrase got TOK:"+str(self.tokens[self.tokPtr]))      
     return False
+
+  def elseState(self, openObject, tabValue):
+      if self.compareTokenTypes([TokenType.ELSE]):
+        conditionals = []
+        lines = []
+        self.commandphraseState(conditionals)
+        if self.compareTokenTypes([TokenType.COLON]):
+          if self.lineState(lines, tabValue + self.tabSize):
+            openObject.append(ElseObject(conditionals,lines))
+            self.consumeTokens()   
+            return True
+          else: raise Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
+        else: raise Exception("expected : got TOK:"+str(self.tokens[self.tokPtr]))    
+      return False
 
   def whileState(self, openObject,tabValue):
     if self.compareTokenTypes([TokenType.WHILE]):
@@ -193,15 +221,17 @@ class Parcer: #REFACTOR spell it parser
 
   def varasignState(self, openObject, tabValue):
       if self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.EQUALS]):
-        variable = self.tokens[self.tokPtr-2].value
+        variable = self.tokens[self.tokPtr-2]
+        line = self.tokens[self.tokPtr-2].line
+        file = self.tokens[self.tokPtr-2].file
         expression = []
         if self.funccallState( expression, tabValue):
           print("FUNC CALL FOUND IN VAR ASIGN")
-          openObject.append(VarAsignObject(variable, expression))
+          openObject.append(VarAsignObject(variable, expression, line, file ))
           self.consumeTokens()
           return True
         elif self.expargumentphraseState(expression):
-          openObject.append(VarAsignObject(variable, expression))
+          openObject.append(VarAsignObject(variable, expression, line, file))
           self.consumeTokens()
           return True
       return False
@@ -216,7 +246,8 @@ class Parcer: #REFACTOR spell it parser
           if self.lineState(lines, self.tabSize):
             openObject.append(DefFuncObject(name, arguments, lines)) #ERROR needs the line items in the def
             self.consumeTokens()
-            return True
+  
+          return True
     return False
 
   def funccallState(self, openObject, tabValue):
@@ -242,22 +273,24 @@ class Parcer: #REFACTOR spell it parser
       if tabValue > 0: 
         if self.tokens[self.tokPtr].tokenType != TokenType.TABS:
           return True
-        if len(self.tokens[self.tokPtr].value) > tabValue:
-          print("TAB GRATER FAIL STATE")
+        elif len(self.tokens[self.tokPtr].value) > tabValue:
           return False
-        if len(self.tokens[self.tokPtr].value) < tabValue:
-          print("TAB LESS:"+ str(len(self.tokens[self.tokPtr].value))+" < "+ str(tabValue))
+        elif len(self.tokens[self.tokPtr].value) < tabValue:
+          print("TAB:"+ str(len(self.tokens[self.tokPtr].value))+" TABValue:"+ str(tabValue)+" line:"+str(self.tokens[self.tokPtr].line)+str(self.tokens[self.tokPtr].file))
           return True
       else: #should only run if line by itself
         if self.compareTokenTypes([TokenType.TABS]):
-          print("TAB FOUND WHEN TABS=0 FAIL STATE")
+          raise Exception("TAB FOUND WHEN TABS=0 FAIL STATE "+str(self.tokens[self.tokPtr]))
           return False
-      if self.ifState( openObject, tabValue):  anotherLine = True
+      if self.ifState( openObject, tabValue): 
+        self.elseState( openObject, tabValue)
+        anotherLine = True
       elif self.whileState( openObject, tabValue):  anotherLine = True
       elif self.forState( openObject, tabValue):  anotherLine = True
       elif self.funccallState( openObject, tabValue):  anotherLine = True
       elif self.varasignState( openObject, tabValue):  anotherLine = True
       elif self.commandState(openObject):  anotherLine = True
+      elif self.returnState(openObject): anotherLine = True
       self.consumeTokens()  
     return True
 
