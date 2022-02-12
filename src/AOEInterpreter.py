@@ -107,7 +107,6 @@ class Interpreter:
         deepistIf = True
         itr = 0
         while (itr < len(inIf.lineList.lineList)):
-            print("itr: "+str(itr))
             if isinstance( inIf.lineList.lineList[itr], (IfObject,defruleObject,FuncCallObject) ):
                 deepistIf = False
             if isinstance( inIf.lineList.lineList[itr], VarAsignObject):

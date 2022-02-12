@@ -226,7 +226,6 @@ class Parcer: #REFACTOR spell it parser
         file = self.tokens[self.tokPtr-2].file
         expression = []
         if self.funccallState( expression, tabValue):
-          print("FUNC CALL FOUND IN VAR ASIGN")
           openObject.append(VarAsignObject(variable, expression, line, file ))
           self.consumeTokens()
           return True
