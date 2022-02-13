@@ -1,5 +1,5 @@
 from termcolor import colored
-from AOEscanner import Scanner
+from Scanner import Scanner
 import random
 from data import *
 

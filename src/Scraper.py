@@ -1,7 +1,6 @@
+"""
 import requests
 from bs4 import BeautifulSoup
-
-
 
 
 # Making a GET request
@@ -15,3 +14,4 @@ soup = BeautifulSoup(objects.text, features="html.parser")
 x = soup.body.find("div",attrs={'class' : 'container'}).text
 #x = soup.body.find("table").text
 print(x)
+"""

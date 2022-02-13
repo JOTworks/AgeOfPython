@@ -1,8 +1,7 @@
 from logging.config import IDENTIFIER
-from AOEparser import Parcer
-from AOEscanner import Scanner
+from Parser import Parcer
+from Scanner import Scanner
 from data import *
-import pytest
 
 
 @pytest.mark.paramertrize("test_input,expected",[

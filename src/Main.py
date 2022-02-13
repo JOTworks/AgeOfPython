@@ -1,9 +1,9 @@
-from AOEInterpreter import Interpreter
+from Interpreter import Interpreter
 from data import TokenType
-from AOEscanner import Scanner
-from AOEparser import Parcer
-from AOEasserter import Asserter
-from AOEprinter import Printer
+from Scanner import Scanner
+from Parser import Parcer
+from Asserter import Asserter
+from Printer import Printer
 from termcolor import colored
 import sys
 from pprint import pprint
@@ -61,7 +61,7 @@ def main(argv):
     print("\n===Interpreter Results===")
     for myObject in myInterpreter.main:
       pprint(myObject, indent=2, width=20)
-    print("\n===Interpreter FuncList===")
+    print("\n===Function List===")
     for func in myInterpreter.funcList:
       pprint(func, indent=2, width=20)
     print("\n===Used Memory===")

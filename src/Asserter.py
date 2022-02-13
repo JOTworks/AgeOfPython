@@ -1,7 +1,7 @@
 from data import *
 
 
-class Asserter:
+class Asserter: #assert that functions objects only have returns as a last line. #assert that variable asingms with function canot have another token in expression
     def __init__(self, main):
         self.main = main
 
@@ -11,7 +11,7 @@ class Asserter:
         useVarAsign = False
         for item in inList:
             if isinstance(item, ContainesLineList):
-                self.checkUnsuported(item.lineList.lineList)
+                self.checkUnsuported(item.lineList)
             
             #if isinstance(item,VarAsignObject): raise Exception("Variable asignment is currently UNSUPORTED!")
             if isinstance(item,VarAsignObject): 

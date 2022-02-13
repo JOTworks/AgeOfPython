@@ -47,17 +47,17 @@ from os import name
 
 class PrettyPrinter(object):
     def __repr__(self):
-        if self.__class__.__name__ == "LineListObject":
-          lines  = []
-          for val in self.lineList:
-            lines += '{}'.format(val).split('\n')
-          return ('\n    '+ '\n    '.join(lines) )
+      lines = [self.__class__.__name__ + ':']
+      for key, val in vars(self).items():
+          if val.__class__.__name__ == "list":
+            #print("###"+key.__class__.__name__+"###"+val.__class__.__name__+"###")
+            lines += '{}:'.format(key).split('\n')
+            for item in val:
+              lines += '|    {}'.format(item).split('\n')
+          else:
+            lines += '{}: {}'.format(key, val).split('\n')
 
-        else:    
-          lines = [self.__class__.__name__ + ':']
-          for key, val in vars(self).items():
-              lines += '{}: {}'.format(key, val).split('\n')
-          return ( '\n|    '.join(lines) )
+      return ( '\n|    '.join(lines) )
 
 class Token(PrettyPrinter):
   def __init__(self, tokenType, value, line, file):
@@ -88,6 +88,10 @@ class Token(PrettyPrinter):
     elif setting != "errors" and setting != "full errors":
       print("["+ tempValue +"]", end =" ")
 
+class Wrapper(PrettyPrinter):
+  def __init__(self, Type, lineList):
+    self.Type = Type
+    self.lineList = lineList
 
 class LoadIfObject():
   def __init__(self, name, arg = ""):
@@ -98,10 +102,6 @@ class LoadIfObject():
 
 class ContainesLineList(PrettyPrinter):
   pass
-
-class LineListObject(PrettyPrinter):
-  def __init__(self, lineList):
-    self.lineList = lineList
 
 class logicCommandObject(PrettyPrinter):
   def __init__(self, logicOp, commands):
@@ -135,18 +135,18 @@ class ReturnObject(PrettyPrinter):
 
 class IfObject(ContainesLineList):
   def __init__(self, conditionList, lineList):
-    self.conditionList = LineListObject(conditionList)
-    self.lineList = LineListObject(lineList)
+    self.conditionList = conditionList
+    self.lineList = lineList
 
 class ElseObject(ContainesLineList):
   def __init__(self, conditionList, lineList):
-    self.conditionList = LineListObject(conditionList)
-    self.lineList = LineListObject(lineList)
+    self.conditionList = conditionList
+    self.lineList = lineList
 
 class WhileLoopObject(ContainesLineList):
   def __init__(self, conditionals, lineList):
     self.conditionals = conditionals
-    self.lineList = LineListObject(lineList)
+    self.lineList = lineList
 
 class ForLoopObject(ContainesLineList):
   def __init__(self, lineList, interator, itrStartValue, itrEndValue, itrJumpValue):
@@ -154,13 +154,13 @@ class ForLoopObject(ContainesLineList):
     self.itrStartValue = itrStartValue
     self.itrEndValue = itrEndValue
     self.itrJumpValue = itrJumpValue
-    self.lineList = LineListObject(lineList)
+    self.lineList = lineList
 
 class DefFuncObject(ContainesLineList):
   def __init__(self, name, argList, lineList):
     self.name = name
     self.argList = argList
-    self.lineList = LineListObject(lineList)
+    self.lineList = lineList
 
 class DefFuncContainer(ContainesLineList):
   def __init__(self, defFunc, memory):
@@ -171,6 +171,10 @@ class DefFuncContainer(ContainesLineList):
     self.returnMemLoc = (memory.mallocInt(arg))
   #def __repr__(self):
   #  return("FUNCDEF name: "+self.functionName+" arg:"+str(self.argList)+" lines:"+ str(self.lineList))
+class FuncCallObject(PrettyPrinter):
+  def __init__(self, name, args):
+    self.name = name
+    self.args = args
 
 class VarAsignObject(PrettyPrinter):
   def __init__(self, variable, expression, line, file):
@@ -178,8 +182,10 @@ class VarAsignObject(PrettyPrinter):
     self.expression = expression
     self.line = line
     self.file = file
+  
+  def isSetToFunction(self):
+    if isinstance(self.expression[0], FuncCallObject):
+      return True
+    else:
+      return False
 
-class FuncCallObject(PrettyPrinter):
-  def __init__(self, name, args):
-    self.name = name
-    self.args = args
