@@ -141,7 +141,10 @@ class Scanner:
       print("error")
     identifierType = TokenType.IDENTIFIER
 
-    if self.line[:length] == "if":
+    if self.line[:3] == "sn-":
+      #raise Exception(self.line[:length])
+      identifierType = TokenType.STRATEGIC_NUMBER
+    elif self.line[:length] == "if":
       identifierType = TokenType.IF
     elif self.line[:length] == "while":
       identifierType = TokenType.WHILE

@@ -62,6 +62,7 @@ class Parcer: #REFACTOR spell it parser
     if (self.compareTokenTypes([TokenType.OPERATOR]) or
         self.compareTokenTypes([TokenType.IDENTIFIER]) or 
         self.compareTokenTypes([TokenType.NUMBER]) or 
+        self.compareTokenTypes([TokenType.STRATEGIC_NUMBER]) or
         self.compareTokenTypes([TokenType.STRING])):
       openObject.append(self.tokens[self.tokPtr-1])
       return True
@@ -243,7 +244,10 @@ class Parcer: #REFACTOR spell it parser
       if self.pyargumentphraseState(arguments):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN, TokenType.COLON]):
           if self.lineState(lines, self.tabSize):
-            openObject.append(DefFuncObject(name, arguments, lines)) #ERROR needs the line items in the def
+            returnValue = ""
+            if self.compareTokenTypes([TokenType.RETURN, TokenType.IDENTIFIER]):
+              returnValue = self.tokens[self.tokPtr-1].value
+            openObject.append(DefFuncObject(name, arguments, lines, returnValue)) #ERROR needs the line items in the def
             self.consumeTokens()
   
           return True
@@ -289,7 +293,7 @@ class Parcer: #REFACTOR spell it parser
       elif self.funccallState( openObject, tabValue):  anotherLine = True
       elif self.varasignState( openObject, tabValue):  anotherLine = True
       elif self.commandState(openObject):  anotherLine = True
-      elif self.returnState(openObject): anotherLine = True
+      #elif self.returnState(openObject): anotherLine = True
       self.consumeTokens()  
     return True
 

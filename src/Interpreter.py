@@ -139,83 +139,81 @@ class Interpreter:
                 return copy.deepcopy(func)
         raise Exception("Canot call fuction "+name+"() that is not Defined")
 
-    def flattenFuncCalls(self, inList):
-        callStack = ["main"]
+    def scope(self, variables, callStack):
+        if isinstance(variables, list):
+            for var in variables:
+                self.scope(var, callStack)
+        elif isinstance(variables, CommandObject):
+            self.scope(variables.argList, callStack)
+        elif isinstance(variables, Token):
+            if variables.tokenType == TokenType.IDENTIFIER:
+                if len(callStack) == 1:
+                    defArgList = []
+                else:
+                    defArgList = self.getFunctionCopyByName(callStack[-1].name).argList
+                inArgList = False
+                for itr in range(len(defArgList)):
+                    if variables.value == defArgList[itr].value:
+                        variables.value = callStack[-1].args[itr].value
+                        inArgList = True
+                if not inArgList:
+                    variables.value = "/".join([o.name for o in callStack])+"/"+ variables.value
+        else:
+            raise Exception("Need to implament "+str(variables.__class__)+" in scope function")
+
+    def scopeVariables(self, line, callStack):
+        if isinstance(line, FuncCallObject):
+            self.scope(line.args, callStack)
+        elif isinstance(line, VarAsignObject):
+            self.scope(line.variable, callStack)
+            self.scope(line.expression, callStack)
+        elif isinstance(line, CommandObject):
+            self.scope(line.argList, callStack)
+        elif isinstance(line, IfObject):
+            self.scope(line.conditionList, callStack)
+        else:
+            raise Exception("Need to implament "+str(line.__class__)+" in scopeVariables function")
+    
+    def flattenFuncCalls(self, inList, callStack):
         tempList = []
         for line in inList:
+            self.scopeVariables(line, callStack)
             if isinstance(line, FuncCallObject):
                 tempList.append(self.functionCallToLines(line, callStack))
-            elif isinstance(line, VarAsignObject) and line.isSetToFunction():
-                tempList.append(self.functionCallToLines(line, callStack))
-                line.expression = line.expression[0].returnVar
-                tempList.append(self.varAsignToCommands(line)) #this will probably be a bug later on with function scoped variables
-            else:
+            elif isinstance(line, VarAsignObject):
+                if line.isSetToFunction():
+                    tempList.append(self.functionCallToLines(line, callStack))
+                else:
+                    tempList.append(line)
+            elif isinstance(line, IfObject):
+                line.lineList = self.flattenFuncCalls(line.lineList, callStack)
                 tempList.append(line)
+            elif isinstance(line, CommandObject):
+                tempList.append(line)
+            else:
+                raise Exception("Need to implament "+str(line.__class__)+" in flattenFuncCalls function")
         return tempList
 
-    #needs to switch out function parameters and add function Scope
     def functionCallToLines(self, funcCall, callStack): 
-        if funcCall.name in callStack: raise Exception("Recursion will not be suported. function canot call itself")
-        else: callStack.append(funcCall.name)
+        for call in callStack:
+            if funcCall.name == call.name:
+                raise Exception("Recursion will not be suported. function "+funcCall.name+" canot call itself")
         functionCallWrapper = Wrapper(FuncCallObject, [])
         calledFunc = self.getFunctionCopyByName(funcCall.name)
-        for item in calledFunc.lineList:
-            if isinstance(item, FuncCallObject):
-                functionCallWrapper.lineList.append(self.functionCalltoLines(item, callStack))
-            else:
-                functionCallWrapper.lineList.append(item)
+        functionCallWrapper.lineList = self.flattenFuncCalls(calledFunc.lineList, callStack + [funcCall])
         return functionCallWrapper
-
+    
+    def optimizeRules(self):
+        pass
+   
     def interpret(self):
         self.constList = self.moveDefconst(self.main)
         self.funcList = self.moveFuncDef(self.main)
         #self.convertdefrulesToIfs(self.main) #May be nessesary later
-        self.main = self.flattenFuncCalls(self.main)
-        #replace function calls #add to stack trace, and deal with returns #RETURNS ONLY ALOWED AT THE END
-        #allocate memory switch out identifiers for memoryLocations.
-        #self.main = self.interpretLine(self.main)
-        #self.wrapCommandsInDefrules(self.main)
-        #interpreteLine is Scoping (how deep i am in interpreteLine) pass memory to each scope
-        #funcCallStack, how many functions im in # add funcstack to var name in mem exp. /func/x
-        #as i interpret lines, turn every object into a wrapper (list of rules or commands)
-        #optimize wraped objects
-        #add goto functions
-
-#        def modulate(w,y,z)
-#            (set food total w)
-#            (set wood total y)
-#            (set gold total z)
-#            d = 14
-#            return d
-#        
-#        
-#        x = modulate(a,b,c)
-#        
-#        if(true):
-#            (set food total w)
-#            (set wood total y)
-#            (set gold total z)
-#            /modulate/d = 14
-#            x = /modulate/d
-#
-#
-#        x = 1
-#        if(x):
-#            d = x
-#            (set food total a)
-#            (set wood total b)
-#            (set gold total c)
-#            /modulate/d = 14              #setResorces(a,b,c)
-#
-#
-#        1 x
-#        2   d
-#        3   /modulate/x
-#        4
-#        5
-#
-#        1 x
-#        2  
-#        3   
-#        4
-#        5
+        self.main = self.flattenFuncCalls(self.main, [FuncCallObject("main",[])] )
+        
+        #!self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.
+        #!self.main = self.interpretLine(self.main) #turns all objects in to wrappers full of commands
+        #!self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
+        self.main = self.optimizeRules(self.main)
+        #!self.main = self.replaceJumpvalues(self.main) #adds the jump commands now that it knows what rules there are

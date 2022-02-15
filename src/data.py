@@ -40,6 +40,7 @@ class TokenType(enum.Enum):
     RETURN = 31
     LOAD = 32
     LOAD_RANDOM = 33
+    STRATEGIC_NUMBER = 34
 
 from os import name
 # Data Classes
@@ -53,7 +54,7 @@ class PrettyPrinter(object):
             #print("###"+key.__class__.__name__+"###"+val.__class__.__name__+"###")
             lines += '{}:'.format(key).split('\n')
             for item in val:
-              lines += '|    {}'.format(item).split('\n')
+              lines += '| {}'.format(item).split('\n')
           else:
             lines += '{}: {}'.format(key, val).split('\n')
 
@@ -71,7 +72,7 @@ class Token(PrettyPrinter):
     if self.value == '\n':
       tempValue = '/n'
     #return("("+str(self.tokenType)+" "+ tempValue +" "+ str(self.line)+")")
-    return("( "+ tempValue +" "+ str(self.line)+" "+ self.file +" )")
+    return("["+tempValue +" "+str(self.line)+self.file+"]")
 
   def print(self,setting = ""):
     tempValue = self.value
@@ -157,10 +158,11 @@ class ForLoopObject(ContainesLineList):
     self.lineList = lineList
 
 class DefFuncObject(ContainesLineList):
-  def __init__(self, name, argList, lineList):
+  def __init__(self, name, argList, lineList, returnValue):
     self.name = name
     self.argList = argList
     self.lineList = lineList
+    self.returnValue = returnValue
 
 class DefFuncContainer(ContainesLineList):
   def __init__(self, defFunc, memory):
