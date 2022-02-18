@@ -122,13 +122,14 @@ run it with the python command like so if you are in the AgeOfPython folder
 <!-- SUPPORTED PYTHON -->
 ## Supported Python
 
-#### If statemnts
+### If statemnts
 if statments can only have conditions in them like defrules currently
 ```
 if(command arg)(command arg arg):
   (command)
 ```
-#### Asigning
+
+### Asigning
 asignign variables currently only supports 2 in an expression so
 ```
 x = 0
@@ -136,6 +137,27 @@ x = 1 + 3
 x = y + z
 ```
 but do not use more then 2, or use any parenthesis
+
+### Functions
+you can define a function like you would in python.
+<br>
+all functions pass by reference and all veriables created in a function are scoped only to that function
+<br>
+under the hood it currently places this code everywhere you call the function so it greatly increases rule count. But i plan to refactor it to use jump commads before anyone reaches the 10k rule limit.
+<br>
+you cannot have default value or returns.
+```
+def set_gather_percent(v_food, v_wood, v_gold, v_stone):
+  (set-strategic-number sn-food-gatherer-percentage v_food)
+  (set-strategic-number sn-wood-gatherer-percentage v_wood)
+  (set-strategic-number sn-gold-gatherer-percentage v_gold)
+  (set-strategic-number sn-stone-gatherer-percentage v_stone)
+```
+
+example calling the function above.
+```
+set_gather_percent(fuedal_food_percent, fuedal_wood_percent, 0, 0)
+```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
