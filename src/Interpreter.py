@@ -19,7 +19,6 @@ class Interpreter:
         if not self.memory.isUsed(varAsign.variable.value):
             if isinstance(varAsign.expression[0], FuncCallObject):
                 if varAsign.expression[0].name == "Point":
-                    print(varAsign.variable.value)
                     self.memory.mallocPoint(varAsign.variable.value)
                     return 
                 if varAsign.expression[0].name == "State":
@@ -66,11 +65,13 @@ class Interpreter:
         return newLineList
 
     def moveDefconst(self, InList):
-        tempConstList = []
+        tempConstList = {}
         itr=0
         while (itr<len(InList)):
             if isinstance(InList[itr], defconstObject):
-                tempConstList.append(InList.pop(itr))
+                
+                tempConstList[InList[itr].name] = (InList[itr].value)
+                InList.pop(itr)
                 itr -= 1
             itr += 1
         return tempConstList
@@ -145,7 +146,6 @@ class Interpreter:
                         if isinstance(rule, defruleObject):
                             for command in rule.executeList:
                                 if command.name == "up-jump-direct":
-                                    print("COMMAND TOKEN TYPE: "+str(command.argList[-1].tokenType))
                                     if command.argList[-1].tokenType == TokenType.LAST_RULE:
                                         command.argList[-1].value = str(line.rulePosition(-1))
                                     elif command.argList[-1].tokenType == TokenType.SECOND_RULE:
@@ -160,7 +160,6 @@ class Interpreter:
     def allocateArg(self, inCommand):
         if not isinstance(inCommand, CommandObject):
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")
-        print(inCommand)
         if len(inCommand.argList) == 0:
             return
         for arg in inCommand.argList:
@@ -171,8 +170,6 @@ class Interpreter:
             if (len(arg.value) >= 5) and (arg.value[:5] == "main/"):
                 if not self.memory.isUsed(arg.value):
                     self.memory.mallocInt(arg.value)
-                print(arg.value)
-                print("ASIGNED "+str(self.memory.getMemLoc(arg.value)))
                 arg.value = str(self.memory.getMemLoc(arg.value))
                 
 
@@ -205,5 +202,5 @@ class Interpreter:
         #self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
         self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.
         #self.main = self.optimizeRules(self.main)
-        #self.addPositiontoDefrules(self.main, 0)
-        #self.replaceJumpValues(self.main) #adds the jump commands now that it knows what rules there are
+        self.addPositiontoDefrules(self.main, 0)
+        self.replaceJumpValues(self.main) #adds the jump commands now that it knows what rules there are

@@ -154,7 +154,7 @@ class ConditionalObject(PrettyPrinter):
 class IfObject(ConditionalObject):
   def __init__(self, conditionList, lineList):
     super().__init__(conditionList, lineList)
-  def interpret(self):
+  def interpret(self): #TODO: make disable self commands disable the whole if
     newList = []
     newList.append(defruleObject(self.conditionList, [JUMP_1_COMMANDS]))
     newList.append(defruleObject(TRUE_CONDITION, [JUMP_LAST_COMMAND]))
