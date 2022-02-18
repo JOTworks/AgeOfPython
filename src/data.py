@@ -1,50 +1,7 @@
-import enum
+
 from pdb import line_prefix
-class Structure(enum.Enum):
-    POINT = 2
-    STATE = 4
-
-class TokenType(enum.Enum):
-    LEFT_PAREN = 1      #length: 1
-    RIGHT_PAREN = 2     #length: 1
-    LOGIC_OP = 3
-    COMMA = 4
-    COLON = 5           #length: 1
-    ARROW = 6           #length: 2
-    OPERATOR = 7
-    POINTER = 8
-    NUMBER = 9
-    # Variable length tokens:
-    STRING = 10
-    COMMENT = 11
-    IDENTIFIER = 12
-    WHITE_SPACE = 13
-    # Keywords:
-    DEFCONST = 14
-    DEFRULE = 15
-    IF = 16
-    ELSE = 17
-    ELIF = 18
-    FOR = 18
-    WHILE = 20
-    DEF = 21
-    # Comment keywords:
-    LOAD_IF = 22
-    UNIDENTIFIED = 24
-    UNCAUGHT = 25
-    TABS = 26
-    IN = 27
-    RANGE = 28
-    EQUALS = 29
-    MATHOP = 30
-    RETURN = 31
-    LOAD = 32
-    LOAD_RANDOM = 33
-    STRATEGIC_NUMBER = 34
-
 from os import name
-# Data Classes
-
+from enums import TokenType
 
 class PrettyPrinter(object):
     def __repr__(self):
@@ -71,28 +28,40 @@ class Token(PrettyPrinter):
     tempValue = self.value
     if self.value == '\n':
       tempValue = '/n'
-    #return("("+str(self.tokenType)+" "+ tempValue +" "+ str(self.line)+")")
     return("["+tempValue +" "+str(self.line)+self.file+"]")
-
-  def print(self,setting = ""):
-    tempValue = self.value
-    #if self.value == '\n':
-    #  tempValue = '/n'
-    if self.tokenType == TokenType.UNCAUGHT:
-      if setting == "full errors":
-        print(str(self.tokenType)+"\t ["+ tempValue +"] "+ str(self.line)) 
-      print(colored("["+ tempValue +"]","blue"), end =" ")
-    elif self.tokenType == TokenType.UNIDENTIFIED:
-      if setting == "full errors":
-        print(str(self.tokenType)+"\t ["+ tempValue +"] "+ str(self.line))
-      print(colored("["+ tempValue +"]","red"), end =" ")
-    elif setting != "errors" and setting != "full errors":
-      print("["+ tempValue +"]", end =" ")
+  def scope(self, callStack):
+    if self.tokenType == TokenType.IDENTIFIER:
+      if len(callStack) == 1:
+          defArgList = []
+      else:
+          defArgList = callStack[-1].defFuncArgs
+      inArgList = False
+      for itr in range(len(defArgList)):
+          if self.value == defArgList[itr].value:
+              self.value = callStack[-1].funcCall.args[itr].value
+              inArgList = True
+      if not inArgList:
+          self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
 
 class Wrapper(PrettyPrinter):
   def __init__(self, Type, lineList):
     self.Type = Type
     self.lineList = lineList
+  def interpret(self):
+    newList = []
+    for line in self.lineList:
+      newList.append(line.interpret())
+      #raise Exception("LINE"+str(line))
+    return Wrapper(self.Type, newList)
+  def rulePosition(self,index): #REFACTOR this will be a problem later
+    if index == 1:
+      return self.lineList[0].position + 1
+    elif index == -1:
+      return self.lineList[-1].position
+    else:
+      raise Exception("only 1 and -1 is supported for rulePosition()")
+
+
 
 class LoadIfObject():
   def __init__(self, name, arg = ""):
@@ -100,27 +69,24 @@ class LoadIfObject():
     self.arg = arg
   def __repr__(self):
     return ("LOADIF name:"+str(self.name)+" args:"+str(self.arg))
-
-class ContainesLineList(PrettyPrinter):
-  pass
-
 class logicCommandObject(PrettyPrinter):
   def __init__(self, logicOp, commands):
     self.logicOp = logicOp
     self.commands = commands
-
+  def scope(self, callStack):
+    for command in self.commands:
+      command.scope(callStack)
 class defconstObject(PrettyPrinter):
   def __init__(self, name, value, line, file):
     self.name = name
     self.value = value
     self.line = line
     self.file = file
-
 class defruleObject(PrettyPrinter):
   def __init__(self, conditionList, executeList):
     self.conditionList = conditionList
     self.executeList = executeList
-
+    self.position = -1
 class CommandObject(PrettyPrinter):
   def __init__(self, name, argList, line, file):
     self.line = line
@@ -129,54 +95,16 @@ class CommandObject(PrettyPrinter):
     self.argList = argList
   def __repr__(self):
     return ("COMMAND name:"+str(self.name)+" args:"+str(self.argList))
+  def scope(self, callStack):
+    for line in self.argList:
+      line.scope(callStack)
+  def interpret(self):
+      return defruleObject(TRUE_CONDITION, [self])
+
 
 class ReturnObject(PrettyPrinter):
   def __init__(self, arg):
     self.arg = arg
-
-class IfObject(ContainesLineList):
-  def __init__(self, conditionList, lineList):
-    self.conditionList = conditionList
-    self.lineList = lineList
-
-class ElseObject(ContainesLineList):
-  def __init__(self, conditionList, lineList):
-    self.conditionList = conditionList
-    self.lineList = lineList
-
-class WhileLoopObject(ContainesLineList):
-  def __init__(self, conditionals, lineList):
-    self.conditionals = conditionals
-    self.lineList = lineList
-
-class ForLoopObject(ContainesLineList):
-  def __init__(self, lineList, interator, itrStartValue, itrEndValue, itrJumpValue):
-    self.interator = interator
-    self.itrStartValue = itrStartValue
-    self.itrEndValue = itrEndValue
-    self.itrJumpValue = itrJumpValue
-    self.lineList = lineList
-
-class DefFuncObject(ContainesLineList):
-  def __init__(self, name, argList, lineList, returnValue):
-    self.name = name
-    self.argList = argList
-    self.lineList = lineList
-    self.returnValue = returnValue
-
-class DefFuncContainer(ContainesLineList):
-  def __init__(self, defFunc, memory):
-    self.defFunc = defFunc
-    self.argMemLoc = []
-    for arg in self.defFunc.argList:
-      self.argMemLoc.append(memory.mallocInt(arg))
-    self.returnMemLoc = (memory.mallocInt(arg))
-  #def __repr__(self):
-  #  return("FUNCDEF name: "+self.functionName+" arg:"+str(self.argList)+" lines:"+ str(self.lineList))
-class FuncCallObject(PrettyPrinter):
-  def __init__(self, name, args):
-    self.name = name
-    self.args = args
 
 class VarAsignObject(PrettyPrinter):
   def __init__(self, variable, expression, line, file):
@@ -184,10 +112,111 @@ class VarAsignObject(PrettyPrinter):
     self.expression = expression
     self.line = line
     self.file = file
+  def scope(self, callStack):
+      self.variable.scope(callStack)
+      for item in self.expression:
+        item.scope(callStack)
+
+  def isSetToFunction(self):
+    if len(self.expression)==1:
+      if isinstance(self.expression[0], FuncCallObject):
+        return True
+    return False
+
+  def interpret(self):
+    asignCommands = []
+    asignCommands.append(self.createAsignCommand(self.variable, "=", self.expression[0]))
+    if len(self.expression) == 3:
+      asignCommands.append(self.createAsignCommand(self.variable, self.expression[1], self.expression[2]))
+    return defruleObject(TRUE_CONDITION, asignCommands)
+
+  def createAsignCommand(self, variable, op, tempVariable):
+    args = []
+    args.append(variable)
+    if tempVariable.tokenType == TokenType.NUMBER:
+        if isinstance(op, Token): properOp = "c:"+ op.value
+        else: properOp = "c:"+ op
+    else:
+        if isinstance(op, Token): properOp = "g:"+ op.value
+        else: properOp = "g:"+ op
+    args.append(properOp)
+    args.append(tempVariable)
+    return CommandObject("up-modify-goal", args, variable.line, variable.file)
+
+class ConditionalObject(PrettyPrinter):
+  def __init__(self, conditionList, lineList):
+    self.conditionList = conditionList
+    self.lineList = lineList
+  def scope(self, callStack):
+    for line in self.conditionList:
+      line.scope(callStack)
+
+class IfObject(ConditionalObject):
+  def __init__(self, conditionList, lineList):
+    super().__init__(conditionList, lineList)
+  def interpret(self):
+    newList = []
+    newList.append(defruleObject(self.conditionList, [JUMP_1_COMMANDS]))
+    newList.append(defruleObject(TRUE_CONDITION, [JUMP_LAST_COMMAND]))
+    for line in self.lineList:
+      newList.append(line.interpret())
+    jumpLineList = [JUMP_SECOND_COMMAND]
+    #TODO: look for disable-self commands and add it to the first contional rule
+    #if isinstance(self.lineList[-1], CommandObject) and (self.lineList[-1].name == "disable-self"):
+        #jumpLineList.append(self.lineList[-1])
+    newList.append(defruleObject( TRUE_CONDITION, [DO_NOTHING_COMMAND]))
+    return Wrapper(IfObject, newList)
+
+class ElseObject(ConditionalObject):
+  def __init__(self, conditionList, lineList):
+    super().__init__(conditionList, lineList)
+
+class WhileLoopObject(ConditionalObject):
+  def __init__(self, conditionList, lineList):
+    super().__init__(conditionList, lineList)
+
+class ForLoopObject(ConditionalObject):
+  def __init__(self, lineList, iterator, itrStartValue, itrEndValue, itrJumpValue):
+    lessthenToken = Token(TokenType.MATHOP, "<", -1, "")
+    numberToken = Token(TokenType.NUMBER, itrEndValue, -1, "")
+    conditionals = [CommandObject("up-compare-goal",[iterator, lessthenToken, numberToken])]
+    super().__init__(conditionals, lineList)
+    self.iterator = iterator
+    self.itrStartValue = itrStartValue
+    self.itrJumpValue = itrJumpValue
+
+class DefFuncObject(PrettyPrinter):
+  def __init__(self, name, argList, lineList, returnValue):
+    self.name = name
+    self.argList = argList
+    self.lineList = lineList
+    self.returnValue = returnValue
+
+class FuncCallObject(PrettyPrinter):
+  def __init__(self, name, args):
+    self.name = name
+    self.args = args
+  def scope(self, callStack):
+    for line in self.args:
+      line.scope(callStack)
   
+class CallStackItem(PrettyPrinter):
+  def __init__(self, funcCall, defFuncArgs):
+    self.funcCall = funcCall
+    self.defFuncArgs = defFuncArgs
+
   def isSetToFunction(self):
     if isinstance(self.expression[0], FuncCallObject):
       return True
     else:
       return False
 
+TRUE_CONDITION = [CommandObject("true",[],"","")]
+NOT_TOKEN = Token(TokenType.LOGIC_OP,"not",-1,"")
+CONSTANT_TOKEN = Token(TokenType.IDENTIFIER,"c:",-1,"")
+LAST_RULE_TOKEN = Token(TokenType.LAST_RULE,"",-1,"")
+SECOND_RULE_TOKEN = Token(TokenType.SECOND_RULE,"",-1,"")
+DO_NOTHING_COMMAND = CommandObject("do-nothing",[],"","")
+JUMP_LAST_COMMAND = CommandObject("up-jump-direct",[CONSTANT_TOKEN,LAST_RULE_TOKEN ],"","")
+JUMP_SECOND_COMMAND = CommandObject("up-jump-direct",[CONSTANT_TOKEN,SECOND_RULE_TOKEN ],"","")
+JUMP_1_COMMANDS = CommandObject("up-jump-rule",[Token(TokenType.NUMBER,"1",-1,"")],"","")

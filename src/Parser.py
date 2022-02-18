@@ -2,6 +2,7 @@ from termcolor import colored
 from Scanner import Scanner
 import random
 from data import *
+from enums import TokenType
 
 class Parcer: #REFACTOR spell it parser
   def __init__(self, tokens, aiFolder):

@@ -1,4 +1,5 @@
-from data import TokenType, Token
+from data import Token
+from enums import TokenType
 
 class Scanner:
   def __init__(self, fileName, aiFolder):
@@ -142,7 +143,6 @@ class Scanner:
     identifierType = TokenType.IDENTIFIER
 
     if self.line[:3] == "sn-":
-      #raise Exception(self.line[:length])
       identifierType = TokenType.STRATEGIC_NUMBER
     elif self.line[:length] == "if":
       identifierType = TokenType.IF

@@ -27,7 +27,6 @@ class TestInterpreter(unittest.TestCase):
     varAsign = VarAsignObject(self.tokenCenter,[self.tokenCenter,self.tokenPlus,self.tokenCenter],0,"main")
     commands = self.myInterperter.varAsignToCommands(varAsign)
     self.assertTrue(len(commands) == 2)
-    
 
 if __name__ == '__main__':
   unittest.main()

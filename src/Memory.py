@@ -1,6 +1,5 @@
 from pprint import pprint
-
-from data import Structure
+from enums import Structure
 class Memory: #refactor openMemory away. we can just use used Memory for everything! refactor None instead of ""
     def __init__(self):
         #self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
@@ -29,10 +28,10 @@ class Memory: #refactor openMemory away. we can just use used Memory for everyth
         varNameList = varName.split(".")
         if not self.isUsed(varNameList[0]):
             raise Exception("Can't get memLoc that dosnt exist: "+varName+"\n"+self.printUsedMemory())
-        memStartLoc = self.usedMemory.index(varNameList[0]) 
+        memStartLoc = self.__usedMemory.index(varNameList[0]) 
         if (len(varNameList)==1):
             return memStartLoc
-        elif(len(varNameList)==2) and (self.usedMemory[memStartLoc+1]==Structure.POINT):
+        elif(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==Structure.POINT):
             if varNameList[1]=='x' or varNameList[1]=='0':
                 return memStartLoc
             if varNameList[1]=='y' or varNameList[1]=='1':
@@ -40,9 +39,8 @@ class Memory: #refactor openMemory away. we can just use used Memory for everyth
 
     def mallocInt(self, varName):
         self.checkSpace()
-        self.usedMemory[self.openMemory[0]] = varName
-        index = self.openMemory[0]
-        del self.openMemory[0]
+        index = self.__usedMemory.index('')
+        self.__usedMemory[index] = varName
         return index
 
     def mallocPoint(self, varName):

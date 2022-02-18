@@ -1,5 +1,4 @@
 from Interpreter import Interpreter
-from data import TokenType
 from Scanner import Scanner
 from Parser import Parcer
 from Asserter import Asserter

@@ -11,14 +11,14 @@ class Printer:
 
     def printDefrule(self, rule):
         defruleStr = '(defrule '
-        for item in rule.conditionList.lineList:
+        for item in rule.conditionList:
             defruleStr += "  "
             if isinstance(item, CommandObject):
                 defruleStr += self.printCommand(item)
             elif isinstance(item, logicCommandObject):
                 defruleStr += self.printLogicCommand(item)
         defruleStr += '=>'
-        for item in rule.executeList.lineList:
+        for item in rule.executeList:
             defruleStr += "  "
             defruleStr += self.printCommand(item)
         defruleStr = defruleStr[:-1]
@@ -58,16 +58,26 @@ class Printer:
     def printDefconst(self, const):
         return "(defconst "+const.name+" "+const.value+") ;"+str(const.line)+" "+const.file+"\n"
 
+    def printWrapper(self, wrapper):
+        for item in wrapper.lineList:
+            self.printObject(item)
 
+    def printObject(self, item):
+        if isinstance(item, defruleObject):
+            self.finalString += self.printDefrule(item)
+        elif isinstance(item, defconstObject):
+            self.finalString += self.printDefconst(item)
+        elif isinstance(item, Wrapper):
+            self.printWrapper(item)
+        else:
+            raise Exception("printing "+str(item.__class__)+" is not yet Iplamented!")
 
     def print(self):
         for item in self.main:
-            if isinstance(item, defruleObject):
-                self.finalString += self.printDefrule(item)
-            elif isinstance(item, defconstObject):
-                self.finalString += self.printDefconst(item)
+            self.printObject(item)
+            
+                    
             #function calls should be broken down by the interpreter!
             #elif isinstance(item, FuncCallObject):
             #    self.finalString += self.printFuncCall(item)
-            else:
-                raise Exception("printing "+str(item.__class__)+" is not yet Iplamented!")
+            

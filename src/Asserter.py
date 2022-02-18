@@ -10,9 +10,7 @@ class Asserter: #assert that functions objects only have returns as a last line.
         useDefConst = False
         useVarAsign = False
         for item in inList:
-            if isinstance(item, ContainesLineList):
-                self.checkUnsuported(item.lineList)
-            
+           
             #if isinstance(item,VarAsignObject): raise Exception("Variable asignment is currently UNSUPORTED!")
             if isinstance(item,VarAsignObject): 
                 useVarAsign = True
