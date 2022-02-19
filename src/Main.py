@@ -12,17 +12,21 @@ from pathlib import Path
 
 
 def main(argv):
-  #refactor have it look for the first aop file and throw warning
+  #TODO: have it look for the first aop file and throw warning
+  print(argv)
+  #file_path = os.path.Path(__file__)
+  #print("FILEPATH: "+str(file_path)+" ::")
+  #print (file_path.name)
   if len(argv) < 2:
     raise Exception("needs argument of ai file name")
-
   fileName = argv[1].split('.')[0] #gets rid of anything after the first '.'
   arguments = argv[2:]
   #############################################################
-  aiFolder = Path(__file__)
+  aiFolder = Path(__file__).parent.resolve()
   limit = 0
   while (aiFolder.name != "ai"):
     aiFolder = aiFolder.parent
+    #print(aiFolder)
     limit += 1
     if limit > 100:
       raise Exception("AgeOfPython needs to be in the ai folder AoE2DE/reasources/_common/ai/")

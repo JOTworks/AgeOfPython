@@ -5,28 +5,29 @@ from Interpreter import Interpreter
 from data import *
 import unittest
 from data import VarAsignObject
+import pytest
+from Scanner import Scanner
 
+@pytest.mark.parametrize("test_input,expected", [
+('variableName', TokenType.IDENTIFIER)
+])
+def test_scanner(test_input, expected):
+  assert expected == expected
 
-class TestInterpreter(unittest.TestCase):
-  def setUp(self):
-    self.myInterperter = Interpreter(None)
-    self.tokenCenter = Token(TokenType.IDENTIFIER, "center", 0, "main")
-    self.tokenEquals = Token(TokenType.OPERATOR, "=", 0, "main")
-    self.tokenPlus = Token(TokenType.OPERATOR, "+", 0, "main")
+myInterperter = Interpreter(None)
+tokenCenter = Token(TokenType.IDENTIFIER, "center", 0, "main")
+tokenEquals = Token(TokenType.OPERATOR, "=", 0, "main")
+tokenPlus = Token(TokenType.OPERATOR, "+", 0, "main")
+  
+def test_varAsignToCommands():
+  varAsign = VarAsignObject(tokenCenter,[tokenCenter],0,"main")
+  commands = myInterperter.varAsignToCommands(varAsign)
+  assert len(commands) == 1
+  varAsign = VarAsignObject(tokenCenter,[tokenCenter,tokenPlus,tokenCenter],0,"main")
+  commands = myInterperter.varAsignToCommands(varAsign)
+  assert len(commands) == 2
 
-
-  def test_test(self):
-    self.assertTrue(True)
-
-
-  def test_varAsignToCommands(self):
-    varAsign = VarAsignObject(self.tokenCenter,[self.tokenCenter],0,"main")
-    commands = self.myInterperter.varAsignToCommands(varAsign)
-    self.assertTrue(len(commands) == 1)
-
-    varAsign = VarAsignObject(self.tokenCenter,[self.tokenCenter,self.tokenPlus,self.tokenCenter],0,"main")
-    commands = self.myInterperter.varAsignToCommands(varAsign)
-    self.assertTrue(len(commands) == 2)
+def test_
 
 if __name__ == '__main__':
   unittest.main()

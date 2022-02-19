@@ -2,6 +2,8 @@
 from pdb import line_prefix
 from os import name
 from enums import TokenType
+import typing
+import dataclasses
 
 class PrettyPrinter(object):
     def __repr__(self):
@@ -53,7 +55,7 @@ class Wrapper(PrettyPrinter):
       newList.append(line.interpret())
       #raise Exception("LINE"+str(line))
     return Wrapper(self.Type, newList)
-  def rulePosition(self,index): #REFACTOR this will be a problem later
+  def rulePosition(self,index): #TODO: this will be a problem later
     if index == 1:
       return self.lineList[0].position + 1
     elif index == -1:
@@ -61,13 +63,12 @@ class Wrapper(PrettyPrinter):
     else:
       raise Exception("only 1 and -1 is supported for rulePosition()")
 
-
-
 class LoadIfObject():
   def __init__(self, name, arg = ""):
     self.name = name
     self.arg = arg
   def __repr__(self):
+
     return ("LOADIF name:"+str(self.name)+" args:"+str(self.arg))
 class logicCommandObject(PrettyPrinter):
   def __init__(self, logicOp, commands):
@@ -76,17 +77,20 @@ class logicCommandObject(PrettyPrinter):
   def scope(self, callStack):
     for command in self.commands:
       command.scope(callStack)
+
 class defconstObject(PrettyPrinter):
   def __init__(self, name, value, line, file):
     self.name = name
     self.value = value
     self.line = line
     self.file = file
+
 class defruleObject(PrettyPrinter):
   def __init__(self, conditionList, executeList):
     self.conditionList = conditionList
     self.executeList = executeList
     self.position = -1
+
 class CommandObject(PrettyPrinter):
   def __init__(self, name, argList, line, file):
     self.line = line
@@ -100,7 +104,6 @@ class CommandObject(PrettyPrinter):
       line.scope(callStack)
   def interpret(self):
       return defruleObject(TRUE_CONDITION, [self])
-
 
 class ReturnObject(PrettyPrinter):
   def __init__(self, arg):

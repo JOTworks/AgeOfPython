@@ -12,52 +12,6 @@ class Interpreter:
         self.funcList = []
         self.memory = Memory()
 
-
-############################################################################### 
-    def varAsignToCommands(self, varAsign):
-        AsignCommands = []
-        if not self.memory.isUsed(varAsign.variable.value):
-            if isinstance(varAsign.expression[0], FuncCallObject):
-                if varAsign.expression[0].name == "Point":
-                    self.memory.mallocPoint(varAsign.variable.value)
-                    return 
-                if varAsign.expression[0].name == "State":
-                    self.memory.mallocState(varAsign.variable.value)
-                    return               
-            self.memory.mallocInt(varAsign.variable.value)
-        if not isinstance(varAsign.expression[0], FuncCallObject):
-            AsignCommands.append(self.createAsignCommand(varAsign.variable, "=", varAsign.expression[0]))
-        if len(varAsign.expression) == 3:
-            AsignCommands.append(self.createAsignCommand(varAsign.variable, varAsign.expression[1], varAsign.expression[2]))
-        return AsignCommands
-    
-    def createAsignCommand(self, variable, op, tempVariable): #REFACTOR need to allow S: as well
-        args = []
-        if variable.tokenType == TokenType.NUMBER:
-            args.append(variable.value)
-        else:
-            args.append(self.memory.getMemLoc(variable.value))
-        if tempVariable.tokenType == TokenType.NUMBER:
-            if isinstance(op, Token): properOp = "c:"+ op.value
-            else: properOp = "c:"+ op
-            args.append(properOp)
-            args.append(tempVariable.value)
-        else:
-            if isinstance(op, Token): properOp = "g:"+ op.value
-            else: properOp = "g:"+ op
-            args.append(properOp)
-            args.append(self.memory.getMemLoc(tempVariable.value))
-        return CommandObject("up-modify-goal", args, variable.line, variable.file)
-
-    def replaceArg(self, arg, callList, funcList):
-        for itr, funcItem in enumerate(funcList):
-            if arg.value == funcList[itr].value:
-                if callList[itr].tokenType == TokenType.IDENTIFIER:
-                    arg.value = str(self.memory.getMemLoc(callList[itr].value))
-                else:
-                    arg.value = callList[itr].value
-###########################################################################################
-
     def interpretLine(self, lineList):
         newLineList = []
         for line in lineList:

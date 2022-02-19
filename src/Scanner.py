@@ -108,7 +108,7 @@ class Scanner:
       return False
     if symbol.isalnum():
       return True
-    if symbol in {'-', '_', '!', '<', '>', ':', '+', '*', '/', '=', '.'}: #Refactor for expressions to work without spaces. needed now for c:+ case
+    if symbol in {'-', '_', '!', '<', '>', ':', '+', '*', '/', '=', '.'}: #TODO: for expressions to work without spaces. needed now for c:+ case
       return True
     return False
 
@@ -244,7 +244,7 @@ class Scanner:
     lines = f.readlines()
 
     lineNum = 0
-    for line in lines: #REFACTOR accept multiline strings and comments
+    for line in lines: #TODO: accept multiline strings and comments
       lineNum = lineNum + 1
       self.scanLine(line, lineNum)
 

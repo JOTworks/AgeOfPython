@@ -4,7 +4,7 @@ import random
 from data import *
 from enums import TokenType
 
-class Parcer: #REFACTOR spell it parser
+class Parcer: #TODO spell it parser
   def __init__(self, tokens, aiFolder):
     self.tokens = tokens
     self.main = []
@@ -148,7 +148,7 @@ class Parcer: #REFACTOR spell it parser
               return True
     return False
 
-  def loadIfState(self, openObject): #need to refactor LOAD_IF into ones w/wo identifier
+  def loadIfState(self, openObject): #TODO: need to refactor LOAD_IF into ones w/wo identifier
     if self.compareTokenTypes([TokenType.LOAD_IF, TokenType.IDENTIFIER]):
       openObject.append( LoadIfObject(self.tokens[0].value ,self.tokens[1].value) )
       self.consumeTokens()
@@ -313,7 +313,7 @@ class Parcer: #REFACTOR spell it parser
     return fileNameList[random.randint(0, 99)]
     
 
-  def loadState(self, openObject): #REFACTOR this is just a weird fucntion.
+  def loadState(self, openObject): #TODO: this is just a weird fucntion.
     fileName = ""
     if self.compareTokenTypes([TokenType.LEFT_PAREN, TokenType.LOAD, TokenType.STRING, TokenType.RIGHT_PAREN]):
       self.loadCount += 1
