@@ -29,8 +29,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://ih1.redbubble.net/image.636495678.3338/flat,550x550,075,f.u3.jpg">
-    <img src="https://ih1.redbubble.net/image.636495678.3338/flat,550x550,075,f.u3.jpg" alt="Logo" width="80" height="80">
+  <a href="https://raw.githubusercontent.com/JOTworks/AgeOfPython/main/resources/images/AOP%20logo.png">
+    <img src="https://raw.githubusercontent.com/JOTworks/AgeOfPython/main/resources/images/AOP%20logo.png" alt="Logo" width="240" height="240">
   </a>
 
   <h3 align="center">Age Of Python</h3>
