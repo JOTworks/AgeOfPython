@@ -43,3 +43,4 @@ class TokenType(enum.Enum):
     STRATEGIC_NUMBER = 34
     LAST_RULE = 35
     SECOND_RULE = 36
+    TYPEOP = 27

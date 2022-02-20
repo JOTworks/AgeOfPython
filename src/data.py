@@ -13,7 +13,10 @@ class PrettyPrinter(object):
             #print("###"+key.__class__.__name__+"###"+val.__class__.__name__+"###")
             lines += '{}:'.format(key).split('\n')
             for item in val:
-              lines += '| {}'.format(item).split('\n')
+              if item is None:
+                lines += '***NONTYPTE***'
+              else:  
+                lines += '| {}'.format(item).split('\n')
           else:
             lines += '{}: {}'.format(key, val).split('\n')
 
@@ -109,6 +112,14 @@ class ReturnObject(PrettyPrinter):
   def __init__(self, arg):
     self.arg = arg
 
+class VarInit(PrettyPrinter):
+  def __init__(self, name, args):
+    self.name = name
+    self.args = args
+  def scope(self, callStack):
+    for line in self.args:
+      line.scope(callStack)
+
 class VarAsignObject(PrettyPrinter):
   def __init__(self, variable, expression, line, file):
     self.variable = variable
@@ -119,20 +130,24 @@ class VarAsignObject(PrettyPrinter):
       self.variable.scope(callStack)
       for item in self.expression:
         item.scope(callStack)
-
   def isSetToFunction(self):
     if len(self.expression)==1:
       if isinstance(self.expression[0], FuncCallObject):
         return True
     return False
-
   def interpret(self):
     asignCommands = []
-    asignCommands.append(self.createAsignCommand(self.variable, "=", self.expression[0]))
-    if len(self.expression) == 3:
-      asignCommands.append(self.createAsignCommand(self.variable, self.expression[1], self.expression[2]))
-    return defruleObject(TRUE_CONDITION, asignCommands)
+    if isinstance(self.expression[0], VarInit): #TODO: this is BROKEN!
+      if self.expression[0].name == "Const":
+        return defconstObject(self.variable.value.split('/')[-1], self.expression[0].args[0],"","")
+      self.variable.value = self.variable.value + "()" + self.expression[0].name
 
+      asignCommands.append(self.createAsignCommand(self.variable, "=", ZERO_NUMBER_TOKEN))
+    else:
+      asignCommands.append(self.createAsignCommand(self.variable, "=", self.expression[0]))
+      if len(self.expression) == 3:
+        asignCommands.append(self.createAsignCommand(self.variable, self.expression[1], self.expression[2]))
+    return defruleObject(TRUE_CONDITION, asignCommands)
   def createAsignCommand(self, variable, op, tempVariable):
     args = []
     args.append(variable)
@@ -157,17 +172,19 @@ class ConditionalObject(PrettyPrinter):
 class IfObject(ConditionalObject):
   def __init__(self, conditionList, lineList):
     super().__init__(conditionList, lineList)
-  def interpret(self): #TODO: make disable self commands disable the whole if
+  def interpret(self):
+    isDisableSelf = False
     newList = []
     newList.append(defruleObject(self.conditionList, [JUMP_1_COMMANDS]))
     newList.append(defruleObject(TRUE_CONDITION, [JUMP_LAST_COMMAND]))
     for line in self.lineList:
-      newList.append(line.interpret())
-    jumpLineList = [JUMP_SECOND_COMMAND]
-    #TODO: look for disable-self commands and add it to the first contional rule
-    #if isinstance(self.lineList[-1], CommandObject) and (self.lineList[-1].name == "disable-self"):
-        #jumpLineList.append(self.lineList[-1])
+      if isinstance(line, CommandObject) and (line.name == "disable-self"):
+        isDisableSelf = True
+      else:
+        newList.append(line.interpret())
     newList.append(defruleObject( TRUE_CONDITION, [DO_NOTHING_COMMAND]))
+    if isDisableSelf:
+      newList[0].executeList.append(DISABLE_SELF_COMMAND)
     return Wrapper(IfObject, newList)
 
 class ElseObject(ConditionalObject):
@@ -202,7 +219,7 @@ class FuncCallObject(PrettyPrinter):
   def scope(self, callStack):
     for line in self.args:
       line.scope(callStack)
-  
+
 class CallStackItem(PrettyPrinter):
   def __init__(self, funcCall, defFuncArgs):
     self.funcCall = funcCall
@@ -216,9 +233,11 @@ class CallStackItem(PrettyPrinter):
 
 TRUE_CONDITION = [CommandObject("true",[],"","")]
 NOT_TOKEN = Token(TokenType.LOGIC_OP,"not",-1,"")
+ZERO_NUMBER_TOKEN = Token(TokenType.NUMBER, "0",-1,"")
 CONSTANT_TOKEN = Token(TokenType.IDENTIFIER,"c:",-1,"")
 LAST_RULE_TOKEN = Token(TokenType.LAST_RULE,"",-1,"")
 SECOND_RULE_TOKEN = Token(TokenType.SECOND_RULE,"",-1,"")
+DISABLE_SELF_COMMAND = CommandObject("disable-self",[],"","")
 DO_NOTHING_COMMAND = CommandObject("do-nothing",[],"","")
 JUMP_LAST_COMMAND = CommandObject("up-jump-direct",[CONSTANT_TOKEN,LAST_RULE_TOKEN ],"","")
 JUMP_SECOND_COMMAND = CommandObject("up-jump-direct",[CONSTANT_TOKEN,SECOND_RULE_TOKEN ],"","")

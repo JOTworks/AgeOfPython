@@ -64,6 +64,7 @@ class Parcer: #TODO spell it parser
         self.compareTokenTypes([TokenType.IDENTIFIER]) or 
         self.compareTokenTypes([TokenType.NUMBER]) or 
         self.compareTokenTypes([TokenType.STRATEGIC_NUMBER]) or
+        self.compareTokenTypes([TokenType.TYPEOP]) or
         self.compareTokenTypes([TokenType.STRING])):
       openObject.append(self.tokens[self.tokPtr-1])
       return True
@@ -253,6 +254,10 @@ class Parcer: #TODO spell it parser
   
           return True
     return False
+  
+  def isReservedInitFunc(self, name):
+    if name in {'Point', 'Const', 'State'}: return True
+    else: False
 
   def funccallState(self, openObject, tabValue):
     if self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.LEFT_PAREN]):
@@ -260,8 +265,10 @@ class Parcer: #TODO spell it parser
       args = []
       if self.pyargumentphraseState(args):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
-          #print("IS FUNC CALL")
-          openObject.append(FuncCallObject(name, args))
+          if self.isReservedInitFunc(name):
+            openObject.append(VarInit(name, args))
+          else:
+            openObject.append(FuncCallObject(name, args))
           self.consumeTokens()
           return True
     return False

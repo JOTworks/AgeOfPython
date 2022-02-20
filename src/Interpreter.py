@@ -53,7 +53,8 @@ class Interpreter:
             if isinstance(line, FuncCallObject):
                 tempList.append(self.functionCallToLines(line, callStack))
             elif isinstance(line, VarAsignObject):
-                if line.isSetToFunction():
+                if line.isSetToFunction(): #TODO: fix false positve of initializing var type
+                    raise Exception("function returns are not Supported")
                     tempList.append(self.functionCallToLines(line, callStack))
                 else:
                     tempList.append(line)
@@ -89,7 +90,7 @@ class Interpreter:
                 line.position = count
                 count += 1
             else:
-                raise Exception("there is a class besides wrapper or defrule when trying to replace jump values")
+                raise Exception("there is a class besides wrapper or defrule when trying to replace jump values\n"+str(line))
         return count
 
     def replaceJumpValues(self, lineList):
@@ -103,14 +104,11 @@ class Interpreter:
                                     if command.argList[-1].tokenType == TokenType.LAST_RULE:
                                         command.argList[-1].value = str(line.rulePosition(-1))
                                     elif command.argList[-1].tokenType == TokenType.SECOND_RULE:
-                                        command.argList[-1].value = str(line.rulePosition(1))
-
-                                    #ifel string based on command.arg[-1] token type
-                                    #command.arg[-1] == something
-                                
-
+                                        command.argList[-1].value = str(line.rulePosition(1))                         
                 self.replaceJumpValues(line.lineList)
 
+ #TODO: deal with varAsigns that are actualy initalizing a type.  
+ #find some way to leave a note in the command that it needs to be a point or something.
     def allocateArg(self, inCommand):
         if not isinstance(inCommand, CommandObject):
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")
@@ -121,17 +119,35 @@ class Interpreter:
                 arg = Token(TokenType.UNIDENTIFIED, arg, "-1", "")
             elif not isinstance(arg, Token):
                 raise Exception(str(arg.__class__)+" is not a Token")
+            tempSplitArgValue = arg.value.split('()')
+            arg.value = tempSplitArgValue[0]
+            structure = None
+
+            if len(tempSplitArgValue) > 1:
+                structure = tempSplitArgValue[1]
+
             if (len(arg.value) >= 5) and (arg.value[:5] == "main/"):
                 if not self.memory.isUsed(arg.value):
-                    self.memory.mallocInt(arg.value)
+                    if structure == None:
+                        self.memory.mallocInt(arg.value)
+                    elif structure == "Point":
+                        self.memory.mallocPoint(arg.value)
+                    elif structure == "State":
+                        self.memory.mallocState(arg.value)
+                    elif structure == "Const":
+                        return
+                        #self.constList[arg.value.split('/')[-1]] = 
+                    else:
+                        raise Exception("Structure "+structure+" not recognized")
                 arg.value = str(self.memory.getMemLoc(arg.value))
                 
 
     def allocateMemory(self, inList):
-        #very bad allocation thing
         for item in inList:
             if isinstance(item, Wrapper):
                 self.allocateMemory(item.lineList)
+            elif isinstance(item, defconstObject):
+                self.constList[item.name] = item.value
             elif isinstance(item, defruleObject):
                 for condition in item.conditionList:
                     if isinstance(condition, logicCommandObject):
@@ -141,10 +157,10 @@ class Interpreter:
                         self.allocateArg(condition)
                 for execute in item.executeList:
                     self.allocateArg(execute)
+            else: raise Exception("allocateMemory() can only parce defrulesObjects, not "+str(item.__class__)+"\n"+str(item))
+        inListWithoutDefConst = [item for item in inList if not isinstance(item, defconstObject)]
+        return inListWithoutDefConst
 
-
-            else: raise Exception("allocateMemory() can only parce defrulesObjects, not "+str(item.__class__))
-    
     def interpret(self):
         self.constList = self.moveDefconst(self.main)
         self.funcList = self.moveFuncDef(self.main)
@@ -154,7 +170,7 @@ class Interpreter:
         
         self.main = self.interpretLine(self.main) #turns all objects in to wrappers full of commands
         #self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
-        self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.
+        self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.
         #self.main = self.optimizeRules(self.main)
         self.addPositiontoDefrules(self.main, 0)
         self.replaceJumpValues(self.main) #adds the jump commands now that it knows what rules there are

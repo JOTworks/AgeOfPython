@@ -3,7 +3,6 @@ sys.path.append('./src')
 sys.path.append('../src')
 from Interpreter import Interpreter
 from data import *
-import unittest
 from data import VarAsignObject
 import pytest
 from Scanner import Scanner
@@ -21,14 +20,10 @@ tokenPlus = Token(TokenType.OPERATOR, "+", 0, "main")
   
 def test_varAsignToCommands():
   varAsign = VarAsignObject(tokenCenter,[tokenCenter],0,"main")
-  commands = myInterperter.varAsignToCommands(varAsign)
-  assert len(commands) == 1
+  defrule = varAsign.interpret()
+  assert len(defrule.executeList) == 1
   varAsign = VarAsignObject(tokenCenter,[tokenCenter,tokenPlus,tokenCenter],0,"main")
-  commands = myInterperter.varAsignToCommands(varAsign)
-  assert len(commands) == 2
+  defrule = varAsign.interpret()
+  assert len(defrule.executeList) == 2
 
-def test_
-
-if __name__ == '__main__':
-  unittest.main()
 

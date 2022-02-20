@@ -9,8 +9,6 @@ from pprint import pprint
 import os.path
 from pathlib import Path
 
-
-
 def main(argv):
   #TODO: have it look for the first aop file and throw warning
   print(argv)
@@ -69,6 +67,8 @@ def main(argv):
       pprint(func, indent=2, width=20)
     print("\n===Used Memory===")
     print(myInterpreter.memory.printUsedMemory())
+    print("\n===Constant List===")
+    print(myInterpreter.constList)
 
   myPrinter = Printer(myInterpreter.main, myInterpreter.funcList, myInterpreter.constList)
   myPrinter.print()
@@ -76,7 +76,6 @@ def main(argv):
   if "-v" in arguments:
     print("\n===Printer Results===")
     print(myPrinter.finalString)
-
 
   fileName = fileName.split(".")
   f = open(str(aiFolder)+'\\'+fileName[0]+".per","w")

@@ -50,6 +50,9 @@ class Scanner:
     elif self.line[:1] in {'/', '*', '-', '+'}:
       self.popToken(self.lineNum,1,TokenType.MATHOP)
       return True
+    elif self.line[:2] in {'c:', 'g:', 's:'}:
+      self.popToken(self.lineNum,2,TokenType.TYPEOP)
+      return True
     return False
 
   def commentState(self):
