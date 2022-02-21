@@ -256,7 +256,7 @@ class Parcer: #TODO spell it parser
     return False
   
   def isReservedInitFunc(self, name):
-    if name in {'Point', 'Const', 'State'}: return True
+    if name in {'Point', 'Const', 'State', 'Int'}: return True
     else: False
 
   def funccallState(self, openObject, tabValue):

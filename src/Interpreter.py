@@ -53,9 +53,8 @@ class Interpreter:
             if isinstance(line, FuncCallObject):
                 tempList.append(self.functionCallToLines(line, callStack))
             elif isinstance(line, VarAsignObject):
-                if line.isSetToFunction(): #TODO: fix false positve of initializing var type
+                if line.isSetToFunction():
                     raise Exception("function returns are not Supported")
-                    tempList.append(self.functionCallToLines(line, callStack))
                 else:
                     tempList.append(line)
             elif isinstance(line, ConditionalObject):
@@ -110,6 +109,8 @@ class Interpreter:
  #TODO: deal with varAsigns that are actualy initalizing a type.  
  #find some way to leave a note in the command that it needs to be a point or something.
     def allocateArg(self, inCommand):
+        
+            
         if not isinstance(inCommand, CommandObject):
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")
         if len(inCommand.argList) == 0:
@@ -122,13 +123,17 @@ class Interpreter:
             tempSplitArgValue = arg.value.split('()')
             arg.value = tempSplitArgValue[0]
             structure = None
-
             if len(tempSplitArgValue) > 1:
                 structure = tempSplitArgValue[1]
-
             if (len(arg.value) >= 5) and (arg.value[:5] == "main/"):
-                if not self.memory.isUsed(arg.value):
+
+                if (not self.memory.isUsed(arg.value)) and (inCommand.name == "up-modify-goal"):
                     if structure == None:
+                        if arg.value.split('/')[-1] in self.constList:
+                            arg.value = self.constList[arg.value.split('/')[-1]].value
+                            return
+                        self.memory.mallocInt(arg.value)
+                    elif structure == "Int":
                         self.memory.mallocInt(arg.value)
                     elif structure == "Point":
                         self.memory.mallocPoint(arg.value)
@@ -136,10 +141,13 @@ class Interpreter:
                         self.memory.mallocState(arg.value)
                     elif structure == "Const":
                         return
-                        #self.constList[arg.value.split('/')[-1]] = 
                     else:
                         raise Exception("Structure "+structure+" not recognized")
-                arg.value = str(self.memory.getMemLoc(arg.value))
+
+                if self.memory.isUsed(arg.value):
+                    arg.value = str(self.memory.getMemLoc(arg.value))
+                else:
+                    arg.value = arg.value.split('/')[-1]
                 
 
     def allocateMemory(self, inList):
@@ -167,7 +175,6 @@ class Interpreter:
         #self.convertdefrulesToIfs(self.main) #May be nessesary later
         firstCallStack = CallStackItem(FuncCallObject("main",[]),[])
         self.main = self.flattenFuncCalls(self.main, [firstCallStack])
-        
         self.main = self.interpretLine(self.main) #turns all objects in to wrappers full of commands
         #self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
         self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.

@@ -32,7 +32,7 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
         memStartLoc = self.__usedMemory.index(varNameList[0]) 
         if (len(varNameList)==1):
             return memStartLoc
-        elif(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==Structure.POINT):
+        if(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==str(Structure.POINT)):
             if varNameList[1]=='x' or varNameList[1]=='0':
                 return memStartLoc
             if varNameList[1]=='y' or varNameList[1]=='1':
@@ -46,7 +46,7 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
 
     def mallocPoint(self, varName):
         self.checkSpace()
-        for itr in range(len(self.__usedMemory)-1):
+        for itr in range(41,len(self.__usedMemory)-1):
             if (self.__usedMemory[itr] == "") and (self.__usedMemory[itr+1] == ""):
                 self.__usedMemory[itr] = varName
                 self.__usedMemory[itr+1] = str("Structure.POINT")
@@ -55,7 +55,7 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
     #victory data is 3
     def mallocState(self, varName): #state and cost
         self.checkSpace()
-        for itr in range(len(self.__usedMemory)-3):
+        for itr in range(41,len(self.__usedMemory)-3):
             if (self.__usedMemory[itr] == "") and (self.__usedMemory[itr+1] == ""):
                 self.__usedMemory[itr] = varName
                 self.__usedMemory[itr+1] = str("Structure.STATE")

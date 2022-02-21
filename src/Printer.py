@@ -22,7 +22,7 @@ class Printer:
             defruleStr += "  "
             defruleStr += self.printCommand(item)
         defruleStr = defruleStr[:-1]
-        defruleStr += '\n)\n'
+        defruleStr += '\n);'+str(rule.position)+'\n'
         return defruleStr
     
     def printLogicCommand(self, logicCommand):
@@ -62,6 +62,12 @@ class Printer:
         for item in wrapper.lineList:
             self.printObject(item)
 
+    def printConstants(self):
+        for constant in self.constList:
+            self.finalString += "(defconst "+constant+" "+self.constList[constant].value+")"
+            self.finalString += " ;"+str(self.constList[constant].line)+" "+self.constList[constant].file+"\n"
+
+
     def printObject(self, item):
         if isinstance(item, defruleObject):
             self.finalString += self.printDefrule(item)
@@ -73,6 +79,7 @@ class Printer:
             raise Exception("printing "+str(item.__class__)+" is not yet Iplamented!")
 
     def print(self):
+        self.printConstants()
         for item in self.main:
             self.printObject(item)
             
