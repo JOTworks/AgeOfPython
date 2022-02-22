@@ -175,8 +175,8 @@ class IfObject(ConditionalObject):
   def interpret(self):
     isDisableSelf = False
     newList = []
-    newList.append(defruleObject(self.conditionList, [JUMP_1_COMMANDS]))
-    newList.append(defruleObject(TRUE_CONDITION, [JUMP_LAST_COMMAND]))
+    newList.append(defruleObject(self.conditionList, [JUMP_1_COMMANDS()]))
+    newList.append(defruleObject(TRUE_CONDITION, [JUMP_LAST_COMMAND()]))
     for line in self.lineList:
       if isinstance(line, CommandObject) and (line.name == "disable-self"):
         isDisableSelf = True
@@ -231,6 +231,7 @@ class CallStackItem(PrettyPrinter):
     else:
       return False
 
+#TODO change all of these to returns
 TRUE_CONDITION = [CommandObject("true",[],"","")]
 NOT_TOKEN = Token(TokenType.LOGIC_OP,"not",-1,"")
 ZERO_NUMBER_TOKEN = Token(TokenType.NUMBER, "0",-1,"")
@@ -239,6 +240,9 @@ LAST_RULE_TOKEN = Token(TokenType.LAST_RULE,"",-1,"")
 SECOND_RULE_TOKEN = Token(TokenType.SECOND_RULE,"",-1,"")
 DISABLE_SELF_COMMAND = CommandObject("disable-self",[],"","")
 DO_NOTHING_COMMAND = CommandObject("do-nothing",[],"","")
-JUMP_LAST_COMMAND = CommandObject("up-jump-direct",[CONSTANT_TOKEN,LAST_RULE_TOKEN ],"","")
-JUMP_SECOND_COMMAND = CommandObject("up-jump-direct",[CONSTANT_TOKEN,SECOND_RULE_TOKEN ],"","")
-JUMP_1_COMMANDS = CommandObject("up-jump-rule",[Token(TokenType.NUMBER,"1",-1,"")],"","")
+def JUMP_LAST_COMMAND():
+  return CommandObject("up-jump-direct",[CONSTANT_TOKEN,LAST_RULE_TOKEN ],"","")
+def JUMP_SECOND_COMMAND():
+  return CommandObject("up-jump-direct",[CONSTANT_TOKEN,SECOND_RULE_TOKEN ],"","")
+def JUMP_1_COMMANDS():
+  return CommandObject("up-jump-rule",[Token(TokenType.NUMBER,"1",-1,"")],"","")

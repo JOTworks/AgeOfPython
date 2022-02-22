@@ -38,7 +38,6 @@ class Printer:
         return logicStr
 
     def printCommand(self, command):
-        #logicCommandObject
         commandStr = "("
         commandStr += command.name
         for item in command.argList:
@@ -49,7 +48,7 @@ class Printer:
                 if item.tokenType == TokenType.STRING: commandStr += '"'
             else:
                 commandStr += " "
-                commandStr += str(item)
+                commandStr += item
         commandStr += ") ;"
         commandStr += (str(command.line) +" "+ command.file)
         commandStr += "\n"

@@ -92,25 +92,49 @@ class Interpreter:
                 raise Exception("there is a class besides wrapper or defrule when trying to replace jump values\n"+str(line))
         return count
 
-    def replaceJumpValues(self, lineList):
-        for line in lineList:
+#    def replaceJumpValues(self, inLine, wrapper):
+#        if isinstance(inLine, Wrapper):
+#            for otherLine in inLine.lineList:
+#                otherLine = self.replaceJumpValues(otherLine, inLine)
+#        elif isinstance(inLine, defruleObject):
+#            for command in inLine.executeList:
+#                if command.name == "up-jump-direct":
+#                    if command.argList[-1].tokenType == TokenType.LAST_RULE:
+#                        print("****\n****\n****\n")
+#                        print()
+#                        print("****\n****\n****\n")
+#                        print(wrapper.rulePosition(-1))
+#                        command.argList[-1].value = str(wrapper.rulePosition(-1))
+#                        print(command)
+#                        print(inLine)
+#                    elif command.argList[-1].tokenType == TokenType.SECOND_RULE:
+#                        raise Exception("broken code, should not have run this")
+#                        command.argList[-1].value = str(line.rulePosition(1))   
+#        return inLine
+    def replaceJumpValues(self, inLine):
+        tempList = []
+        for line in inLine:
             if isinstance(line, Wrapper):
-                if line.Type == IfObject:
-                    for rule in line.lineList:
-                        if isinstance(rule, defruleObject):
-                            for command in rule.executeList:
-                                if command.name == "up-jump-direct":
-                                    if command.argList[-1].tokenType == TokenType.LAST_RULE:
-                                        command.argList[-1].value = str(line.rulePosition(-1))
-                                    elif command.argList[-1].tokenType == TokenType.SECOND_RULE:
-                                        command.argList[-1].value = str(line.rulePosition(1))                         
-                self.replaceJumpValues(line.lineList)
+                tempList.append(Wrapper(line.Type, self.replaceJumpValues(line.lineList)))
+            if isinstance(line, defruleObject):
+                isUpJump = False
+                for command in line.executeList:
+                    if command.name == "up-jump-direct":
+                        if command.argList[-1].tokenType == TokenType.LAST_RULE:
+                            command.argList[-1].value = str(inLine[-1].position)
+                            isUpJump = True
+                        elif command.argList[-1].tokenType == TokenType.SECOND_RULE:
+                            raise Exception("broken code, should not have run this")
+                            command.argList[-1].value = str(line.rulePosition(1))
+                if(isUpJump):
+                    print("++++++++++++++++++++")
+                    print(line)
+                    print("++++++++++++++++++++")
+                tempList.append(line)
+        return tempList
+                    
 
- #TODO: deal with varAsigns that are actualy initalizing a type.  
- #find some way to leave a note in the command that it needs to be a point or something.
     def allocateArg(self, inCommand):
-        
-            
         if not isinstance(inCommand, CommandObject):
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")
         if len(inCommand.argList) == 0:
@@ -144,12 +168,13 @@ class Interpreter:
                     else:
                         raise Exception("Structure "+structure+" not recognized")
 
+                print(arg.value)
                 if self.memory.isUsed(arg.value):
+                    print("IS USED")
                     arg.value = str(self.memory.getMemLoc(arg.value))
                 else:
                     arg.value = arg.value.split('/')[-1]
                 
-
     def allocateMemory(self, inList):
         for item in inList:
             if isinstance(item, Wrapper):
@@ -180,4 +205,8 @@ class Interpreter:
         self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.
         #self.main = self.optimizeRules(self.main)
         self.addPositiontoDefrules(self.main, 0)
-        self.replaceJumpValues(self.main) #adds the jump commands now that it knows what rules there are
+        self.main = self.replaceJumpValues(self.main)
+        
+        #for line in self.main:
+        #    if isinstance(line, Wrapper):
+        #        line = self.replaceJumpValues(line, None) #adds the jump commands now that it knows what rules there are

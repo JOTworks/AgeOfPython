@@ -37,6 +37,16 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
                 return memStartLoc
             if varNameList[1]=='y' or varNameList[1]=='1':
                 return memStartLoc+1
+        if(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==str(Structure.STATE)):
+            if varNameList[1]=='local_total' or varNameList[1]=='0':
+                return memStartLoc
+            if varNameList[1]=='local_last' or varNameList[1]=='1':
+                return memStartLoc+1
+            if varNameList[1]=='remote_total' or varNameList[1]=='2':
+                return memStartLoc+2
+            if varNameList[1]=='remote_last' or varNameList[1]=='3':
+                return memStartLoc+3
+        raise Exception ("didnt get MemLoc!")
 
     def mallocInt(self, varName):
         self.checkSpace()
