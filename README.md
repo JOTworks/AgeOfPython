@@ -1,13 +1,4 @@
 <div id="top"></div>
-<!--
-*** Thanks for checking out the Best-README-Template. If you have a suggestion
-*** that would make this better, please fork the repo and create a pull request
-*** or simply open an issue with the tag "enhancement".
-*** Don't forget to give the project a star!
-*** Thanks again! Now go create something AMAZING! :D
--->
-
-
 
 <!-- PROJECT SHIELDS -->
 <!--
@@ -73,7 +64,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-CURRENTLY IN PREALPHA ... basicly main branch is not promissed to even be functional. give it a week or 2 and we should be in alpha
+CURRENTLY IN ALPHA ... main branch will always be funcional but still missing some basic features
 
 writing with aoeScript defrules and using goals and dealing with the 30 character command names can be dificult. 
 Exspecialy it can be dificult reading what others have written (that is including your past self in others)
@@ -166,17 +157,19 @@ set_gather_percent(fuedal_food_percent, fuedal_wood_percent, 0, 0)
 
 ### Alpha Release
 
-- [ ] Add object types:
-    - [ ] Point
-    - [ ] State
-    - [ ] Const
-- [ ] fix curent bugs
-- [ ] implement disable-self in if statments
+- [X] Add object types:
+    - [X] Point
+    - [X] State
+    - [X] Const
+- [X] fix curent bugs
+- [X] implement disable-self in if statments
 
 
 ### Beta Release
-
-- [ ] Add backwards compatability
+- [ ] add loops:
+    - [ ] while loop
+    - [ ] for loop
+- [ ] Add simplified conditional expressions
 - [ ] Add asserter to tell user if syntax is not supported
 - [ ] Add better errors and comments to track user bugs
 - [ ] Add test casses:
@@ -188,13 +181,19 @@ set_gather_percent(fuedal_food_percent, fuedal_wood_percent, 0, 0)
 
 
 ### Full Release
-
-- [ ] Add object types:
-    - [ ] Array
-- [ ] Add function return values
+- [ ] Robust functions:
+    - [ ] Add default values
+    - [ ] Add return values
 - [ ] optimize rule usage
+    - [ ] compine close truesy rules
+    - [ ] remove jump rules on flat ifs & loops
+    - [ ] refactor out lagging do-nothing rules on ifs
+    - [ ] refactor out struct init asignment of +0
 - [ ] optimize goal usage
+    - [ ] dealocate when out of scope
 - [ ] add predefined ai numbers
+- [ ] Add printout of rule number and goal useage
+- [ ] Add backwards compatability
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
