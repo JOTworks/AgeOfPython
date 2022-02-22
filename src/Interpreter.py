@@ -92,25 +92,6 @@ class Interpreter:
                 raise Exception("there is a class besides wrapper or defrule when trying to replace jump values\n"+str(line))
         return count
 
-#    def replaceJumpValues(self, inLine, wrapper):
-#        if isinstance(inLine, Wrapper):
-#            for otherLine in inLine.lineList:
-#                otherLine = self.replaceJumpValues(otherLine, inLine)
-#        elif isinstance(inLine, defruleObject):
-#            for command in inLine.executeList:
-#                if command.name == "up-jump-direct":
-#                    if command.argList[-1].tokenType == TokenType.LAST_RULE:
-#                        print("****\n****\n****\n")
-#                        print()
-#                        print("****\n****\n****\n")
-#                        print(wrapper.rulePosition(-1))
-#                        command.argList[-1].value = str(wrapper.rulePosition(-1))
-#                        print(command)
-#                        print(inLine)
-#                    elif command.argList[-1].tokenType == TokenType.SECOND_RULE:
-#                        raise Exception("broken code, should not have run this")
-#                        command.argList[-1].value = str(line.rulePosition(1))   
-#        return inLine
     def replaceJumpValues(self, inLine):
         tempList = []
         for line in inLine:

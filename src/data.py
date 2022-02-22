@@ -33,7 +33,7 @@ class Token(PrettyPrinter):
     tempValue = self.value
     if self.value == '\n':
       tempValue = '/n'
-    return("["+tempValue +" "+str(self.line)+self.file+"]")
+    return("["+tempValue +" "+str(self.tokenType)+str(self.line)+self.file+"]")
   def scope(self, callStack):
     if self.tokenType == TokenType.IDENTIFIER:
       if len(callStack) == 1:
@@ -45,6 +45,8 @@ class Token(PrettyPrinter):
           if self.value == defArgList[itr].value:
               self.value = callStack[-1].funcCall.args[itr].value
               inArgList = True
+              if callStack[-1].funcCall.args[itr].tokenType == TokenType.STRING:
+                self.tokenType = TokenType.STRING
       if not inArgList:
           self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
 
@@ -236,13 +238,15 @@ TRUE_CONDITION = [CommandObject("true",[],"","")]
 NOT_TOKEN = Token(TokenType.LOGIC_OP,"not",-1,"")
 ZERO_NUMBER_TOKEN = Token(TokenType.NUMBER, "0",-1,"")
 CONSTANT_TOKEN = Token(TokenType.IDENTIFIER,"c:",-1,"")
-LAST_RULE_TOKEN = Token(TokenType.LAST_RULE,"",-1,"")
-SECOND_RULE_TOKEN = Token(TokenType.SECOND_RULE,"",-1,"")
 DISABLE_SELF_COMMAND = CommandObject("disable-self",[],"","")
 DO_NOTHING_COMMAND = CommandObject("do-nothing",[],"","")
+def LAST_RULE_TOKEN():
+  return Token(TokenType.LAST_RULE,"",-1,"")
+def SECOND_RULE_TOKEN():
+  return Token(TokenType.SECOND_RULE,"",-1,"")
 def JUMP_LAST_COMMAND():
-  return CommandObject("up-jump-direct",[CONSTANT_TOKEN,LAST_RULE_TOKEN ],"","")
+  return CommandObject("up-jump-direct",[CONSTANT_TOKEN,LAST_RULE_TOKEN() ],"","")
 def JUMP_SECOND_COMMAND():
-  return CommandObject("up-jump-direct",[CONSTANT_TOKEN,SECOND_RULE_TOKEN ],"","")
+  return CommandObject("up-jump-direct",[CONSTANT_TOKEN,SECOND_RULE_TOKEN() ],"","")
 def JUMP_1_COMMANDS():
   return CommandObject("up-jump-rule",[Token(TokenType.NUMBER,"1",-1,"")],"","")
