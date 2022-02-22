@@ -114,7 +114,6 @@ class Interpreter:
                 tempList.append(line)
         return tempList
                     
-
     def allocateArg(self, inCommand):
         if not isinstance(inCommand, CommandObject):
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")

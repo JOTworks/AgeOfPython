@@ -1,7 +1,7 @@
 from data import Token
 from enums import TokenType
 
-class Scanner:
+class Scanner: #TODO: add extra line at end of file for mid token parces to fail instead of OOI crash
   def __init__(self, fileName, aiFolder):
     self.aiFolder = aiFolder
     self.fileName = fileName

@@ -143,8 +143,7 @@ class VarAsignObject(PrettyPrinter):
       if self.expression[0].name == "Const":
         return defconstObject(self.variable.value.split('/')[-1], self.expression[0].args[0],"","")
       self.variable.value = self.variable.value + "()" + self.expression[0].name
-
-      asignCommands.append(self.createAsignCommand(self.variable, "=", ZERO_NUMBER_TOKEN))
+      asignCommands.append(self.createAsignCommand(self.variable, "+", ZERO_NUMBER_TOKEN)) #creates asign command so it is allocated, but +0 so it doesnt reset every loop
     else:
       asignCommands.append(self.createAsignCommand(self.variable, "=", self.expression[0]))
       if len(self.expression) == 3:
