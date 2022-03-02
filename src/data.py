@@ -33,7 +33,7 @@ class Token(PrettyPrinter):
     tempValue = self.value
     if self.value == '\n':
       tempValue = '/n'
-    return("["+tempValue +" "+str(self.tokenType)+str(self.line)+self.file+"]")
+    return("["+str(tempValue)+" "+str(self.tokenType)+str(self.line)+str(self.file)+"]")
   def scope(self, callStack):
     if self.tokenType == TokenType.IDENTIFIER:
       if len(callStack) == 1:
@@ -97,7 +97,7 @@ class defruleObject(PrettyPrinter):
     self.position = -1
 
 class CommandObject(PrettyPrinter):
-  def __init__(self, name, argList, line, file):
+  def __init__(self, name, argList, line = "-1", file = "-1"):
     self.line = line
     self.file = file
     self.name = name

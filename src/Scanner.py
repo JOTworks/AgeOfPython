@@ -229,6 +229,15 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       #print(self.line)
     #print(self.line)
   
+  def scanLines(self, lines):
+    lineNum = 0
+    for line in lines: #TODO: accept multiline strings and comments
+      lineNum = lineNum + 1
+      self.scanLine(line, lineNum)
+    self.tokens.append(Token(TokenType.END_OF_FILE,"",line,lineNum))
+    self.stripTokens(TokenType.WHITE_SPACE)
+    self.stripTokens(TokenType.COMMENT)
+
   def scan(self):
     fullPath = "FILE NOT FOUND"
     for file in list(self.aiFolder.glob('**/*.per')):
@@ -246,10 +255,5 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       raise Exception ("Unable to open file:"+fullPath+", make sure you are not using paths")
     lines = f.readlines()
 
-    lineNum = 0
-    for line in lines: #TODO: accept multiline strings and comments
-      lineNum = lineNum + 1
-      self.scanLine(line, lineNum)
-
-    self.stripTokens(TokenType.WHITE_SPACE)
-    self.stripTokens(TokenType.COMMENT)
+    self.scanLines(lines)
+    

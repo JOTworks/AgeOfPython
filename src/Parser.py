@@ -161,7 +161,6 @@ class Parcer: #TODO spell it parser
     return False
 
   def ifState(self, openObject, tabValue):
-    exist = False
     if self.compareTokenTypes([TokenType.IF]):
       conditionals = []
       lines = []
@@ -171,6 +170,7 @@ class Parcer: #TODO spell it parser
             openObject.append(IfObject(conditionals,lines))
             self.consumeTokens()
             return True
+          
           else: raise Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
         else: raise Exception("expected : got TOK:"+str(self.tokens[self.tokPtr]))  
       else: raise Exception("expected commandPhrase got TOK:"+str(self.tokens[self.tokPtr]))      
@@ -274,36 +274,34 @@ class Parcer: #TODO spell it parser
     return False
 
   def lineState(self, openObject, tabValue):
-    #print(self.tokens[self.tokPtr])
-    #print("tabValue: "+str(tabValue))
+    at_least_one_line = False
     anotherLine = True
     while(anotherLine):
       anotherLine = False
       if self.tokPtr > len(self.tokens)-1:
-        return True
+        return at_least_one_line
       if tabValue > 0: 
         if self.tokens[self.tokPtr].tokenType != TokenType.TABS:
-          return True
+          return at_least_one_line
         elif len(self.tokens[self.tokPtr].value) > tabValue:
-          return False
+          return at_least_one_line
         elif len(self.tokens[self.tokPtr].value) < tabValue:
           print("TAB:"+ str(len(self.tokens[self.tokPtr].value))+" TABValue:"+ str(tabValue)+" line:"+str(self.tokens[self.tokPtr].line)+str(self.tokens[self.tokPtr].file))
-          return True
+          return at_least_one_line
       else: #should only run if line by itself
         if self.compareTokenTypes([TokenType.TABS]):
           raise Exception("TAB FOUND WHEN TABS=0 FAIL STATE "+str(self.tokens[self.tokPtr]))
-          return False
       if self.ifState( openObject, tabValue): 
         self.elseState( openObject, tabValue)
-        anotherLine = True
-      elif self.whileState( openObject, tabValue):  anotherLine = True
-      elif self.forState( openObject, tabValue):  anotherLine = True
-      elif self.funccallState( openObject, tabValue):  anotherLine = True
-      elif self.varasignState( openObject, tabValue):  anotherLine = True
-      elif self.commandState(openObject):  anotherLine = True
-      #elif self.returnState(openObject): anotherLine = True
+        anotherLine, at_least_one_line = True, True
+      elif self.whileState( openObject, tabValue):  anotherLine, at_least_one_line = True, True
+      elif self.forState( openObject, tabValue):  anotherLine, at_least_one_line = True, True
+      elif self.funccallState( openObject, tabValue):  anotherLine, at_least_one_line = True, True
+      elif self.varasignState( openObject, tabValue):  anotherLine, at_least_one_line = True, True
+      elif self.commandState(openObject):  anotherLine, at_least_one_line = True, True
+      #elif self.returnState(openObject): anotherLine = True, True
       self.consumeTokens()  
-    return True
+    return at_least_one_line
 
   def loadRandomPhrase(self, openObject):
     fileNameList = []
@@ -350,7 +348,6 @@ class Parcer: #TODO spell it parser
       return True
     return False
 
-
   def mainState(self, openObject):
     if self.loadState(openObject): return
     if self.loadIfState(openObject): return
@@ -359,13 +356,16 @@ class Parcer: #TODO spell it parser
     if self.deffuncState(openObject): return
     
     curLen = len(self.main)
-    if self.lineState(openObject, 0): 
-      if curLen != len(self.main):
-        return
+    self.lineState(openObject, 0)
+    if curLen != len(self.main):
+      return
 
+    if self.tokens[self.tokPtr].tokenType == TokenType.END_OF_FILE:
+      self.tokens = self.tokens[1:]
+      self.tokPtr = 0
+      return
     raise Exception(str( "Parce failed at "+str(self.tokens[self.tokPtr])))
-    self.tokens = self.tokens[1:]
-    self.tokPtr = 0
+
 
   def parce(self):
       while(len(self.tokens)>0):
