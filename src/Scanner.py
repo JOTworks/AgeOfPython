@@ -134,11 +134,10 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     length = 0
     if self.line[length].isalpha():
       length += 1 
-    while(self.identifierSymbol(self.line[length])):
+      
+    while((length < (len(self.line)-1)) and self.identifierSymbol(self.line[length])):
       length += 1 
-        #print("input: "+self.line)
-        #print("inputlen: "+str(len(self.line)))
-        #print("length: "+ str(length))
+      
     if length == 0:
       return False
     if length > len(self.line):
@@ -192,7 +191,7 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     length = 0
     if(self.line[0] == '-'):
       length += 1
-    while(self.line[length].isnumeric()):
+    while((length < (len(self.line)-1)) and self.line[length].isnumeric()):
       length += 1
     if length == 0:
       return False
@@ -231,6 +230,7 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
   
   def scanLines(self, lines):
     lineNum = 0
+    lines[-1] += "\n"
     for line in lines: #TODO: accept multiline strings and comments
       lineNum = lineNum + 1
       self.scanLine(line, lineNum)

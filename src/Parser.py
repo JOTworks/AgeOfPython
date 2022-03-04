@@ -1,3 +1,4 @@
+from lib2to3.pgen2.token import tok_name
 from termcolor import colored
 from Scanner import Scanner
 import random
@@ -251,9 +252,11 @@ class Parcer: #TODO spell it parser
               returnValue = self.tokens[self.tokPtr-1].value
             openObject.append(DefFuncObject(name, arguments, lines, returnValue)) #ERROR needs the line items in the def
             self.consumeTokens()
-  
-          return True
-    return False
+            return True
+          else: raise Exception("duffuncState exspected lineState but got "+str(self.tokens[self.tokPtr]))
+        else: raise Exception("duffuncState exspected ): but got "+str(self.tokens[self.tokPtr]))
+      else: raise Exception("duffuncState exspected pyargumentphrase but got "+str(self.tokens[self.tokPtr]))
+    else: return False
   
   def isReservedInitFunc(self, name):
     if name in {'Point', 'Const', 'State', 'Int'}: return True
