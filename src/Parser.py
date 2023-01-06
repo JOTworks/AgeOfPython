@@ -3,6 +3,7 @@ from Scanner import Scanner
 import random
 from data import *
 from enums import TokenType
+from commands import JUMP_COMMANDS
 
 class Parcer: #TODO spell it parser
   def __init__(self, tokens, aiFolder):
@@ -111,6 +112,8 @@ class Parcer: #TODO spell it parser
       if self.argumentphraseState(argList):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
           openObject.append(CommandObject(commandName, argList, commandLine, commandFile))
+          if commandName in JUMP_COMMANDS:
+            raise Exception("Jump Cammands will break code please remove all Jump commands")
           return True
     return False
 
@@ -144,7 +147,7 @@ class Parcer: #TODO spell it parser
           executeCammandList = []
           if self.commandphraseState(executeCammandList):
             if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
-              openObject.append(defruleObject(LineListObject(conditionalCammandList), LineListObject(executeCammandList)))
+              openObject.append(defruleObject(conditionalCammandList, executeCammandList))
               self.consumeTokens()
               return True
     return False

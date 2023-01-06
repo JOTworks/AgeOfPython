@@ -107,14 +107,18 @@ class Interpreter:
                         elif command.argList[-1].tokenType == TokenType.SECOND_RULE:
                             raise Exception("broken code, should not have run this")
                             command.argList[-1].value = str(line.rulePosition(1))
-                if(isUpJump):
-                    print("++++++++++++++++++++")
-                    print(line)
-                    print("++++++++++++++++++++")
+                #if(isUpJump):
+                #    print("++++++++++++++++++++")
+                #    print(line)
+                #    print("++++++++++++++++++++")
                 tempList.append(line)
         return tempList
                     
     def allocateArg(self, inCommand):
+        if isinstance(inCommand, logicCommandObject):
+            for command in inCommand.commands:
+                self.allocateArg(command)
+            return
         if not isinstance(inCommand, CommandObject):
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")
         if len(inCommand.argList) == 0:

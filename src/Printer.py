@@ -63,8 +63,12 @@ class Printer:
 
     def printConstants(self):
         for constant in self.constList:
-            self.finalString += "(defconst "+constant+" "+self.constList[constant].value+")"
-            self.finalString += " ;"+str(self.constList[constant].line)+" "+self.constList[constant].file+"\n"
+            if type(self.constList[constant]) == type("string"):
+                self.finalString += "(defconst "+constant+" "+self.constList[constant]+")"
+                self.finalString += " ;"+"unknown line or file"+"\n"
+            else:
+                self.finalString += "(defconst "+constant+" "+self.constList[constant].value+")"
+                self.finalString += " ;"+str(self.constList[constant].line)+" "+self.constList[constant].file+"\n"
 
 
     def printObject(self, item):

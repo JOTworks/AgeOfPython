@@ -1,5 +1,6 @@
 from data import Token
 from enums import TokenType
+from pprint import pprint
 
 class Scanner: #TODO: add extra line at end of file for mid token parces to fail instead of OOI crash
   def __init__(self, fileName, aiFolder):
@@ -50,9 +51,9 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     elif self.line[:1] in {'/', '*', '-', '+'}:
       self.popToken(self.lineNum,1,TokenType.MATHOP)
       return True
-    elif self.line[:2] in {'c:', 'g:', 's:'}:
-      self.popToken(self.lineNum,2,TokenType.TYPEOP)
-      return True
+    #elif self.line[:2] in {'c:', 'g:', 's:'}:
+    #  self.popToken(self.lineNum,2,TokenType.TYPEOP)
+    #  return True
     return False
 
   def commentState(self):
@@ -145,7 +146,9 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       print("error")
     identifierType = TokenType.IDENTIFIER
 
-    if self.line[:3] == "sn-":
+    if self.line[:2] in {'g:','c:','s:'}:
+      identifierType = TokenType.TYPEOP
+    elif self.line[:3] == "sn-":
       identifierType = TokenType.STRATEGIC_NUMBER
     elif self.line[:length] == "if":
       identifierType = TokenType.IF
@@ -231,11 +234,12 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
   
   def scan(self):
     fullPath = "FILE NOT FOUND"
+    self.fileName = self.fileName.replace("/","\\")
     for file in list(self.aiFolder.glob('**/*.per')):
-      if file.name == self.fileName + ".per" or file.name == self.fileName:
+      if self.fileName+".per" in str(file) or self.fileName in str(file):
         fullPath = file
     for file in list(self.aiFolder.glob('**/*.aop')): #prioritizes aop files because it is last
-      if file.name == self.fileName + ".aop" or file.name == self.fileName:
+      if self.fileName+".aop" in str(file) or self.fileName in str(file):
         fullPath = file
     if fullPath == "FILE NOT FOUND":
       raise Exception(self.fileName+" is not found")
