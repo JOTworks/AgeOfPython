@@ -34,7 +34,7 @@ def main(argv):
 
 
 
-  if "-s" in arguments:
+  if "-s" in arguments or "-v" in arguments:
     print("\n===Scanner Results===")
     for token in myScanner.tokens:
       print(str(token.tokenType) + str(token))
@@ -43,11 +43,11 @@ def main(argv):
   myParcer = Parcer(myScanner.tokens, aiFolder)
   myParcer.parce()
 
-  if "-p" in arguments:
+  if "-p" in arguments or "-v" in arguments:
     print(len(myParcer.main))
     print("\n")
 
-  if "-p" in arguments:
+  if "-p" in arguments or "-v" in arguments:
     print("\n===Parcer Results===")
     for myObject in myParcer.main:
       pprint(myObject, indent=2, width=20)
@@ -58,15 +58,15 @@ def main(argv):
   myInterpreter = Interpreter(myParcer.main)
   myInterpreter.interpret()
 
-  if "-i" in arguments:
+  if "-i" in arguments or "-v" in arguments:
     print("\n===Interpreter Results===")
     for myObject in myInterpreter.main:
       pprint(myObject, indent=2, width=20)
-  if "-f" in arguments:
+  if "-f" in arguments or "-v" in arguments:
     print("\n===Function List===")
     for func in myInterpreter.funcList:
       pprint(func, indent=2, width=20)
-  if "-m" in arguments:
+  if "-m" in arguments or "-v" in arguments:
     print("\n===Used Memory===")
     print(myInterpreter.memory.printUsedMemory())
     print("\n===Constant List===")
@@ -75,7 +75,7 @@ def main(argv):
   myPrinter = Printer(myInterpreter.main, myInterpreter.funcList, myInterpreter.constList)
   myPrinter.print()
 
-  if "-v" in arguments:
+  if "-r" in arguments or "-v" in arguments:
     print("\n===Printer Results===")
     print(myPrinter.finalString)
 

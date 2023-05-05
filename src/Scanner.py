@@ -28,7 +28,7 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       self.popToken(self.lineNum,2,TokenType.ARROW)
       return True
     elif self.line[:2] in {'<=', '>=', '!=', '=='}:
-      self.popToken(self.lineNum,2,TokenType.OPERATOR)
+      self.popToken(self.lineNum,2,TokenType.COMPAREOP)
       return True
     elif self.line[:1] == ')':
       self.popToken(self.lineNum,1,TokenType.RIGHT_PAREN)
@@ -45,9 +45,17 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     elif self.line[:1] == '=':
       self.popToken(self.lineNum,1,TokenType.EQUALS)
       return True
-    elif self.line[:1] in {'<', '>', '='}:
-      self.popToken(self.lineNum,1,TokenType.OPERATOR)
+    elif self.line[:1] in {'<', '>'}:
+      self.popToken(self.lineNum,1,TokenType.COMPAREOP)
       return True
+    elif self.line[:2] == '+=':
+      self.popToken(self.lineNum,2,TokenType.INCREMENTER)
+      raise Exception("+= not supported")
+      return True
+    elif self.line[:2] == '-=':
+      self.popToken(self.lineNum,2,TokenType.DECREMENTER)
+      raise Exception("-= not supported")
+      return True      
     elif self.line[:1] in {'/', '*', '-', '+'}:
       self.popToken(self.lineNum,1,TokenType.MATHOP)
       return True
@@ -145,8 +153,12 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     if length > len(self.line):
       print("error")
     identifierType = TokenType.IDENTIFIER
-
-    if self.line[:2] in {'g:','c:','s:'}:
+    #TODO: add all the COMPARE ops with have C G and S
+    if self.line[:length] in {"c:=","c:+","c:-","c:*","c:z/","c:/","c:mod","c:min","c:max","c:neg","c:%/","c:%*",
+                              "g:=","g:+","g:-","g:*","g:z/","g:/","g:mod","g:min","g:max","g:neg","g:%/","g:%*",
+                              "s:=","s:+","s:-","s:*","s:z/","s:/","s:mod","s:min","s:max","s:neg","s:%/","s:%*"}:
+      identifierType = TokenType.MATHOP
+    elif self.line[:2] in {'g:','c:','s:'}:
       identifierType = TokenType.TYPEOP
     elif self.line[:3] == "sn-":
       identifierType = TokenType.STRATEGIC_NUMBER
@@ -164,10 +176,6 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       identifierType = TokenType.ELSE
     elif self.line[:length] == "elif":
       identifierType = TokenType.ELIF
-    elif self.line[:length] == "for":
-      identifierType = TokenType.FOR
-    elif self.line[:length] == "while":
-      identifierType = TokenType.WHILE
     elif self.line[:length] == "def":
       identifierType = TokenType.DEF
     elif self.line[:length] == "defconst":
@@ -195,6 +203,8 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     length = 0
     if(self.line[0] == '-'):
       length += 1
+      if not self.line[length].isnumeric():
+        return False
     while(self.line[length].isnumeric()):
       length += 1
     if length == 0:

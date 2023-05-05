@@ -49,12 +49,14 @@ class Interpreter:
     def flattenFuncCalls(self, inList, callStack):
         tempList = []
         for line in inList:
-            line.scope(callStack)
+            line.t(callStack)
             if isinstance(line, FuncCallObject):
                 tempList.append(self.functionCallToLines(line, callStack))
             elif isinstance(line, VarAsignObject):
                 if line.isSetToFunction():
-                    raise Exception("function returns are not Supported")
+                    tempList.append(self.functionCallToLines(line.expression[0], callStack))
+                    tempList.append(line)
+                    #raise Exception("function returns are not Supported")
                 else:
                     tempList.append(line)
             elif isinstance(line, ConditionalObject):
@@ -93,6 +95,9 @@ class Interpreter:
         return count
 
     def replaceJumpValues(self, inLine):
+        print("\n===Interpreter Results===")
+        for myObject in self.main:
+            pprint(myObject, indent=2, width=20)
         tempList = []
         for line in inLine:
             if isinstance(line, Wrapper):
@@ -101,16 +106,22 @@ class Interpreter:
                 isUpJump = False
                 for command in line.executeList:
                     if command.name == "up-jump-direct":
+                        
                         if command.argList[-1].tokenType == TokenType.LAST_RULE:
                             command.argList[-1].value = str(inLine[-1].position)
                             isUpJump = True
                         elif command.argList[-1].tokenType == TokenType.SECOND_RULE:
-                            raise Exception("broken code, should not have run this")
-                            command.argList[-1].value = str(line.rulePosition(1))
-                #if(isUpJump):
-                #    print("++++++++++++++++++++")
-                #    print(line)
-                #    print("++++++++++++++++++++")
+                            command.argList[-1].value = str(inLine[1].position)
+                            isUpJump = True
+                        elif command.argList[-1].tokenType == TokenType.FIRST_RULE:
+                            command.argList[-1].value = str(inLine[0].position)
+                        elif command.argList[-1].tokenType == TokenType.RETURN_POINT:
+                            command.argList[-1].value = get_return_Point()
+                        else:
+                            raise Exception("cammand.name == up-jump-direct but TokenType is not [placement]_RULE")
+                        print("++++++++++++++++++++")
+                        print(line)
+                        print("++++++++++++++++++++")
                 tempList.append(line)
         return tempList
                     
@@ -120,6 +131,8 @@ class Interpreter:
                 self.allocateArg(command)
             return
         if not isinstance(inCommand, CommandObject):
+            print("*********************")
+            print(inCommand)
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")
         if len(inCommand.argList) == 0:
             return
@@ -181,13 +194,14 @@ class Interpreter:
     def interpret(self):
         self.constList = self.moveDefconst(self.main)
         self.funcList = self.moveFuncDef(self.main)
+        self.main = self.main + self.funcList #something to jumpPastFunctions 
         #self.convertdefrulesToIfs(self.main) #May be nessesary later
         firstCallStack = CallStackItem(FuncCallObject("main",[]),[])
-        self.main = self.flattenFuncCalls(self.main, [firstCallStack])
+        #self.main = self.flattenFuncCalls(self.main, [firstCallStack])
         self.main = self.interpretLine(self.main) #turns all objects in to wrappers full of commands
-        #self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
+        ##self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
         self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.
-        #self.main = self.optimizeRules(self.main)
+        ##self.main = self.optimizeRules(self.main)
         self.addPositiontoDefrules(self.main, 0)
         self.main = self.replaceJumpValues(self.main)
         

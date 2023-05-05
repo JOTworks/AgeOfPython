@@ -19,8 +19,8 @@ class Asserter: #assert that functions objects only have returns as a last line.
             if isinstance(item,defconstObject): useDefConst = True
             #if isinstance(item,FuncCallObject): raise Exception("Functions are currently UNSUPORTED!")
             #if isinstance(item,DefFuncObject): raise Exception("Functions are currently UNSUPORTED!")
-            if isinstance(item,ForLoopObject): raise Exception("For Loops are currently UNSUPORTED!")
-            if isinstance(item,WhileLoopObject): raise Exception("While Loops currently UNSUPORTED!")
+            #if isinstance(item,ForLoopObject): raise Exception("For Loops are currently UNSUPORTED!")
+            #if isinstance(item,WhileLoopObject): raise Exception("While Loops currently UNSUPORTED!")
         
         if useDefConst and useVarAsign: raise Exception("Defconst and variables canot both be used!")
 

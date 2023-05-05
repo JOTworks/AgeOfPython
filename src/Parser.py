@@ -61,11 +61,13 @@ class Parcer: #TODO spell it parser
     return False
 
   def argumentState(self, openObject):
-    if (self.compareTokenTypes([TokenType.OPERATOR]) or
+    if (self.compareTokenTypes([TokenType.EQUALS]) or
+        self.compareTokenTypes([TokenType.COMPAREOP]) or
         self.compareTokenTypes([TokenType.IDENTIFIER]) or 
         self.compareTokenTypes([TokenType.NUMBER]) or 
         self.compareTokenTypes([TokenType.STRATEGIC_NUMBER]) or
         self.compareTokenTypes([TokenType.TYPEOP]) or
+        self.compareTokenTypes([TokenType.MATHOP]) or
         self.compareTokenTypes([TokenType.STRING])):
       openObject.append(self.tokens[self.tokPtr-1])
       return True
@@ -97,10 +99,15 @@ class Parcer: #TODO spell it parser
 
   def returnState(self, openObject):
     if self.compareTokenTypes([TokenType.RETURN]):
+      print("found return")
+      returns = []
       if self.compareTokenTypes([TokenType.NUMBER]) or self.compareTokenTypes([TokenType.IDENTIFIER]):
-        openObject.append(ReturnObject(self.tokens[self.tokPtr - 1].value))
-      else:
-        openObject.append(ReturnObject(""))
+        print("found first N/I")
+        returns.append(self.tokens[self.tokPtr - 1])
+      while self.compareTokenTypes([TokenType.COMMA, TokenType.NUMBER]) or self.compareTokenTypes([TokenType.COMMA, TokenType.IDENTIFIER]):
+        print("found another N/I")
+        returns.append(self.tokens[self.tokPtr - 1])
+      openObject.append(ReturnObject(returns))
       return True
 
   def commandState(self, openObject):
@@ -164,7 +171,7 @@ class Parcer: #TODO spell it parser
     return False
 
   def ifState(self, openObject, tabValue):
-    exist = False
+    exist = False #todo: test code without this line
     if self.compareTokenTypes([TokenType.IF]):
       conditionals = []
       lines = []
@@ -203,26 +210,32 @@ class Parcer: #TODO spell it parser
             openObject.append(WhileLoopObject(conditionals,lines))
             self.consumeTokens()
             return True
+          else: Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
+        else: Exception("expected : got TOK:"+str(self.tokens[self.tokPtr]))    
+      else: Exception("expected commandPhrase got TOK:"+str(self.tokens[self.tokPtr]))    
     return False
 
   def forState(self, openObject,tabValue):
     if self.compareTokenTypes([TokenType.FOR, TokenType.IDENTIFIER, TokenType.IN, TokenType.RANGE, TokenType.LEFT_PAREN]):
-      iterator = self.tokens[self.tokPtr-4].value
+      iterator = self.tokens[self.tokPtr-4]
       args = []
       if self.pyargumentphraseState(args):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN, TokenType.COLON]):
           lines = []
           if self.lineState(lines, tabValue + self.tabSize):
             if len(args) == 1:
-              openObject.append(ForLoopObject(lines, iterator, 0, args[0], 1))
+              openObject.append(ForLoopObject(lines, iterator, "0", args[0], "1"))
             elif len(args) == 2:
-              openObject.append(ForLoopObject(lines, iterator, args[0], args[1], 1))
+              openObject.append(ForLoopObject(lines, iterator, args[0], args[1], "1"))
             elif len(args) == 3:
               openObject.append(ForLoopObject(lines, iterator, args[0], args[1], args[2]))
             else:
-              return False #throw error, for loop not right number of inputs
+              Exception("wrong number of imputs in for loop range function") 
             self.consumeTokens()
             return True
+          else: Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
+        else: Exception("expected ): got TOK:"+str(self.tokens[self.tokPtr])) 
+      else: Exception("expected pyargumentphrase got TOK:"+str(self.tokens[self.tokPtr])) 
     return False
 
   def varasignState(self, openObject, tabValue):
@@ -249,10 +262,7 @@ class Parcer: #TODO spell it parser
       if self.pyargumentphraseState(arguments):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN, TokenType.COLON]):
           if self.lineState(lines, self.tabSize):
-            returnValue = ""
-            if self.compareTokenTypes([TokenType.RETURN, TokenType.IDENTIFIER]):
-              returnValue = self.tokens[self.tokPtr-1].value
-            openObject.append(DefFuncObject(name, arguments, lines, returnValue)) #ERROR needs the line items in the def
+            openObject.append(DefFuncObject(name, arguments, lines)) #ERROR needs the line items in the def
             self.consumeTokens()
   
           return True
@@ -304,7 +314,7 @@ class Parcer: #TODO spell it parser
       elif self.funccallState( openObject, tabValue):  anotherLine = True
       elif self.varasignState( openObject, tabValue):  anotherLine = True
       elif self.commandState(openObject):  anotherLine = True
-      #elif self.returnState(openObject): anotherLine = True
+      elif self.returnState(openObject): anotherLine = True
       self.consumeTokens()  
     return True
 

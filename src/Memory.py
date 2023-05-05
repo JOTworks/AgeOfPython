@@ -74,6 +74,10 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
                 return itr
         raise Exception("Malloc ERROR RAN OUT OF SPACE FOR A STATE!")
 
+    def mallocFunction(self, funcName, Returns  ):
+        self.checkSpace()
+
+
     def free(self, varName):
         if not varName in self.__usedMemory:
             raise Exception ("tried to free"+varName+"but it was not in Memory!")

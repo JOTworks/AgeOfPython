@@ -25,7 +25,7 @@ class TokenType(enum.Enum):
     IF = 16
     ELSE = 17
     ELIF = 18
-    FOR = 18
+    FOR = 19
     WHILE = 20
     DEF = 21
     # Comment keywords:
@@ -42,6 +42,11 @@ class TokenType(enum.Enum):
     LOAD_RANDOM = 33
     STRATEGIC_NUMBER = 34
     LAST_RULE = 35
-    SECOND_RULE = 36
-    TYPEOP = 27
-
+    FIRST_RULE = 36
+    SECOND_RULE = 37
+    TYPEOP = 38
+    COMPAREOP = 39
+    INCREMENTER = 40
+    DECREMENTER = 41
+    RETURN_VAR_TOKEN = 42
+    RETURN_POINT = 43

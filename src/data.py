@@ -4,6 +4,7 @@ from os import name
 from enums import TokenType
 import typing
 import dataclasses
+import commands as c
 
 class PrettyPrinter(object):
     def __repr__(self):
@@ -108,11 +109,23 @@ class CommandObject(PrettyPrinter):
     for line in self.argList:
       line.scope(callStack)
   def interpret(self):
-      return defruleObject(TRUE_CONDITION, [self])
+    return defruleObject(TRUE_CONDITION, [self])
 
 class ReturnObject(PrettyPrinter):
-  def __init__(self, arg):
-    self.arg = arg
+  def __init__(self, args):
+    self.args = args
+  def interpret(self):
+    commands = []
+    for arg in self.args:
+      argList = [RETURN_VAR_TOKEN()]
+      if arg.tokenType == TokenType.NUMBER:
+        argList.append(CONSTANT_TOKEN)
+      else:
+        argList.append(GOAL_TOKEN)
+      argList.append(arg)
+      commands.append(CommandObject("up-modify-goal", argList, -1,""))
+    commands.append(JUMP_TO_RETURN_COMMAND())
+    return Wrapper(ReturnObject, [defruleObject(TRUE_CONDITION, commands)])
 
 class VarInit(PrettyPrinter):
   def __init__(self, name, args):
@@ -144,6 +157,9 @@ class VarAsignObject(PrettyPrinter):
         return defconstObject(self.variable.value.split('/')[-1], self.expression[0].args[0],"","")
       self.variable.value = self.variable.value + "()" + self.expression[0].name
       asignCommands.append(self.createAsignCommand(self.variable, "+", ZERO_NUMBER_TOKEN)) #creates asign command so it is allocated, but +0 so it doesnt reset every loop
+    elif isinstance(self.expression[0], FuncCallObject):
+      #TODO: add return value stuff
+      asignCommands.append(self.createAsignCommand(self.variable, "=", ZERO_NUMBER_TOKEN)) # shouldnt be ZNT, self.expression[0].name this donest work, needs to get the deffunc return variable not the name
     else:
       asignCommands.append(self.createAsignCommand(self.variable, "=", self.expression[0]))
       if len(self.expression) == 3:
@@ -195,23 +211,77 @@ class ElseObject(ConditionalObject):
 class WhileLoopObject(ConditionalObject):
   def __init__(self, conditionList, lineList):
     super().__init__(conditionList, lineList)
+  def interpret(self):
+    isDisableSelf = False
+    newList = []
+    newList.append(defruleObject(self.conditionList, [JUMP_1_COMMANDS()]))
+    newList.append(defruleObject(TRUE_CONDITION, [JUMP_LAST_COMMAND()]))
+    for line in self.lineList:
+      if isinstance(line, CommandObject) and (line.name == "disable-self"):
+        isDisableSelf = True
+      else:
+        newList.append(line.interpret())
+    newList.append(defruleObject(TRUE_CONDITION, [JUMP_FIRST_COMMAND()]))
+    newList.append(defruleObject( TRUE_CONDITION, [DO_NOTHING_COMMAND]))
+    if isDisableSelf:
+      newList[0].executeList.append(DISABLE_SELF_COMMAND)
+    return Wrapper(WhileLoopObject, newList)
 
 class ForLoopObject(ConditionalObject):
-  def __init__(self, lineList, iterator, itrStartValue, itrEndValue, itrJumpValue):
-    lessthenToken = Token(TokenType.MATHOP, "<", -1, "")
-    numberToken = Token(TokenType.NUMBER, itrEndValue, -1, "")
-    conditionals = [CommandObject("up-compare-goal",[iterator, lessthenToken, numberToken])]
+  def __init__(self, lineList, iterator, itrStart, itrEnd, itrJump):
+    if isinstance(itrEnd, Token):
+      #if itrEnd.tokenType != TokenType.NUMBER:
+        #raise Exception("only Integers are supported in the range function currently. itrEnd")
+      numberToken = itrEnd
+    else:
+      numberToken = Token(TokenType.NUMBER, itrEnd, -1, "")
+    if itrEnd.tokenType == TokenType.NUMBER:
+      conditionals = [CommandObject("up-compare-goal",[iterator, GREATER_THEN_OR_EQUAL_TOKEN, numberToken], -1,"")]
+    else:
+      conditionals = [CommandObject("up-compare-goal",[iterator, GREATER_THEN_OR_EQUAL_GOAL_TOKEN, numberToken], -1,"")]
     super().__init__(conditionals, lineList)
     self.iterator = iterator
-    self.itrStartValue = itrStartValue
-    self.itrJumpValue = itrJumpValue
+    if isinstance(itrStart, Token):
+      self.itrStart = itrStart
+    else: 
+      self.itrStart = Token(TokenType.NUMBER, itrStart, -1, "")
+    if isinstance(itrJump, Token):
+      self.itrJump = itrJump
+    else:
+      self.itrJump = Token(TokenType.NUMBER, itrJump, -1, "")
+  def interpret(self):
+    isDisableSelf = False
+    newList = []
+    if self.itrStart.tokenType == TokenType.NUMBER:
+      newList.append(defruleObject(TRUE_CONDITION, [CommandObject("up-modify-goal",[self.iterator, CONSTANT_EQUAL_TOKEN, self.itrStart],-1,"")]))
+    else:
+      raise Exception("only Integers are supported in the range function currently. itrStart")
+    newList.append(defruleObject(self.conditionList, [JUMP_LAST_COMMAND()]))
+    for line in self.lineList:
+      if isinstance(line, CommandObject) and (line.name == "disable-self"):
+        raise Exception("disable-self command in a for loop is undefined behavior")#isDisableSelf = True
+      else:
+        newList.append(line.interpret())
+    incroment_comamnd = CommandObject("up-modify-goal",[self.iterator, CONSTANT_ADD_TOKEN, self.itrJump],"","")
+    newList.append(defruleObject(TRUE_CONDITION, [incroment_comamnd, JUMP_SECOND_COMMAND()]))        
+    newList.append(defruleObject( TRUE_CONDITION, [DO_NOTHING_COMMAND]))
+    return Wrapper(WhileLoopObject, newList)
 
 class DefFuncObject(PrettyPrinter):
-  def __init__(self, name, argList, lineList, returnValue):
+  def __init__(self, name, argList, lineList):
     self.name = name
     self.argList = argList
     self.lineList = lineList
-    self.returnValue = returnValue
+  def interpret(self):
+    newList = []
+    for line in self.lineList:
+      if isinstance(line, CommandObject) and (line.name == "disable-self"):
+        raise Exception("disable-self command in a deffuncobject is undefined behavior")#isDisableSelf = True
+      else:
+        newList.append(line.interpret())
+    if not isinstance(self.lineList[-1], ReturnObject):
+      newList.append(Wrapper(ReturnObject, [defruleObject( TRUE_CONDITION, [JUMP_TO_RETURN_COMMAND()])]))
+    return Wrapper(DefFuncObject, newList)
 
 class FuncCallObject(PrettyPrinter):
   def __init__(self, name, args):
@@ -224,7 +294,8 @@ class FuncCallObject(PrettyPrinter):
 class CallStackItem(PrettyPrinter):
   def __init__(self, funcCall, defFuncArgs):
     self.funcCall = funcCall
-    self.defFuncArgs = defFuncArgs
+    self.defFuncArgs = defFuncArgs  
+    
 
   def isSetToFunction(self):
     if isinstance(self.expression[0], FuncCallObject):
@@ -232,17 +303,34 @@ class CallStackItem(PrettyPrinter):
     else:
       return False
 
-#TODO change all of these to returns
+
+
 TRUE_CONDITION = [CommandObject("true",[],"","")]
 NOT_TOKEN = Token(TokenType.LOGIC_OP,"not",-1,"")
 ZERO_NUMBER_TOKEN = Token(TokenType.NUMBER, "0",-1,"")
+ONE_NUMBER_TOKEN = Token(TokenType.NUMBER, "1",-1,"")
+GREATER_THEN_OR_EQUAL_TOKEN = Token(TokenType.COMPAREOP, ">=",-1,"")
+GREATER_THEN_OR_EQUAL_GOAL_TOKEN = Token(TokenType.COMPAREOP, "g:>=",-1,"")
+GOAL_TOKEN = Token(TokenType.IDENTIFIER,"g:",-1,"")
 CONSTANT_TOKEN = Token(TokenType.IDENTIFIER,"c:",-1,"")
+CONSTANT_ADD_TOKEN = Token(TokenType.MATHOP, "c:+",-1,"")
+CONSTANT_EQUAL_TOKEN = Token(TokenType.MATHOP, "c:=",-1,"")
 DISABLE_SELF_COMMAND = CommandObject("disable-self",[],"","")
 DO_NOTHING_COMMAND = CommandObject("do-nothing",[],"","")
+def RETURN_VAR_TOKEN():
+  return Token(TokenType.RETURN_VAR_TOKEN,"",-1,"")
 def LAST_RULE_TOKEN():
   return Token(TokenType.LAST_RULE,"",-1,"")
+def FIRST_RULE_TOKEN():
+  return Token(TokenType.FIRST_RULE,"",-1,"")
 def SECOND_RULE_TOKEN():
   return Token(TokenType.SECOND_RULE,"",-1,"")
+def RETURN_POINT():
+  return Token(TokenType.RETURN_POINT,"",-1,"")
+def JUMP_TO_RETURN_COMMAND():
+  return CommandObject("up-jump-direct",[GOAL_TOKEN,RETURN_POINT() ],"","")
+def JUMP_FIRST_COMMAND():
+  return CommandObject("up-jump-direct",[CONSTANT_TOKEN,FIRST_RULE_TOKEN() ],"","")
 def JUMP_LAST_COMMAND():
   return CommandObject("up-jump-direct",[CONSTANT_TOKEN,LAST_RULE_TOKEN() ],"","")
 def JUMP_SECOND_COMMAND():
