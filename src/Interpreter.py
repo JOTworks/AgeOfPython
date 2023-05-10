@@ -95,9 +95,9 @@ class Interpreter:
         return count
 
     def replaceJumpValues(self, inLine):
-        print("\n===Interpreter Results===")
-        for myObject in self.main:
-            pprint(myObject, indent=2, width=20)
+        #print("\n===Interpreter Results===")
+        #for myObject in self.main:
+        #    pprint(myObject, indent=2, width=20)
         tempList = []
         for line in inLine:
             if isinstance(line, Wrapper):

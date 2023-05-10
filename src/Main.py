@@ -9,10 +9,20 @@ from pprint import pprint
 import os.path
 from pathlib import Path
 from colorama import Fore, Back, Style
+import re
 
-def print_column(rows):
-  widths = [max(map(len, col)) for col in zip(*rows)]
-  for row in rows:
+def print_column(rows, num_columns):
+  columned_rows = []
+  length_column = int(len(rows)/num_columns)
+  col_line = ["  \u2502"]
+  for i in range(length_column):
+    single_row = []
+    for j in range(num_columns):
+      single_row += col_line
+      single_row += rows[i+(j*length_column)]
+    columned_rows.append(single_row)
+  widths = [max(map(len, col)) for col in zip(*columned_rows)]
+  for row in columned_rows:
     print("  ".join((val.ljust(width) for val, width in zip(row, widths))))
 
 def main(argv):
@@ -41,7 +51,9 @@ def main(argv):
 
 
   if "-s" in arguments or "-v" in arguments:
-    print("\n===Scanner Results===")
+    print_bright("\n+===================+\n"+
+                   "|  Scanner Results  |\n"+
+                   "+===================+")
     token_list = []
     last_file_line = ''
     for tok in myScanner.tokens:
@@ -55,7 +67,7 @@ def main(argv):
         row.append(str(tok.line) +Fore.WHITE)
       token_list.append(row)   
     #token_list = [[str(tok.tokenType).split('.')[1], str(tok.value), str(tok.file), str(tok.line)] for tok in myScanner.tokens]
-    print_column(token_list)
+    print_column(token_list, 5)
 
 
   myParcer = Parcer(myScanner.tokens, aiFolder)
@@ -66,7 +78,9 @@ def main(argv):
     print("\n")
 
   if "-p" in arguments or "-v" in arguments:
-    print("\n===Parcer Results===")
+    print_bright("\n+===================+\n"+
+                   "|  Parcer Results   |\n"+
+                   "+===================+")
     for myObject in myParcer.main:
       pprint(myObject, indent=2, width=20)
 
@@ -77,7 +91,9 @@ def main(argv):
   myInterpreter.interpret()
 
   if "-i" in arguments or "-v" in arguments:
-    print("\n===Interpreter Results===")
+    print_bright("\n+===================+\n"+
+                  "|Interpreter Results|\n"+
+                  "+===================+")
     for myObject in myInterpreter.main:
       pprint(myObject, indent=2, width=20)
   if "-f" in arguments or "-v" in arguments:
@@ -94,14 +110,23 @@ def main(argv):
   myPrinter.print()
 
   if "-r" in arguments or "-v" in arguments:
-    print("\n===Printer Results===")
-    print(myPrinter.finalString)
+    print_bright("\n+===================+\n"+
+                   "|  Printer Result   |\n"+ 
+                   "+===================+")
+
+    pattern = r'(\;.*)'
+    replacement = Fore.GREEN+Style.DIM+r'\1'+Fore.WHITE+Style.NORMAL
+    regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
+    print(regexed_finalString)
 
   fileName = fileName.split(".")
   f = open(str(aiFolder)+'\\'+fileName[0]+".per","w")
   open(str(aiFolder)+'\\'+fileName[0]+".ai","w") #adds the ai file if it doesnt exist already
   print(fileName[0]+".per")
   f.write(myPrinter.finalString)
+
+def print_bright(string):
+  print(Style.BRIGHT+string+Style.NORMAL)
 
 if __name__ == '__main__':
   main(sys.argv)
