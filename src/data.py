@@ -5,10 +5,11 @@ from enums import TokenType
 import typing
 import dataclasses
 import commands as c
+from colorama import Fore, Back, Style
 
 class PrettyPrinter(object):
     def __repr__(self):
-      lines = [self.__class__.__name__ + ':']
+      lines = [Fore.GREEN + self.__class__.__name__ + Fore.WHITE + ':']
       for key, val in vars(self).items():
           if val.__class__.__name__ == "list":
             #print("###"+key.__class__.__name__+"###"+val.__class__.__name__+"###")
@@ -34,7 +35,7 @@ class Token(PrettyPrinter):
     tempValue = self.value
     if self.value == '\n':
       tempValue = '/n'
-    return("["+tempValue +" "+str(self.tokenType)+str(self.line)+self.file+"]")
+    return("["+tempValue +" "+str(self.tokenType).split('.')[1]+' '+self.file+str(self.line)+"]")
   def scope(self, callStack):
     if self.tokenType == TokenType.IDENTIFIER:
       if len(callStack) == 1:

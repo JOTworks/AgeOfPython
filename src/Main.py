@@ -8,6 +8,12 @@ import sys
 from pprint import pprint
 import os.path
 from pathlib import Path
+from colorama import Fore, Back, Style
+
+def print_column(rows):
+  widths = [max(map(len, col)) for col in zip(*rows)]
+  for row in rows:
+    print("  ".join((val.ljust(width) for val, width in zip(row, widths))))
 
 def main(argv):
   #TODO: have it look for the first aop file and throw warning
@@ -36,9 +42,21 @@ def main(argv):
 
   if "-s" in arguments or "-v" in arguments:
     print("\n===Scanner Results===")
-    for token in myScanner.tokens:
-      print(str(token.tokenType) + str(token))
-      #token.print()
+    token_list = []
+    last_file_line = ''
+    for tok in myScanner.tokens:
+      row = [str(tok.tokenType).split('.')[1], str(tok.value)]
+      if str(tok.file)+str(tok.line) != last_file_line:
+        last_file_line = str(tok.file)+str(tok.line)
+        row.append(Fore.WHITE + str(tok.file))
+        row.append(str(tok.line) +Fore.WHITE)
+      else:
+        row.append(Fore.LIGHTBLACK_EX + str(tok.file))
+        row.append(str(tok.line) +Fore.WHITE)
+      token_list.append(row)   
+    #token_list = [[str(tok.tokenType).split('.')[1], str(tok.value), str(tok.file), str(tok.line)] for tok in myScanner.tokens]
+    print_column(token_list)
+
 
   myParcer = Parcer(myScanner.tokens, aiFolder)
   myParcer.parce()
