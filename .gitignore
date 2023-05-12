@@ -2,3 +2,6 @@ __pycache__/
 *.aop
 *.txt
 *.per
+!TuskenRai/*
+!TuskenRail.aop
+

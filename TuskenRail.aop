@@ -1,0 +1,186 @@
+(load "myConst")
+(load "UserPatchConst")
+
+searchState = State()
+#Our first age status is that we are in the dark age. Post Imp games will require a different definition
+if (true):
+  (set-goal g-age-status gv-dark-age)
+  (disable-self)
+
+if (true):
+  (set-goal g-local-total 0)
+  (set-goal g-local-last 0)
+  (set-goal g-remote-total 0)
+  (set-goal gl-deforest 0)
+  (disable-self)
+
+if (true):
+  (chat-to-player my-player-number "Scouting with villagers and scout")
+  (set-strategic-number sn-cap-civilian-explorers 0)
+  (set-strategic-number sn-number-explore-groups 0)
+  (set-strategic-number sn-cap-civilian-builders 100)
+  (set-strategic-number sn-cap-civilian-gatherers 0)
+  #(set-strategic-number sn-cap-civilian-explorers 0)
+  (set-strategic-number sn-initial-exploration-required 0)
+  (set-strategic-number sn-maximum-food-drop-distance 10)
+  (set-strategic-number sn-maximum-gold-drop-distance 10)
+  (set-strategic-number sn-maximum-hunt-drop-distance 20)
+  (set-strategic-number sn-maximum-stone-drop-distance 10)
+  (set-strategic-number sn-maximum-wood-drop-distance 10)
+  ;(set-strategic-number sn-disable-villager-garrison 3)
+  (disable-self)
+#if (true):
+#  (set-strategic-number sn-camp-max-distance 8)
+#  (set-strategic-number sn-initial-exploration-required 0)
+#  (set-strategic-number sn-food-dropsite-distance -1)
+#  (set-strategic-number sn-wood-dropsite-distance -1)
+#  (set-strategic-number sn-stone-dropsite-distance 100) ;priotitize gold over stone
+#  (set-strategic-number sn-gold-dropsite-distance 35)
+#  (set-strategic-number sn-maximum-food-drop-distance 15)
+#  (set-strategic-number sn-maximum-wood-drop-distance 15)
+#  (set-strategic-number sn-maximum-stone-drop-distance 25)
+#  (set-strategic-number sn-maximum-gold-drop-distance 25)
+#  (set-strategic-number sn-maximum-hunt-drop-distance 15)
+#  (set-strategic-number sn-maximum-fish-boat-drop-distance 15)
+#  (set-strategic-number sn-mill-max-distance 15)
+#  (set-strategic-number sn-cap-civilian-builders 100)
+#  (disable-self)
+
+if (true):
+  (set-strategic-number sn-cap-civilian-builders 100)
+  (set-strategic-number sn-percent-civilian-builders 100)
+  (set-strategic-number sn-initial-exploration-required 0)
+  (disable-self)
+
+#-------------------Dark Age Econ-------------------------
+if (goal g-age-status gv-dark-age):
+  set_gather_percent(100, 0, 0, 0)
+if (goal g-age-status gv-dark-age)(unit-type-count villager == 7):
+  set_gather_percent(85, 15, 0, 0)
+if (goal g-age-status gv-dark-age)(unit-type-count villager >= 8):
+  set_gather_percent(75, 25, 0, 0)
+if (goal g-age-status gv-dark-age)(unit-type-count villager >= 11):
+  set_gather_percent(69, 31, 0, 0)
+if (goal g-age-status gv-dark-age)(unit-type-count villager >= 13):
+  set_gather_percent(70, 30, 0, 0)
+if (goal g-age-status gv-dark-age)(unit-type-count villager >= 15):
+  set_gather_percent(71, 29, 0, 0)
+if (goal g-age-status gv-dark-age)(unit-type-count villager >= 17):
+  set_gather_percent(63, 37, 0, 0)
+if (goal g-age-status gv-dark-age)(unit-type-count villager >= 19):
+  set_gather_percent(70, 30, 0, 0)
+#-----------------------------------------------------------
+if (can-train villager):
+  (train villager)
+
+if (can-build house)(housing-headroom < 4):
+  (build house)
+
+if(can-research ri-loom)
+  (and
+    (building-type-count-total house > 1)
+    (or
+      (and
+        (not(can-build house))
+        (housing-headroom < 1)
+      )
+      (food-amount < 50)
+    )
+  ):
+  (research ri-loom)
+  (disable-self)
+
+
+
+berry_uper = Point()
+berry_lower = Point()
+trash = 0
+
+if(resource-found food):
+  set_gather_percent(65,20,15,0)
+  (up-full-reset-search)
+  (up-filter-status c: status-resource c: list-active)
+  (up-find-resource c: food c: 20)
+  (up-get-search-state searchState)
+  printD("found %d berry bushes", searchState.remote_total)
+  if(true): #flares the first run
+    (up-set-target-object search-remote c: 0)    
+    tempPoint = Point()
+    (up-get-point position-object tempPoint)
+    printD("found %d x", tempPoint.x)
+    printD("found %d y", tempPoint.y)
+    (up-send-flare tempPoint)
+    set_resource_boundry(berries, berry_uper, berry_lower)
+    (disable-self)
+
+#set_resource_boundry(forage-class,tempPoint,tempPoint)
+
+#move scout to 73 103
+scout-type = Const(-286)
+scout_point = Point()
+scout_point.x = 73
+scout_point.y = 103
+if(true):
+  (up-full-reset-search)
+  (up-find-local c: scout-type c: 1)
+  (up-get-search-state searchState)
+  (up-target-point scout_point action-move -1 -1)
+  (disable-self)
+
+#(load "RailBoarLure")
+
+#**************************************************************************
+# --------------------------FUNCTIONS--------------------------------------
+#**************************************************************************
+def printD(string, player_number):
+  (up-chat-data-to-player my-player-number string g: player_number)
+
+def set_gather_percent(food, wood, gold, stone):
+  (set-strategic-number sn-food-gatherer-percentage food)
+  (set-strategic-number sn-wood-gatherer-percentage wood)
+  (set-strategic-number sn-gold-gatherer-percentage gold)
+  (set-strategic-number sn-stone-gatherer-percentage stone)
+
+def set_resource_boundry(resource_type, upper_left_point, lower_right_point):
+  boundry_moved = 1
+  while (boundry_moved):
+    tracking_point = Point()
+    boundry_moved = 0
+    tracking_point = upper_left_point
+    
+    tracking_point.x = tracking_point.x + 1
+    side = upper_left_point.y + lower_right_point.y
+    for i in range(0,side):
+      if (up-get-point-contains tracking_point trash c: resource_type):
+        upper_left_point.x = tracking_point.x
+        boundry_moved = 1
+      tracking_point.y = tracking_point.y - 1
+    
+    tracking_point = upper_left_point
+    tracking_point.y = tracking_point.y + 1
+    side = upper_left_point.x - lower_right_point.x
+    for i in range(0,side):
+      if (up-get-point-contains tracking_point trash c: resource_type):
+        upper_left_point.y = tracking_point.y
+        boundry_moved = 1
+      tracking_point.x = tracking_point.x - 1
+    
+    tracking_point = lower_right_point
+    tracking_point.x = tracking_point.x + 1
+    side = upper_left_point.y - lower_right_point.y
+    for i in range(0,side):
+      if (up-get-point-contains tracking_point trash c: resource_type):
+        upper_left_point.x = tracking_point.x
+        boundry_moved = 1
+      tracking_point.y = tracking_point.y - 1
+    
+    tracking_point = lower_right_point
+    tracking_point.y = tracking_point.y - 1
+    side =  upper_left_point.x - lower_right_point.x
+    for i in range(0,side):
+      if (up-get-point-contains tracking_point trash c: resource_type):
+        upper_left_point.y = tracking_point.y
+        boundry_moved = 1
+      tracking_point.x = tracking_point.x - 1
+
+

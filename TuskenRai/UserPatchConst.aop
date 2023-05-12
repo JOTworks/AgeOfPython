@@ -1,0 +1,839 @@
+;--------------------------------------
+; Define FactId Constants
+;--------------------------------------
+game-time = Const(0)
+population-cap = Const(1)
+population-headroom = Const(2)
+housing-headroom = Const(3)
+idle-farm-count = Const(4)
+food-amount = Const(5)
+wood-amount = Const(6)
+stone-amount = Const(7)
+gold-amount = Const(8)
+escrow-amount = Const(9)
+commodity-buying-price = Const(10)
+commodity-selling-price = Const(11)
+dropsite-min-distance = Const(12)
+soldier-count = Const(13)
+attack-soldier-count = Const(14)
+defend-soldier-count = Const(15)
+warboat-count = Const(16)
+attack-warboat-count = Const(17)
+defend-warboat-count = Const(18)
+current-age = Const(19)					;any
+current-score = Const(20)					;any
+civilization = Const(21)					;any
+player-number = Const(22)					;any
+player-in-game = Const(23)				;any
+unit-count = Const(24)					;any
+unit-type-count = Const(25)				;any
+unit-type-count-total = Const(26)
+building-count = Const(27)				;any
+building-type-count = Const(28)			;any
+building-type-count-total = Const(29)
+population = Const(30)					;any
+military-population = Const(31)			;any
+civilian-population = Const(32)			;any
+random-number = Const(33)
+resource-amount = Const(34)				;any
+player-distance = Const(35)				;any
+allied-goal = Const(36)					;any
+allied-sn = Const(37)						;any
+resource-percent = Const(38)				;any
+enemy-buildings-in-town = Const(39)
+enemy-units-in-town = Const(40)
+enemy-villagers-in-town = Const(41)
+players-in-game = Const(42)
+defender-count = Const(43)
+building-type-in-town = Const(44)
+unit-type-in-town = Const(45)
+villager-type-in-town = Const(46)
+gaia-type-count = Const(47)
+gaia-type-count-total = Const(48)
+cc-gaia-type-count = Const(49)
+current-age-time = Const(50)				;any
+timer-status = Const(51)
+players-tribute = Const(52)				;any
+players-tribute-memory = Const(53)			;any
+
+;--------------------------------------
+; Define ObjectId Constants
+;--------------------------------------
+flare = Const(274)
+villager-class = Const(904)
+building-class = Const(903)
+ocean-fish-class = Const(905)
+shore-fish-class = Const(933)
+farm-class = Const(949)
+tower-class = Const(952)
+wall-class = Const(927)
+gate-class = Const(939)
+king-class = Const(959)
+livestock-class = Const(958)
+infantry-class = Const(906)
+archery-class = Const(900)
+archery-cannon-class = Const(944)
+cavalry-class = Const(912)
+cavalry-archer-class = Const(936)
+cavalry-cannon-class = Const(923)
+monastery-class = Const(918)
+siege-weapon-class = Const(913)
+scorpion-class = Const(955)
+packed-trebuchet-class = Const(951)
+unpacked-trebuchet-class = Const(954)
+petard-class = Const(935)
+warship-class = Const(922)
+all-units-class = Const(-1)
+boar-class = Const(910)
+
+;--------------------------------------
+; = Const(Define = Const(FoundationId = Const(Constants
+;--------------------------------------
+town-center-foundation = Const(621)
+gate-ascending = Const(487)
+gate-ascending-closed = Const(64)
+gate-ascending-open = Const(78)
+gate-descending = Const(490)
+gate-descending-closed = Const(88)
+gate-descending-open = Const(99)
+gate-horizontal = Const(665)
+gate-horizontal-closed = Const(659)
+gate-horizontal-open = Const(661)
+gate-vertical = Const(673)
+gate-vertical-closed = Const(667)
+gate-vertical-open = Const(669)
+
+;--------------------------------------
+; Define ResearchState Constants
+;--------------------------------------
+research-unavailable = Const(0)
+research-available = Const(1)
+research-pending = Const(2)
+research-complete = Const(3)
+
+;--------------------------------------
+; Define TimerState Constants
+;--------------------------------------
+timer-disabled = Const(0)
+timer-triggered = Const(1)
+timer-running = Const(2)
+
+;--------------------------------------
+; Define GroupType Constants
+;--------------------------------------
+group-type-land-attack = Const(100)
+group-type-land-explore = Const(101)
+group-type-land-trade = Const(109)
+group-type-water-attack = Const(102)
+group-type-water-explore = Const(103)
+group-type-water-trade = Const(106)
+group-type-transport-ship = Const(104)
+group-type-fishing-ship = Const(105)
+group-type-forward-builder = Const(107)
+group-type-monk = Const(108)
+
+;--------------------------------------
+; = Const(Define = Const(IdleType = Const(Constants
+;--------------------------------------
+idle-type-villager = Const(0)
+idle-type-trade-cart = Const(1)
+idle-type-fishing-ship = Const(2)
+idle-type-trade-cog = Const(3)
+
+;--------------------------------------
+; = Const(Define = Const(AttackStance = Const(Constants
+;--------------------------------------
+stance-aggressive = Const(0)
+stance-defensive = Const(1)
+stance-stand-ground = Const(2)
+stance-no-attack = Const(3)
+
+;--------------------------------------
+; = Const(Define = Const(ResourceAmount = Const(Constants
+;--------------------------------------
+amount-food = Const(0)
+amount-wood = Const(1)
+amount-stone = Const(2)
+amount-gold = Const(3)
+amount-population-cap = Const(4)
+amount-religion = Const(5)
+amount-current-age = Const(6)
+amount-relics = Const(7)
+amount-trade-bonus = Const(8)
+amount-trade-goods = Const(9)
+amount-trade-production = Const(10)
+amount-population = Const(11)
+amount-decay = Const(12)
+amount-discovery = Const(13)
+amount-ruins = Const(14)
+amount-meat = Const(15)
+amount-berries = Const(16)
+amount-fish = Const(17)
+amount-kills = Const(20)
+amount-research-count = Const(21)
+amount-exploration = Const(22)
+amount-convert-priest = Const(27)
+amount-convert-building = Const(28)
+amount-building-limit = Const(30)
+amount-food-limit = Const(31)
+amount-unit-limit = Const(32)
+amount-maintenance = Const(33)
+amount-faith = Const(34)
+amount-faith-recharge-rate = Const(35)
+amount-farm-food = Const(36)
+amount-civilian-population = Const(37)
+amount-all-techs-achieved = Const(39)
+amount-military-population = Const(40)
+amount-conversions = Const(41)
+amount-wonder = Const(42)
+amount-razings = Const(43)
+amount-kill-ratio = Const(44)
+amount-player-killed = Const(45)
+amount-tribute-inefficiency = Const(46)
+amount-gold-bonus = Const(47)
+amount-town-center-unavailable = Const(48)
+amount-gold-counter = Const(49)
+amount-writing = Const(50)
+amount-monasteries = Const(52)
+amount-tribute = Const(53)
+amount-hold-ruins = Const(54)
+amount-hold-relics = Const(55)
+amount-ore = Const(56)
+amount-captured-unit = Const(57)
+amount-trade-good-quality = Const(59)
+amount-trade-market-level = Const(60)
+amount-formations = Const(61)
+amount-building-housing-rate = Const(62)
+amount-gather-tax-rate = Const(63)
+amount-gather-accumulator = Const(64)
+amount-salvage-decay-rate = Const(65)
+amount-allow-formations = Const(66)
+amount-can-convert = Const(67)
+amount-player1-kills = Const(69)
+amount-player2-kills = Const(70)
+amount-player3-kills = Const(71)
+amount-player4-kills = Const(72)
+amount-player5-kills = Const(73)
+amount-player6-kills = Const(74)
+amount-player7-kills = Const(75)
+amount-player8-kills = Const(76)
+amount-convert-resistance = Const(77)
+amount-trade-vig-rate = Const(78)
+amount-stone-bonus = Const(79)
+amount-queued-count = Const(80)
+amount-training-count = Const(81)
+amount-raider = Const(82)
+amount-boarding-recharge-rate = Const(83)
+amount-starting-villagers = Const(84)
+amount-research-cost-mod = Const(85)
+amount-research-time-mod = Const(86)
+amount-convert-boats = Const(87)
+amount-fish-trap-food = Const(88)
+amount-heal-rate-modifier = Const(89)
+amount-heal-range = Const(90)
+amount-starting-food = Const(91)
+amount-starting-wood = Const(92)
+amount-starting-stone = Const(93)
+amount-starting-gold = Const(94)
+amount-raider-ability = Const(95)
+amount-berserker-heal-timer = Const(96)
+amount-dominant-sheep-control = Const(97)
+amount-object-cost-summation = Const(98)
+amount-research-cost-summation = Const(99)
+amount-relic-income-summation = Const(100)
+amount-trade-income-summation = Const(101)
+amount-player1-tribute = Const(102)
+amount-player2-tribute = Const(103)
+amount-player3-tribute = Const(104)
+amount-player4-tribute = Const(105)
+amount-player5-tribute = Const(106)
+amount-player6-tribute = Const(107)
+amount-player7-tribute = Const(108)
+amount-player8-tribute = Const(109)
+amount-player1-kill-value = Const(110)
+amount-player2-kill-value = Const(111)
+amount-player3-kill-value = Const(112)
+amount-player4-kill-value = Const(113)
+amount-player5-kill-value = Const(114)
+amount-player6-kill-value = Const(115)
+amount-player7-kill-value = Const(116)
+amount-player8-kill-value = Const(117)
+amount-player1-razings = Const(118)
+amount-player2-razings = Const(119)
+amount-player3-razings = Const(120)
+amount-player4-razings = Const(121)
+amount-player5-razings = Const(122)
+amount-player6-razings = Const(123)
+amount-player7-razings = Const(124)
+amount-player8-razings = Const(125)
+amount-player1-razing-value = Const(126)
+amount-player2-razing-value = Const(127)
+amount-player3-razing-value = Const(128)
+amount-player4-razing-value = Const(129)
+amount-player5-razing-value = Const(130)
+amount-player6-razing-value = Const(131)
+amount-player7-razing-value = Const(132)
+amount-player8-razing-value = Const(133)
+amount-castle = Const(134)
+amount-kills-by-player1 = Const(136)
+amount-kills-by-player2 = Const(137)
+amount-kills-by-player3 = Const(138)
+amount-kills-by-player4 = Const(139)
+amount-kills-by-player5 = Const(140)
+amount-kills-by-player6 = Const(141)
+amount-kills-by-player7 = Const(142)
+amount-kills-by-player8 = Const(143)
+amount-razings-by-player1 = Const(144)
+amount-razings-by-player2 = Const(145)
+amount-razings-by-player3 = Const(146)
+amount-razings-by-player4 = Const(147)
+amount-razings-by-player5 = Const(148)
+amount-razings-by-player6 = Const(149)
+amount-razings-by-player7 = Const(150)
+amount-razings-by-player8 = Const(151)
+amount-value-killed-by-others = Const(152)
+amount-value-razed-by-others = Const(153)
+amount-killed-by-others = Const(154)
+amount-razed-by-others = Const(155)
+amount-tribute-from-player1 = Const(156)
+amount-tribute-from-player2 = Const(157)
+amount-tribute-from-player3 = Const(158)
+amount-tribute-from-player4 = Const(159)
+amount-tribute-from-player5 = Const(160)
+amount-tribute-from-player6 = Const(161)
+amount-tribute-from-player7 = Const(162)
+amount-tribute-from-player8 = Const(163)
+amount-value-current-units = Const(164)
+amount-value-current-buildings = Const(165)
+amount-food-total = Const(166)
+amount-wood-total = Const(167)
+amount-stone-total = Const(168)
+amount-gold-total = Const(169)
+amount-total-value-of-kills = Const(170)
+amount-total-tribute-received = Const(171)
+amount-total-value-of-razings = Const(172)
+amount-total-castles-built = Const(173)
+amount-total-wonders-built = Const(174)
+amount-tribute-score = Const(175)
+amount-convert-min-adj = Const(176)
+amount-convert-max-adj = Const(177)
+amount-convert-resist-min-adj = Const(178)
+amount-convert-resist-max-adj = Const(179)
+amount-convert-building-min = Const(180)
+amount-convert-building-max = Const(181)
+amount-convert-building-chance = Const(182)
+amount-spies = Const(183)
+amount-value-wonders-castles = Const(184)
+amount-food-score = Const(185)
+amount-wood-score = Const(186)
+amount-stone-score = Const(187)
+amount-gold-score = Const(188)
+amount-wood-bonus = Const(189)
+amount-food-bonus = Const(190)
+amount-relic-rate = Const(191)
+amount-heresy = Const(192)
+amount-theocracy = Const(193)
+amount-crenellations = Const(194)
+amount-construction-rate-mod = Const(195)
+amount-hun-wonder-bonus = Const(196)
+amount-spies-discount = Const(197)
+amount-unused-0 = Const(220)
+amount-unused-1 = Const(221)
+amount-unused-2 = Const(222)
+amount-unused-3 = Const(223)
+amount-unused-4 = Const(224)
+
+;--------------------------------------
+; = Const(Unused = Const(ResourceAmount = Const(Constants
+;--------------------------------------
+;amount-houses = Const(51)
+;amount-hit-points-killed = Const(68)
+;amount-hit-points-razings = Const(135)
+
+;--------------------------------------
+; = Const(Define = Const(ProjectileType = Const(Constants
+;--------------------------------------
+projectile-town-center = Const(0)
+projectile-castle = Const(1)
+projectile-watch-tower = Const(2)
+projectile-bombard-tower = Const(3)
+projectile-ship = Const(4)
+projectile-siege = Const(5)
+projectile-fortification = Const(6)
+projectile-any = Const(7)
+
+;--------------------------------------
+; = Const(Define = Const(EscrowState = Const(Constants
+;--------------------------------------
+with-escrow = Const(0)
+without-escrow = Const(1)
+
+;--------------------------------------
+; = Const(Define = Const(ExploredState = Const(Constants
+;--------------------------------------
+explored-no = Const(0)
+explored-yes = Const(128)					;point = Const(has = Const(been = Const(seen = Const(in = Const(the = Const(past
+explored-active = Const(15)				;point = Const(is = Const(currently = Const(visible = Const(by = Const(an = Const(object
+
+;--------------------------------------
+; = Const(Define = Const(PlacementType = Const(Constants
+;--------------------------------------
+place-normal = Const(0)
+place-forward = Const(1)
+place-control = Const(2)
+place-point = Const(3)
+
+;--------------------------------------
+; = Const(Define = Const(PriorityType = Const(Constants
+;--------------------------------------
+priority-offense = Const(0)
+priority-defense = Const(1)
+
+;--------------------------------------
+; = Const(Define = Const(PositionType = Const(Constants
+;--------------------------------------
+position-center = Const(0)
+position-opposite = Const(1)
+position-corner = Const(2)
+position-enemy = Const(3)
+position-border = Const(4)
+position-mirror = Const(5)
+position-flank = Const(6)
+position-zero = Const(7)
+position-map-size = Const(8)
+position-self = Const(9)
+position-target = Const(10)
+position-focus = Const(11)
+position-object = Const(12)
+position-point = Const(13)
+
+;--------------------------------------
+; = Const(Define = Const(SearchSource = Const(Constants
+;--------------------------------------
+search-local = Const(1)
+search-remote = Const(2)
+
+;--------------------------------------
+; = Const(Define = Const(ObjectList = Const(Constants
+;--------------------------------------
+list-active = Const(0)
+list-inactive = Const(1)
+
+;--------------------------------------
+; = Const(Define = Const(ObjectStatus = Const(Constants
+;--------------------------------------
+status-pending = Const(0)
+status-ready = Const(2)
+status-resource = Const(3)
+status-down = Const(4)
+status-gather = Const(5)
+
+;--------------------------------------
+; = Const(Define = Const(SearchOrder = Const(Constants
+;--------------------------------------
+search-order-none = Const(0)
+search-order-asc = Const(1)
+search-order-desc = Const(2)
+
+;--------------------------------------
+; = Const(Define = Const(GuardFlag = Const(Constants
+;--------------------------------------
+guard-flag-victory = Const(1)
+guard-flag-resource = Const(2)
+guard-flag-inverse = Const(4)
+
+;--------------------------------------
+; = Const(Define = Const(ProgressType = Const(Constants
+;--------------------------------------
+progress-type-train = Const(102)
+progress-type-research = Const(103)
+
+;--------------------------------------
+; = Const(Define = Const(TargetAction = Const(Constants
+;--------------------------------------
+action-default = Const(0)	;target-point = Const(-> = Const(action-move
+action-move = Const(1)	;target-point = Const(+ = Const(target-objects
+action-patrol = Const(2)	;target-point = Const(+ = Const(target-objects
+action-guard = Const(3)	;target-point = Const(-> = Const(action-move
+action-follow = Const(4)	;target-point = Const(-> = Const(action-move
+action-stop = Const(5)	;target-point = Const(+ = Const(target-objects
+action-ground = Const(6)	;target-point = Const(+ = Const(target-objects
+action-garrison = Const(7)	;target-point = Const(-> = Const(action-move
+action-delete = Const(8)	;target-point = Const(+ = Const(target-objects
+action-unload = Const(9)	;target-objects = Const(-> = Const(action-none
+action-train = Const(10)	;target-objects = Const(-> = Const(action-none
+action-gather = Const(11)	;target-point = Const(+ = Const(target-objects
+action-lock = Const(12)	;target-objects = Const(-> = Const(action-none
+action-work = Const(13)	;target-objects = Const(-> = Const(action-none
+action-ungarrison = Const(14)	;target-objects = Const(-> = Const(action-none
+action-drop-relic = Const(15)	;target-objects = Const(-> = Const(action-none
+action-pack = Const(16)	;target-objects = Const(-> = Const(action-none
+action-unpack = Const(17)	;target-objects = Const(-> = Const(action-none
+action-none = Const(18)	;target-point = Const(+ = Const(target-objects
+
+; = Const(action-train: = Const((up-target-point = Const(inGoalEscrowState = Const(action-train = Const(typeOp = Const(inOpTypeId)
+; = Const(inGoalEscrowState = Const(must = Const(be = Const(either = Const(0 = Const(for = Const(without-escrow = Const(or = Const(an = Const(extended = Const(goal = Const(from = Const(41-510
+
+;--------------------------------------
+; = Const(Define = Const(Formation = Const(Constants
+;--------------------------------------
+formation-line = Const(2)
+formation-box = Const(4)
+formation-stagger = Const(7)
+formation-flank = Const(8)
+
+;--------------------------------------
+; = Const(Define = Const(CmdId = Const(Constants
+;--------------------------------------
+cmdid-flag = Const(0)
+cmdid-livestock-gaia = Const(1)
+cmdid-civilian-building = Const(2)
+cmdid-villager = Const(3)
+cmdid-military = Const(4)
+cmdid-trade = Const(5)
+cmdid-monk = Const(6)
+cmdid-transport = Const(7)
+cmdid-relic = Const(8)					;includes = Const(monk-with-relic
+cmdid-unknown = Const(9)
+cmdid-military-building = Const(10)
+
+;--------------------------------------
+; = Const(Define = Const(ActionId = Const(Constants
+;--------------------------------------
+actionid-attack = Const(600)
+actionid-defend = Const(601)
+actionid-build = Const(602)
+actionid-heal = Const(603)
+actionid-convert = Const(604)
+actionid-explore = Const(605)
+actionid-stop = Const(606)
+actionid-runaway = Const(607)
+actionid-retreat = Const(608)
+actionid-gather = Const(609)
+actionid-move = Const(610)
+actionid-patrol = Const(611)
+actionid-follow = Const(612)
+actionid-hunt = Const(613)
+actionid-transport = Const(614)
+actionid-trade = Const(615)
+actionid-evade = Const(616)
+actionid-enter = Const(617)
+actionid-repair = Const(618)
+actionid-train = Const(619)
+actionid-research = Const(620)
+actionid-unload = Const(621)
+actionid-relic = Const(631)
+
+;--------------------------------------
+; = Const(Define = Const(OrderId = Const(Constants
+;--------------------------------------
+orderid-attack = Const(700)
+orderid-defend = Const(701)
+orderid-build = Const(702)
+orderid-heal = Const(703)
+orderid-convert = Const(704)
+orderid-explore = Const(705)
+orderid-stop = Const(706)
+orderid-runaway = Const(707)
+orderid-retreat = Const(708)
+orderid-gather = Const(709)
+orderid-move = Const(710)
+orderid-patrol = Const(711)
+orderid-follow = Const(712)
+orderid-hunt = Const(713)
+orderid-transport = Const(714)
+orderid-trade = Const(715)
+orderid-evade = Const(716)
+orderid-enter = Const(717)
+orderid-repair = Const(718)
+orderid-train = Const(719)
+orderid-research = Const(720)
+orderid-unload = Const(721)
+orderid-relic = Const(731)
+
+;--------------------------------------
+; = Const(Define = Const(Mainland = Const(Constants
+;--------------------------------------
+off-mainland = Const(0)
+on-mainland = Const(1)
+
+;--------------------------------------
+; = Const(Define = Const(ObjectData = Const(Constants
+;--------------------------------------
+object-data-index = Const(-1)				;only = Const(use = Const(with = Const(up-remove-objects
+object-data-id = Const(0)
+object-data-type = Const(1)
+object-data-class = Const(2)
+object-data-category = Const(3)
+object-data-cmdid = Const(4)
+object-data-action = Const(5)
+object-data-order = Const(6)
+object-data-target = Const(7)
+object-data-point-x = Const(8)
+object-data-point-y = Const(9)
+object-data-hitpoints = Const(10)
+object-data-maxhp = Const(11)
+object-data-range = Const(12)
+object-data-speed = Const(13)
+object-data-dropsite = Const(14)
+object-data-resource = Const(15)
+object-data-carry = Const(16)
+object-data-garrisoned = Const(17)
+object-data-garrison-count = Const(18)
+object-data-status = Const(19)			;0:incomplete, = Const(2:active, = Const(3:resource, = Const(>=4:inactive
+object-data-player = Const(20)
+object-data-attack-stance = Const(21)
+object-data-action-time = Const(22)
+object-data-target-id = Const(23)
+object-data-formation-id = Const(24)
+object-data-patrolling = Const(25)
+object-data-strike-armor = Const(26)
+object-data-pierce-armor = Const(27)
+object-data-base-attack = Const(28)
+object-data-locked = Const(29)
+object-data-garrison-id = Const(30)
+object-data-train-count = Const(31)
+object-data-tasks-count = Const(32)		;increased = Const(for = Const(internal = Const(tasks = Const(performed = Const(on = Const(the = Const(object = Const((may = Const(be = Const(more = Const(than = Const(1 = Const(per = Const(event)
+object-data-attacker-count = Const(33)	;not = Const(increased = Const(for = Const(certain = Const(situations = Const(like = Const(hunting
+object-data-attacker-id = Const(34)		;not = Const(set = Const(for = Const(certain = Const(situations = Const(like = Const(hunting
+object-data-under-attack = Const(35)		;not = Const(set = Const(for = Const(certain = Const(situations = Const(like = Const(hunting
+object-data-attack-timer = Const(36)		;resets = Const(to = Const(60s = Const(for = Const(each = Const(attack = Const((buildings = Const(only)
+object-data-point-z = Const(37)
+object-data-precise-x = Const(38)		;point = Const(x100.0
+object-data-precise-y = Const(39)
+object-data-precise-z = Const(40)
+object-data-researching = Const(41)
+object-data-tile-position = Const(42)		;match = Const(with = Const(sn-target-point-adjustment
+object-data-tile-inverse = Const(43)
+object-data-distance = Const(44)		;based = Const(on = Const(target-point
+object-data-precise-distance = Const(45)	;distance = Const(x100
+object-data-full-distance = Const(46)
+object-data-map-zone-id = Const(47)
+object-data-on-mainland = Const(48)		;compares = Const(map-zone-id = Const(to = Const(home = Const(TC = Const(map-zone-id
+object-data-idling = Const(49)
+object-data-move-x = Const(50)
+object-data-move-y = Const(51)
+object-data-precise-move-x = Const(52)
+object-data-precise-move-y = Const(53)
+object-data-reload-time = Const(54)		;in = Const(milliseconds
+object-data-next-attack = Const(55)		;in = Const(milliseconds
+object-data-train-site = Const(56)
+object-data-train-time = Const(57)		;in = Const(seconds
+object-data-blast-radius = Const(58)		;radius = Const(x100.0
+object-data-blast-level = Const(59)
+object-data-progress-type = Const(60)
+object-data-progress-value = Const(61)
+object-data-min-range = Const(62)
+object-data-target-time = Const(63)		;in = Const(milliseconds = Const((not = Const(for = Const(villagers)
+object-data-heresy = Const(64)		;checks = Const(amount-heresy
+object-data-faith = Const(65)			;checks = Const(amount-convert-resistance
+object-data-redemption = Const(66)		;checks = Const(amount-convert-building
+object-data-atonement = Const(67)		;checks = Const(amount-convert-priest
+object-data-theocracy = Const(68)		;checks = Const(amount-theocracy
+object-data-spies = Const(69)			;checks = Const(amount-spies
+object-data-ballistics = Const(70)
+object-data-gather-type = Const(71)		;food, = Const(wood, = Const(gold, = Const(stone, = Const(or = Const(-1 = Const(for = Const(none
+object-data-language-id = Const(72)		;can = Const(use = Const(to = Const(check = Const(villager = Const(types
+object-data-group-flag = Const(73)		;group = Const(id = Const(from = Const(0 = Const(to = Const(9 = Const(or = Const(-2 = Const(for = Const(none
+object-data-hero-flags = Const(74)		;combined = Const(hero = Const(status = Const(flags
+object-data-hero = Const(75)			;has = Const(actual = Const(hero = Const(flag = Const(set
+object-data-auto-heal = Const(76)		;will = Const(hero = Const(heal = Const((non-berserk)
+object-data-no-convert = Const(77)		;cannot = Const(be = Const(converted
+object-data-frame-delay = Const(78)		;number = Const(of = Const(frames = Const(for = Const(projectile = Const(delay
+object-data-attack-count = Const(79)		;consecutive = Const(attack = Const(count
+object-data-to-precise = Const(80)		;precise = Const(distance = Const(to = Const(a = Const(precise = Const(target-point
+object-data-base-type = Const(81)		;object = Const(base = Const(type = Const(id
+object-data-upgrade-type = Const(82)		;object = Const(upgrade = Const(type = Const(id
+
+;--------------------------------------
+; = Const(Define = Const(LangId = Const(Constants = Const((aoc)
+;--------------------------------------
+lid-villager-idle = Const(5121)
+lid-villager-shepherd = Const(5496)
+lid-villager-farmer = Const(5123)
+lid-villager-forager = Const(5402)
+lid-villager-hunter = Const(5124)
+lid-villager-fisherman = Const(5499)
+lid-villager-lumberjack = Const(5125)
+lid-villager-gold-miner = Const(5482)
+lid-villager-stone-miner = Const(5126)
+lid-villager-builder = Const(5122)
+lid-villager-repairer = Const(5127)
+
+;--------------------------------------
+; = Const(Define = Const(Terrain = Const(Constants
+;--------------------------------------
+terrain-grass = Const(0)
+terrain-grass2 = Const(12)
+terrain-grass3 = Const(9)
+terrain-grass-snow = Const(34)
+terrain-grass-old = Const(16)
+terrain-water = Const(1)
+terrain-water-deep = Const(22)
+terrain-water-medium = Const(23)
+terrain-water-bridge = Const(28)
+terrain-water-old = Const(15)
+terrain-water-beach = Const(2)
+terrain-shallows = Const(4)
+terrain-ice = Const(26)
+terrain-ice2 = Const(35)
+terrain-ice-beach = Const(37)
+terrain-desert = Const(14)
+terrain-dirt = Const(6)
+terrain-dirt2 = Const(11)
+terrain-dirt3 = Const(3)
+terrain-dirt-snow = Const(33)
+terrain-farm = Const(7)
+terrain-farm1 = Const(29)
+terrain-farm2 = Const(30)
+terrain-farm3 = Const(31)
+terrain-farm-dead = Const(8)
+terrain-forest = Const(10)
+terrain-forest-bamboo = Const(18)
+terrain-forest-jungle = Const(17)
+terrain-forest-oak = Const(20)
+terrain-forest-palm = Const(13)
+terrain-forest-pine = Const(19)
+terrain-forest-snow = Const(21)
+terrain-foundation = Const(27)
+terrain-foundation-snow = Const(36)
+terrain-koh = Const(40)
+terrain-leaves = Const(5)
+terrain-road = Const(24)
+terrain-road-broken = Const(25)
+terrain-road-snow = Const(38)
+terrain-road-fungus = Const(39)
+terrain-snow = Const(32)
+terrain-unknown = Const(41)
+
+;--------------------------------------
+; = Const(Define = Const(SortTargetMethod = Const(Constants
+;--------------------------------------
+sort-targets = Const(0)
+sort-random = Const(1)
+sort-distance = Const(2)
+sort-hitpoints = Const(3)
+sort-range = Const(4)
+
+;--------------------------------------
+; = Const(Define = Const(FindPlayerMethod = Const(Constants
+;--------------------------------------
+find-attacker = Const(0)
+find-random = Const(1)
+find-closest = Const(2)
+find-ordered = Const(3)
+
+;--------------------------------------
+; = Const(Define = Const(ScoutMethod = Const(Constants
+;--------------------------------------
+scout-center = Const(0)
+scout-opposite = Const(1)
+scout-corner = Const(2)
+scout-enemy = Const(3)
+scout-border = Const(4)
+scout-mirror = Const(5)
+scout-flank = Const(6)
+
+;--------------------------------------
+; = Const(Define = Const(AdjustPoint = Const(Constants
+;--------------------------------------
+adjust-default = Const(0)
+adjust-left = Const(1)
+adjust-top = Const(2)
+adjust-right = Const(3)
+adjust-bottom = Const(4)
+adjust-middle = Const(5)
+adjust-precise = Const(6)
+
+;--------------------------------------
+; = Const(Define = Const(PlayerStance = Const(Constants
+;--------------------------------------
+;ally = Const(0)
+;neutral = Const(1)
+;enemy = Const(3)
+;any = Const(2)
+
+;--------------------------------------
+; = Const(Define = Const(DropsiteMinDistance = Const(Constants
+;--------------------------------------
+;hunting = Const(4)
+;boar-hunting = Const(5)
+;deer-hunting = Const(6)
+;live-boar = Const(7)
+
+;--------------------------------------
+; = Const(Define = Const(Counting = Const(Constants
+;--------------------------------------
+;monk-set = Const(970)
+;trebuchet-set = Const(971)
+;huskarl-set = Const(972)
+;villager-shepherd = Const(973)
+;villager-forager = Const(974)
+;villager-farmer = Const(975)
+;villager-hunter = Const(976)
+;villager-fisherman = Const(977)
+;villager-food = Const(978)
+;villager-wood = Const(979)
+;villager-stone = Const(980)
+;villager-gold = Const(981)
+;villager-builder = Const(982)
+;villager-repairer = Const(983)
+;villager-base = Const(984)
+
+;--------------------------------------
+; = Const(Define = Const(Extended = Const(Strategic = Const(Numbers
+;--------------------------------------
+;sn-enable-new-building-system = Const(242)
+;sn-percent-building-cancellation = Const(243)
+;sn-enable-boar-hunting = Const(244)
+;sn-minimum-number-hunters = Const(245)
+;sn-object-repair-level = Const(246)
+;sn-enable-patrol-attack = Const(247)
+;sn-dropsite-separation-distance = Const(248)
+;sn-target-player-number = Const(249)
+;sn-safe-town-size = Const(250)
+;sn-focus-player-number = Const(251)
+;sn-minimum-boar-lure-group-size = Const(252)
+;sn-preferred-mill-placement = Const(253)
+;sn-enable-offensive-priority = Const(254)
+;sn-building-targeting-mode = Const(255)
+;sn-home-exploration-time = Const(256)
+;sn-number-civilian-militia = Const(257)
+;sn-allow-civilian-offense = Const(258)
+;sn-preferred-trade-distance = Const(259)
+;sn-lumber-camp-max-distance = Const(260)
+;sn-mining-camp-max-distance = Const(261)
+;sn-wall-targeting-mode = Const(262)
+;sn-livestock-to-town-center = Const(263)
+;sn-enable-training-queue = Const(264)
+;sn-ignore-tower-elevation = Const(265)
+;sn-town-center-placement = Const(266)
+;sn-disable-tower-priority = Const(267)
+;sn-placement-zone-size = Const(268)
+;sn-placement-fail-delta = Const(269)
+;sn-placement-to-center = Const(270)
+;sn-disable-attack-groups = Const(271)
+;sn-allow-adjacent-dropsites = Const(272)
+;sn-defer-dropsite-update = Const(273)
+;sn-maximum-garrison-fill = Const(274)
+;sn-number-garrison-units = Const(275)
+;sn-filter-under-attack = Const(276)
+;sn-disable-defend-groups = Const(277)
+;sn-dock-placement-mode = Const(278)
+;sn-dock-proximity-factor = Const(279)
+;sn-dock-avoidance-factor = Const(280)
+;sn-dock-training-filter = Const(281)
+;sn-free-siege-targeting = Const(282)
+;sn-warship-targeting-mode = Const(283)
+;sn-disable-sighted-response-cap = Const(284)
+;sn-disable-builder-assistance = Const(285)
+;sn-local-targeting-mode = Const(286)
+;sn-livestock-defend-priority = Const(287)
+;sn-number-tasked-units = Const(288)
+;sn-minimum-tasked-units = Const(289)
+;sn-maximum-tasked-units = Const(290)
+;sn-disable-villager-garrison = Const(291)
+;sn-target-point-adjustment = Const(292)
+;sn-unexplored-construction = Const(293)
+;sn-disable-trade-evasion = Const(294)
+;sn-boar-lure-destination = Const(295)
