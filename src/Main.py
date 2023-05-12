@@ -44,10 +44,19 @@ def main(argv):
     limit += 1
     if limit > 100:
       raise Exception("AgeOfPython needs to be in the ai folder AoE2DE/reasources/_common/ai/")
-
+    
+  if "-h" in arguments or "-help" in arguments or "help" in arguments or "?" in arguments:
+    print_bright("\n===HELP===")
+    print("-s Scanner\n"+
+          "-p Parcer\n"+
+          "-i Interpreter\n"+
+          "-f Function List\n"+
+          "-m Memory\n"+
+          "-r Printer\n"+
+          "-v everything\n"       
+          )
   myScanner = Scanner(str(fileName), aiFolder)
   myScanner.scan()
-
 
 
   if "-s" in arguments or "-v" in arguments:
@@ -97,14 +106,18 @@ def main(argv):
     for myObject in myInterpreter.main:
       pprint(myObject, indent=2, width=20)
   if "-f" in arguments or "-v" in arguments:
-    print("\n===Function List===")
+    print_bright("\n===Function List===")
     for func in myInterpreter.funcList:
       pprint(func, indent=2, width=20)
   if "-m" in arguments or "-v" in arguments:
-    print("\n===Used Memory===")
+    print_bright("\n===Used Memory===")
+
     print(myInterpreter.memory.printUsedMemory())
-    print("\n===Constant List===")
-    print(myInterpreter.constList)
+    print_bright("\n===Constant List===")
+    #sorts const list by number and strips token to number
+    constList = [[str(const), int(str(myInterpreter.constList[const]).split(' ')[0][1:])] for const in myInterpreter.constList]
+    constList.sort(key = lambda x: x[1])
+    print_column([[const[0], str(const[1])] for const in constList],4)
 
   myPrinter = Printer(myInterpreter.main, myInterpreter.funcList, myInterpreter.constList)
   myPrinter.print()

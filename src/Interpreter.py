@@ -49,7 +49,7 @@ class Interpreter:
     def flattenFuncCalls(self, inList, callStack):
         tempList = []
         for line in inList:
-            line.t(callStack)
+            line.scope(callStack)
             if isinstance(line, FuncCallObject):
                 tempList.append(self.functionCallToLines(line, callStack))
             elif isinstance(line, VarAsignObject):
@@ -119,9 +119,9 @@ class Interpreter:
                             command.argList[-1].value = get_return_Point()
                         else:
                             raise Exception("cammand.name == up-jump-direct but TokenType is not [placement]_RULE")
-                        print("++++++++++++++++++++")
-                        print(line)
-                        print("++++++++++++++++++++")
+                        #print("++++++++++++++++++++")
+                        #print(line)
+                        #print("++++++++++++++++++++")
                 tempList.append(line)
         return tempList
                     
@@ -131,8 +131,8 @@ class Interpreter:
                 self.allocateArg(command)
             return
         if not isinstance(inCommand, CommandObject):
-            print("*********************")
-            print(inCommand)
+            #print("*********************")
+            #print(inCommand)
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")
         if len(inCommand.argList) == 0:
             return
@@ -165,9 +165,9 @@ class Interpreter:
                     else:
                         raise Exception("Structure "+structure+" not recognized")
 
-                print(arg.value)
+                #print(arg.value)
                 if self.memory.isUsed(arg.value):
-                    print("IS USED")
+                    #print("IS USED")
                     arg.value = str(self.memory.getMemLoc(arg.value))
                 else:
                     arg.value = arg.value.split('/')[-1]
@@ -194,10 +194,10 @@ class Interpreter:
     def interpret(self):
         self.constList = self.moveDefconst(self.main)
         self.funcList = self.moveFuncDef(self.main)
-        self.main = self.main + self.funcList #something to jumpPastFunctions 
+        self.main = self.main #+ self.funcList #something to jumpPastFunctions 
         #self.convertdefrulesToIfs(self.main) #May be nessesary later
         firstCallStack = CallStackItem(FuncCallObject("main",[]),[])
-        #self.main = self.flattenFuncCalls(self.main, [firstCallStack])
+        self.main = self.flattenFuncCalls(self.main, [firstCallStack])
         self.main = self.interpretLine(self.main) #turns all objects in to wrappers full of commands
         ##self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
         self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.

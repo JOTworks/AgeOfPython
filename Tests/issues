@@ -1,0 +1,54 @@
+#what happens when you initialzie a variable that already exists? it should be dealocated and realocated as it could be a different size.
+#right now it is simply asigned to 0 :/
+x = 4
+x = Point()
+
+
+#while loop does not scope variable out properly
+while (boundry_moved):
+    
+#passed in varaible (points) upper_left_point and lower_right_point really break memory
+===Used Memory===
+0 ***ZERO_INDEX***
+1 main/trash
+2 main/set_resource_boundry/boundry_moved
+3 main/set_resource_boundry/side
+4 main/set_resource_boundry/upper_left_point.y
+5 main/set_resource_boundry/lower_right_point.y
+6 main/set_resource_boundry/i
+7 main/set_resource_boundry/upper_left_point.x
+8 main/set_resource_boundry/upper_left_point.x
+9 main/set_resource_boundry/lower_right_point.x
+10 main/set_resource_boundry/upper_left_point.y
+11 main/set_resource_boundry/upper_left_point.y
+12 main/set_resource_boundry/lower_right_point.y
+13 main/set_resource_boundry/upper_left_point.x
+14 main/set_resource_boundry/upper_left_point.x
+15 main/set_resource_boundry/lower_right_point.x
+16 main/set_resource_boundry/upper_left_point.y
+17 main/set_resource_boundry/upper_left_point.y
+18 main/set_resource_boundry/lower_right_point.y
+19 main/set_resource_boundry/upper_left_point.x
+20 main/set_resource_boundry/upper_left_point.x
+21 main/set_resource_boundry/lower_right_point.x
+22 main/set_resource_boundry/upper_left_point.y
+23 main/set_resource_boundry/upper_left_point.y
+24 main/set_resource_boundry/lower_right_point.y
+25 main/set_resource_boundry/upper_left_point.x
+26 main/set_resource_boundry/upper_left_point.x
+27 main/set_resource_boundry/lower_right_point.x
+28 main/set_resource_boundry/upper_left_point.y
+41 main/searchState
+42 Structure.STATE
+43 Structure.STATE
+44 Structure.STATE
+45 main/berry_uper
+46 Structure.POINT
+47 main/berry_lower
+48 Structure.POINT
+49 main/tempPoint
+50 Structure.POINT
+51 main/set_resource_boundry/tracking_point
+52 Structure.POINT
+53 main/scout_point
+54 Structure.POINT

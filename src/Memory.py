@@ -1,5 +1,6 @@
 from pprint import pprint
 from enums import Structure
+from colorama import Fore, Back, Style
 class Memory: #TODO: openMemory away. we can just use used Memory for everything! None instead of ""
     def __init__(self):
         #self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
@@ -12,7 +13,10 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
         memoryString = ""
         for itr in range(len(self.__usedMemory)):
             if self.__usedMemory[itr] != "":
-                memoryString += str(itr) +" "+self.__usedMemory[itr]+"\n"
+                if "Structure." in self.__usedMemory[itr]:
+                   memoryString += str(itr) +" "+Fore.LIGHTBLACK_EX+self.__usedMemory[itr]+Fore.WHITE+"\n"
+                else: 
+                    memoryString += str(itr) +" "+self.__usedMemory[itr]+"\n"
         return memoryString
                 
     def checkSpace(self):
