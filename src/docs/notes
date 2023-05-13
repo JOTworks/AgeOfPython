@@ -1,0 +1,10 @@
+#what is next
+
+return statments:
+
+x = myfunc(y)
+
+x, z = myFunc(y)
+
+added anywhere there is a return, it needs to know the asigning portion.
+

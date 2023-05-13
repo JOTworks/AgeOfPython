@@ -107,7 +107,8 @@ class Parcer: #TODO spell it parser
       while self.compareTokenTypes([TokenType.COMMA, TokenType.NUMBER]) or self.compareTokenTypes([TokenType.COMMA, TokenType.IDENTIFIER]):
         print("found another N/I")
         returns.append(self.tokens[self.tokPtr - 1])
-      openObject.append(ReturnObject(returns))
+      last_token = self.tokens[self.tokPtr - 1]  
+      openObject.append(ReturnObject(returns, last_token.line, last_token.file))
       return True
 
   def commandState(self, openObject):

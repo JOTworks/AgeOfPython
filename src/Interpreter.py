@@ -54,8 +54,8 @@ class Interpreter:
                 tempList.append(self.functionCallToLines(line, callStack))
             elif isinstance(line, VarAsignObject):
                 if line.isSetToFunction():
-                    tempList.append(self.functionCallToLines(line.expression[0], callStack))
-                    tempList.append(line)
+                    tempList.append(self.functionCallToLines(line.expression[0], callStack, line.variable))
+                    #tempList.append(line) #not needed as the assign will always happen in the return.
                     #raise Exception("function returns are not Supported")
                 else:
                     tempList.append(line)
@@ -64,24 +64,32 @@ class Interpreter:
                 tempList.append(line)
             elif isinstance(line, CommandObject):
                 tempList.append(line)
+            elif isinstance(line, ReturnObject):
+                line.set_assignVars([callStack[-1].assignVars])
+                tempList.append(line)
             else:
                 raise Exception("Need to implament "+str(line.__class__)+" in flattenFuncCalls function")
         return tempList
 
-    def functionCallToLines(self, funcCall, callStack): 
+    def functionCallToLines(self, funcCall, callStack, assignVars = None): 
         for callStackItem in callStack:
             if funcCall.name == callStackItem.funcCall.name:
                 raise Exception("Recursion will not be suported. function "+funcCall.name+" canot call itself")
         functionCallWrapper = Wrapper(FuncCallObject, [])
         calledFunc = self.getFunctionCopyByName(funcCall.name)
-        nextCallStack = CallStackItem(funcCall, calledFunc.argList)
+        nextCallStack = CallStackItem(funcCall, calledFunc.argList, assignVars)
         argAssignList = []
         for i in range(len(calledFunc.argList)):
             calledFunc.argList[i].scope(callStack + [nextCallStack])
             argAssignList.append(VarAsignObject(calledFunc.argList[i], [funcCall.args[i]], -1, ''))
         #for line in argAssignList:
             #line.scope(callStack + [nextCallStack])
-        functionCallWrapper.lineList = argAssignList + self.flattenFuncCalls(calledFunc.lineList, callStack + [nextCallStack])
+        flat_function = self.flattenFuncCalls(calledFunc.lineList, callStack + [nextCallStack])
+        functionCallWrapper.lineList = argAssignList + flat_function
+        #inner_flat = self.flattenFuncCalls(calledFunc.lineList, callStack + [nextCallStack])
+        #if inner_flat != None:
+        #    functionCallWrapper.lineList += inner_flat
+
         return functionCallWrapper
     
     def optimizeRules(self, inList):
@@ -193,7 +201,7 @@ class Interpreter:
                         self.allocateArg(condition)
                 for execute in item.executeList:
                     self.allocateArg(execute)
-            else: raise Exception("allocateMemory() can only parce defrulesObjects, not "+str(item.__class__)+"\n"+str(item))
+            else: raise Exception("allocateMemory() can only parce defrulesObjects, not "+str(item.__class__)+"\n"+str(item)+"\n"+str(inList))
         inListWithoutDefConst = [item for item in inList if not isinstance(item, defconstObject)]
         return inListWithoutDefConst
 
@@ -204,8 +212,6 @@ class Interpreter:
         #self.convertdefrulesToIfs(self.main) #May be nessesary later
         firstCallStack = CallStackItem(FuncCallObject("main",[]),[])
         self.main = self.flattenFuncCalls(self.main, [firstCallStack])
-        print("\n\nFLATTEN FUNC CALLS")
-        print(self.main)
         self.main = self.interpretLine(self.main) #turns all objects in to wrappers full of commands
         ##self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
         self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.
