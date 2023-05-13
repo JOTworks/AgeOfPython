@@ -38,19 +38,7 @@ class Token(PrettyPrinter):
     return("["+tempValue +" "+str(self.tokenType).split('.')[1]+' '+self.file+str(self.line)+"]")
   def scope(self, callStack):
     if self.tokenType == TokenType.IDENTIFIER:
-      if len(callStack) == 1:
-          defArgList = []
-      else:
-          defArgList = callStack[-1].defFuncArgs
-      inArgList = False
-      for itr in range(len(defArgList)):
-          if self.value == defArgList[itr].value:
-              self.value = callStack[-1].funcCall.args[itr].value
-              inArgList = True
-              if callStack[-1].funcCall.args[itr].tokenType == TokenType.STRING:
-                self.tokenType = TokenType.STRING
-      if not inArgList:
-          self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
+      self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
 
 class Wrapper(PrettyPrinter):
   def __init__(self, Type, lineList):
@@ -113,20 +101,39 @@ class CommandObject(PrettyPrinter):
     return defruleObject(TRUE_CONDITION, [self])
 
 class ReturnObject(PrettyPrinter):
-  def __init__(self, args):
+  def __init__(self, args, line, file):
     self.args = args
+    self.assignVars = None
+    self.line = line
+    self.file = file
+  def set_assignVars(self, assignVars):
+    self.assignVars = assignVars
+  def scope(self, callStack):
+    for line in self.args:
+      line.scope(callStack)
   def interpret(self):
     commands = []
-    for arg in self.args:
-      argList = [RETURN_VAR_TOKEN()]
-      if arg.tokenType == TokenType.NUMBER:
-        argList.append(CONSTANT_TOKEN)
-      else:
-        argList.append(GOAL_TOKEN)
-      argList.append(arg)
-      commands.append(CommandObject("up-modify-goal", argList, -1,""))
-    commands.append(JUMP_TO_RETURN_COMMAND())
-    return Wrapper(ReturnObject, [defruleObject(TRUE_CONDITION, commands)])
+    if self.assignVars:
+      for i in range(len(self.args)):
+        x = self.assignVars[i]
+        y = [self.args[i]]
+        if x and y:
+          commands.append(VarAsignObject(self.assignVars[i], [self.args[i]], -1, '').interpret())
+    return Wrapper(ReturnObject, commands)
+        
+  ##used for stack based functions
+  #def interpret(self):
+  #  commands = []
+  #  for arg in self.args:
+  #    argList = [RETURN_VAR_TOKEN()]
+  #    if arg.tokenType == TokenType.NUMBER:
+  #      argList.append(CONSTANT_TOKEN)
+  #    else:
+  #      argList.append(GOAL_TOKEN)
+  #    argList.append(arg)
+  #    commands.append(CommandObject("up-modify-goal", argList, -1,""))
+  #  commands.append(JUMP_TO_RETURN_COMMAND())
+  #  return Wrapper(ReturnObject, [defruleObject(TRUE_CONDITION, commands)])
 
 class VarInit(PrettyPrinter):
   def __init__(self, name, args):
@@ -159,8 +166,9 @@ class VarAsignObject(PrettyPrinter):
       self.variable.value = self.variable.value + "()" + self.expression[0].name
       asignCommands.append(self.createAsignCommand(self.variable, "+", ZERO_NUMBER_TOKEN)) #creates asign command so it is allocated, but +0 so it doesnt reset every loop
     elif isinstance(self.expression[0], FuncCallObject):
-      #TODO: add return value stuff
-      asignCommands.append(self.createAsignCommand(self.variable, "=", ZERO_NUMBER_TOKEN)) # shouldnt be ZNT, self.expression[0].name this donest work, needs to get the deffunc return variable not the name
+      pass
+      #TODO: add return value stuff: but its the returns, not the asign that needs to return
+      #asignCommands.append(self.createAsignCommand(self.variable, "=", ZERO_NUMBER_TOKEN)) # shouldnt be ZNT, self.expression[0].name this donest work, needs to get the deffunc return variable not the name
     else:
       asignCommands.append(self.createAsignCommand(self.variable, "=", self.expression[0]))
       if len(self.expression) == 3:
@@ -293,9 +301,10 @@ class FuncCallObject(PrettyPrinter):
       line.scope(callStack)
 
 class CallStackItem(PrettyPrinter):
-  def __init__(self, funcCall, defFuncArgs):
+  def __init__(self, funcCall, defFuncArgs, assignVars = None):
     self.funcCall = funcCall
-    self.defFuncArgs = defFuncArgs  
+    self.defFuncArgs = defFuncArgs 
+    self.assignVars = assignVars 
     
 
   def isSetToFunction(self):
