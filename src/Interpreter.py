@@ -75,7 +75,13 @@ class Interpreter:
         functionCallWrapper = Wrapper(FuncCallObject, [])
         calledFunc = self.getFunctionCopyByName(funcCall.name)
         nextCallStack = CallStackItem(funcCall, calledFunc.argList)
-        functionCallWrapper.lineList = self.flattenFuncCalls(calledFunc.lineList, callStack + [nextCallStack])
+        argAssignList = []
+        for i in range(len(calledFunc.argList)):
+            calledFunc.argList[i].scope(callStack + [nextCallStack])
+            argAssignList.append(VarAsignObject(calledFunc.argList[i], [funcCall.args[i]], -1, ''))
+        #for line in argAssignList:
+            #line.scope(callStack + [nextCallStack])
+        functionCallWrapper.lineList = argAssignList + self.flattenFuncCalls(calledFunc.lineList, callStack + [nextCallStack])
         return functionCallWrapper
     
     def optimizeRules(self, inList):
@@ -198,6 +204,8 @@ class Interpreter:
         #self.convertdefrulesToIfs(self.main) #May be nessesary later
         firstCallStack = CallStackItem(FuncCallObject("main",[]),[])
         self.main = self.flattenFuncCalls(self.main, [firstCallStack])
+        print("\n\nFLATTEN FUNC CALLS")
+        print(self.main)
         self.main = self.interpretLine(self.main) #turns all objects in to wrappers full of commands
         ##self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
         self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.

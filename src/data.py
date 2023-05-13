@@ -38,19 +38,7 @@ class Token(PrettyPrinter):
     return("["+tempValue +" "+str(self.tokenType).split('.')[1]+' '+self.file+str(self.line)+"]")
   def scope(self, callStack):
     if self.tokenType == TokenType.IDENTIFIER:
-      if len(callStack) == 1:
-          defArgList = []
-      else:
-          defArgList = callStack[-1].defFuncArgs
-      inArgList = False
-      for itr in range(len(defArgList)):
-          if self.value == defArgList[itr].value:
-              self.value = callStack[-1].funcCall.args[itr].value
-              inArgList = True
-              if callStack[-1].funcCall.args[itr].tokenType == TokenType.STRING:
-                self.tokenType = TokenType.STRING
-      if not inArgList:
-          self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
+      self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
 
 class Wrapper(PrettyPrinter):
   def __init__(self, Type, lineList):
