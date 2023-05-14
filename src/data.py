@@ -1,11 +1,12 @@
 
 from pdb import line_prefix
 from os import name
-from enums import TokenType
+from enums import TokenType, Structure
 import typing
 import dataclasses
 import commands as c
 from colorama import Fore, Back, Style
+from utils import *
 
 class PrettyPrinter(object):
     def __repr__(self):
@@ -35,7 +36,7 @@ class Token(PrettyPrinter):
     tempValue = self.value
     if self.value == '\n':
       tempValue = '/n'
-    return("["+tempValue +" "+str(self.tokenType).split('.')[1]+' '+self.file+str(self.line)+"]")
+    return("["+str(tempValue) +" "+str(self.tokenType).split('.')[1]+' '+self.file+str(self.line)+"]")
   def scope(self, callStack):
     if self.tokenType == TokenType.IDENTIFIER:
       self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
@@ -137,11 +138,21 @@ class ReturnObject(PrettyPrinter):
 
 class VarInit(PrettyPrinter):
   def __init__(self, name, args):
-    self.name = name
+    if name == "Int":
+      self.name = Structure.INT
+    elif name == "Point":
+      self.name = Structure.POINT
+    elif name == "State":
+      self.name = Structure.STATE
+    elif name == "Const":
+      raise Exception("why varInit a const bru?")
+    else:
+      raise Exception(f'{name} is not a var init type')
     self.args = args
   def scope(self, callStack):
     for line in self.args:
       line.scope(callStack)
+  
 
 class VarAsignObject(PrettyPrinter):
   def __init__(self, variable, expression, line, file):
@@ -163,8 +174,7 @@ class VarAsignObject(PrettyPrinter):
     if isinstance(self.expression[0], VarInit): #TODO: this is BROKEN!
       if self.expression[0].name == "Const":
         return defconstObject(self.variable.value.split('/')[-1], self.expression[0].args[0],"","")
-      self.variable.value = self.variable.value + "()" + self.expression[0].name
-      asignCommands.append(self.createAsignCommand(self.variable, "+", ZERO_NUMBER_TOKEN)) #creates asign command so it is allocated, but +0 so it doesnt reset every loop
+      asignCommands.append(self.createAsignCommand(self.variable, "+", Token(TokenType.IDENTIFIER, self.expression[0].name, -1,''))) #creates asign command so it is allocated, but +0 so it doesnt reset every loop
     elif isinstance(self.expression[0], FuncCallObject):
       pass
       #TODO: add return value stuff: but its the returns, not the asign that needs to return
@@ -277,10 +287,15 @@ class ForLoopObject(ConditionalObject):
     return Wrapper(WhileLoopObject, newList)
 
 class DefFuncObject(PrettyPrinter):
-  def __init__(self, name, argList, lineList):
+  def __init__(self, name, argList, lineList, returnType):
     self.name = name
     self.argList = argList
     self.lineList = lineList
+    if not isReservedInitFunc(returnType):
+      raise Exception(f'{returnType} is not a reserved init function')
+    self.returnType = returnType
+  def get_Return_type_varInit(self):
+    return VarInit(self.returnType,[])
   def interpret(self):
     newList = []
     for line in self.lineList:

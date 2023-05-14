@@ -27,6 +27,9 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     if self.line[:2] == '=>':
       self.popToken(self.lineNum,2,TokenType.ARROW)
       return True
+    elif self.line[:2] == '->':
+      self.popToken(self.lineNum,2,TokenType.ARROW_SMALL)
+      return True
     elif self.line[:2] in {'<=', '>=', '!=', '=='}:
       self.popToken(self.lineNum,2,TokenType.COMPAREOP)
       return True

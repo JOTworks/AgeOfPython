@@ -8,3 +8,9 @@ x, z = myFunc(y)
 
 added anywhere there is a return, it needs to know the asigning portion.
 
+
+# soooo i asign vars always had a check to make sure they are asign the right kind of thing, then that would be good.
+# theeeeen if you asign something for the frist time it can maloc bassed on the other objects thing!
+
+
+

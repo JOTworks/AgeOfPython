@@ -2,8 +2,9 @@ from termcolor import colored
 from Scanner import Scanner
 import random
 from data import *
-from enums import TokenType
+from enums import TokenType, Structure
 from commands import JUMP_COMMANDS
+from utils import *
 
 class Parcer: #TODO spell it parser
   def __init__(self, tokens, aiFolder):
@@ -261,17 +262,21 @@ class Parcer: #TODO spell it parser
       arguments = []
       lines = []
       if self.pyargumentphraseState(arguments):
-        if self.compareTokenTypes([TokenType.RIGHT_PAREN, TokenType.COLON]):
-          if self.lineState(lines, self.tabSize):
-            openObject.append(DefFuncObject(name, arguments, lines)) #ERROR needs the line items in the def
-            self.consumeTokens()
-  
-          return True
+        if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
+          if self.compareTokenTypes([TokenType.ARROW_SMALL, TokenType.IDENTIFIER]):
+            return_type = self.tokens[self.tokPtr-1].value
+            raise Exception("need to use Structure enum instead of settint return_type to a string")
+          else:
+            return_type = Structure.INT
+          if self.compareTokenTypes([TokenType.COLON]):
+            if self.lineState(lines, self.tabSize):
+              openObject.append(DefFuncObject(name, arguments, lines, return_type)) #ERROR needs the line items in the def
+              self.consumeTokens()
+    
+            return True
     return False
   
-  def isReservedInitFunc(self, name):
-    if name in {'Point', 'Const', 'State', 'Int'}: return True
-    else: False
+
 
   def funccallState(self, openObject, tabValue):
     if self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.LEFT_PAREN]):
@@ -279,7 +284,9 @@ class Parcer: #TODO spell it parser
       args = []
       if self.pyargumentphraseState(args):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
-          if self.isReservedInitFunc(name):
+          print("!!!!"+name)
+          print(isReservedInitFunc_str(name))
+          if isReservedInitFunc_str(name):
             openObject.append(VarInit(name, args))
           else:
             openObject.append(FuncCallObject(name, args))

@@ -13,8 +13,8 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
         memoryString = ""
         for itr in range(len(self.__usedMemory)):
             if self.__usedMemory[itr] != "":
-                if "Structure." in self.__usedMemory[itr]:
-                   memoryString += str(itr) +" "+Fore.LIGHTBLACK_EX+self.__usedMemory[itr]+Fore.WHITE+"\n"
+                if isinstance(self.__usedMemory[itr], Structure):
+                   memoryString += str(itr) +" "+Fore.LIGHTBLACK_EX+str(self.__usedMemory[itr])+Fore.WHITE+"\n"
                 else: 
                     memoryString += str(itr) +" "+self.__usedMemory[itr]+"\n"
         return memoryString
@@ -24,11 +24,21 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
             raise Exception("Malloc ERROR RAN OUT OF GOALS!")
     
     def isUsed(self, varName):
+        #print(varName)
         varName = varName.split(".")
         if varName[0] in self.__usedMemory:
             return True
         return False
-        
+
+    def get_type(self, varName):
+        if not self.isUsed(varName):
+            raise Exception(f'{varName} is not allocated')
+        memLoc = self.getMemLoc(varName)
+        if isinstance(self.__usedMemory[memLoc+1], Structure):
+            return self.__usedMemory[memLoc+1]
+        else:
+            return Structure.INT
+       
     def getMemLoc(self, varName):
         varNameList = varName.split(".")
         if not self.isUsed(varNameList[0]):
@@ -37,6 +47,7 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
         if (len(varNameList)==1):
             return memStartLoc
         if(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==str(Structure.POINT)):
+            print("IS STRUCTURE POINT")
             if varNameList[1]=='x' or varNameList[1]=='0':
                 return memStartLoc
             if varNameList[1]=='y' or varNameList[1]=='1':
@@ -50,7 +61,20 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
                 return memStartLoc+2
             if varNameList[1]=='remote_last' or varNameList[1]=='3':
                 return memStartLoc+3
-        raise Exception ("didnt get MemLoc!")
+        print(self.printUsedMemory())
+        raise Exception (f'didnt get MemLoc! {varName}')
+
+    def malloc(self, varName, s_type):
+        if not isinstance(varName, str):
+            raise Exception("what are you doing trying to store a none string into memory???")
+        if s_type == Structure.INT:
+            self.mallocInt(varName)
+        elif s_type == Structure.POINT:
+            self.mallocPoint(varName)
+        elif s_type == Structure.STATE:
+            self.mallocState(varName)
+        else:
+            raise Exception(f'type {s_type}::{type(s_type)} is not a mallocable type')
 
     def mallocInt(self, varName):
         self.checkSpace()
@@ -63,7 +87,7 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
         for itr in range(41,len(self.__usedMemory)-1):
             if (self.__usedMemory[itr] == "") and (self.__usedMemory[itr+1] == ""):
                 self.__usedMemory[itr] = varName
-                self.__usedMemory[itr+1] = str("Structure.POINT")
+                self.__usedMemory[itr+1] = Structure.POINT
                 return itr
         raise Exception("Malloc ERROR RAN OUT OF SPACE FOR A POINT!")
     #victory data is 3
@@ -72,9 +96,9 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
         for itr in range(41,len(self.__usedMemory)-3):
             if (self.__usedMemory[itr] == "") and (self.__usedMemory[itr+1] == ""):
                 self.__usedMemory[itr] = varName
-                self.__usedMemory[itr+1] = str("Structure.STATE")
-                self.__usedMemory[itr+2] = str("Structure.STATE")
-                self.__usedMemory[itr+3] = str("Structure.STATE")
+                self.__usedMemory[itr+1] = Structure.STATE
+                self.__usedMemory[itr+2] = Structure.STATE
+                self.__usedMemory[itr+3] = Structure.STATE
                 return itr
         raise Exception("Malloc ERROR RAN OUT OF SPACE FOR A STATE!")
 

@@ -1,8 +1,8 @@
-from distutils import command
 from pprint import pprint
 import copy
 from Memory import Memory
 from data import *
+from enums import Structure
 
 class Interpreter:
     def __init__(self, main):
@@ -81,6 +81,9 @@ class Interpreter:
         argAssignList = []
         for i in range(len(calledFunc.argList)):
             calledFunc.argList[i].scope(callStack + [nextCallStack])
+            #passed_var_type = 
+            #make it so functions pass a specific type (default is int)
+            #argAssignList.append(VarAsignObject(calledFunc.argList[i], passed_var_type, -1, ''))
             argAssignList.append(VarAsignObject(calledFunc.argList[i], [funcCall.args[i]], -1, ''))
         #for line in argAssignList:
             #line.scope(callStack + [nextCallStack])
@@ -138,53 +141,77 @@ class Interpreter:
                         #print("++++++++++++++++++++")
                 tempList.append(line)
         return tempList
-                    
+
+    def isVariable(self, variable):
+        if isinstance(variable, Structure):
+            return False
+        return (len(variable) >= 5) and (variable[:5] == "main/")
+
+    def get_type_of_thing(self, thing):
+        print("\nGET TYPE OF THING:" + str(thing))
+        if isReservedInitFunc(thing.value):
+            print("IS RESERVED INIT FUNC")
+            return thing.value
+        elif self.isVariable(thing.value):
+            print("IS VARIABLE")
+            if thing.value.split('/')[-1] in self.constList:
+                print("IS IN CONSTLIST")
+                return Structure.INT
+            else:
+                print("GANA RUN GET_TYPE")
+                return self.memory.get_type(thing.value)
+        elif thing.tokenType == TokenType.NUMBER:
+            print("IS TOKENTYPE NUMBER")
+            return Structure.INT
+        else:
+            raise Exception(f'cant figure out what type {thing} is')
+
     def allocateArg(self, inCommand):
         if isinstance(inCommand, logicCommandObject):
             for command in inCommand.commands:
                 self.allocateArg(command)
             return
         if not isinstance(inCommand, CommandObject):
-            #print("*********************")
-            #print(inCommand)
             raise Exception(str(inCommand.__class__)+" is not a CommandObject")
-        if len(inCommand.argList) == 0:
-            return
         for arg in inCommand.argList:
             if isinstance(arg, str):
                 arg = Token(TokenType.UNIDENTIFIED, arg, "-1", "")
-            elif not isinstance(arg, Token):
+                print(Fore.YELLOW+f"warning: arg {arg} is a str and not a Token"+Fore.WHITE)
+            if not isinstance(arg, Token):
                 raise Exception(str(arg.__class__)+" is not a Token")
-            tempSplitArgValue = arg.value.split('()')
-            arg.value = tempSplitArgValue[0]
-            structure = None
-            if len(tempSplitArgValue) > 1:
-                structure = tempSplitArgValue[1]
-            if (len(arg.value) >= 5) and (arg.value[:5] == "main/"):
+            print("!!!"+str(arg.value))
 
-                if (not self.memory.isUsed(arg.value)) and (inCommand.name == "up-modify-goal"):
-                    if structure == None:
-                        if arg.value.split('/')[-1] in self.constList:
-                            arg.value = self.constList[arg.value.split('/')[-1]].value
-                            return
-                        self.memory.mallocInt(arg.value)
-                    elif structure == "Int":
-                        self.memory.mallocInt(arg.value)
-                    elif structure == "Point":
-                        self.memory.mallocPoint(arg.value)
-                    elif structure == "State":
-                        self.memory.mallocState(arg.value)
-                    elif structure == "Const":
-                        return
-                    else:
-                        raise Exception("Structure "+structure+" not recognized")
+        if inCommand.name == "up-modify-goal":
+            if inCommand.argList[0].value.split('/')[-1] in self.constList:
+                raise Exception("dont asign const to variable!")
 
-                #print(arg.value)
-                if self.memory.isUsed(arg.value):
-                    #print("IS USED")
-                    arg.value = str(self.memory.getMemLoc(arg.value))
+            if self.memory.isUsed(inCommand.argList[0].value):
+                inCommand.argList[0] = str(self.memory.getMemLoc(inCommand.argList[0].value))
+            else:
+                s_type = self.get_type_of_thing(inCommand.argList[2])
+                print(f'!!!{inCommand.argList[2]}, Type: {s_type}::{type(s_type)}')
+                self.memory.malloc(inCommand.argList[0].value, s_type)
+                
+            if self.isVariable(inCommand.argList[2].value):
+                if inCommand.argList[2].value.split('/')[-1] in self.constList:
+                    inCommand.argList[2].value = self.constList[inCommand.argList[2].split('/')[-1]].value
                 else:
-                    arg.value = arg.value.split('/')[-1]
+                    if self.memory.isUsed(inCommand.argList[2].value):
+                        inCommand.argList[2] = str(self.memory.getMemLoc(inCommand.argList[2].value))
+                    else:
+                        raise Exception(f'variable {inCommand.argList[2].value} has not been initialized, File:{inCommand.file} {inCommand.line}')
+            elif isReservedInitFunc(inCommand.argList[2].value):
+                inCommand.argList[2] = ZERO_NUMBER_TOKEN #turned to 0 to be deleted later
+            else:
+                pass #it is a number or string and we dont need to translate to MemLoc
+                
+        else:
+            for arg in inCommand.argList:
+                if (len(arg.value) >= 5) and (arg.value[:5] == "main/"):
+                    if self.memory.isUsed(arg.value):
+                        arg.value = str(self.memory.getMemLoc(arg.value))
+                    else:
+                        raise Exception(f'arg {arg.value} is not in memory, and canot be referenced')              
                 
     def allocateMemory(self, inList):
         for item in inList:

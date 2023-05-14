@@ -1,6 +1,7 @@
 import enum
 
 class Structure(enum.Enum):
+    INT = 1
     POINT = 2
     STATE = 4
 
@@ -50,3 +51,4 @@ class TokenType(enum.Enum):
     DECREMENTER = 41
     RETURN_VAR_TOKEN = 42
     RETURN_POINT = 43
+    ARROW_SMALL = 44
