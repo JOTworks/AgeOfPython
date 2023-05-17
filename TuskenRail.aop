@@ -5,7 +5,7 @@
 searchState = State()
 #Our first age status is that we are in the dark age. Post Imp games will require a different definition
 if (true):
-  (set-goal g-age-status gv-dark-age)
+  g-age-status = gv-dark-age
   (disable-self)
 
 if (true):

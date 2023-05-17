@@ -84,7 +84,7 @@ class Interpreter:
             #passed_var_type = 
             #make it so functions pass a specific type (default is int)
             #argAssignList.append(VarAsignObject(calledFunc.argList[i], passed_var_type, -1, ''))
-            argAssignList.append(VarAsignObject(calledFunc.argList[i], [funcCall.args[i]], -1, ''))
+            argAssignList.append(VarAsignObject(copy.deepcopy(calledFunc.argList[i]), [copy.deepcopy(funcCall.args[i])], -1, ''))
         #for line in argAssignList:
             #line.scope(callStack + [nextCallStack])
         flat_function = self.flattenFuncCalls(calledFunc.lineList, callStack + [nextCallStack])
@@ -112,9 +112,6 @@ class Interpreter:
         return count
 
     def replaceJumpValues(self, inLine):
-        #print("\n===Interpreter Results===")
-        #for myObject in self.main:
-        #    pprint(myObject, indent=2, width=20)
         tempList = []
         for line in inLine:
             if isinstance(line, Wrapper):
@@ -136,9 +133,7 @@ class Interpreter:
                             command.argList[-1].value = get_return_Point()
                         else:
                             raise Exception("cammand.name == up-jump-direct but TokenType is not [placement]_RULE")
-                        #print("++++++++++++++++++++")
-                        #print(line)
-                        #print("++++++++++++++++++++")
+
                 tempList.append(line)
         return tempList
 
@@ -148,25 +143,20 @@ class Interpreter:
         return (len(variable) >= 5) and (variable[:5] == "main/")
 
     def get_type_of_thing(self, thing):
-        print("\nGET TYPE OF THING:" + str(thing))
         if isReservedInitFunc(thing.value):
-            print("IS RESERVED INIT FUNC")
             return thing.value
         elif self.isVariable(thing.value):
-            print("IS VARIABLE")
             if thing.value.split('/')[-1] in self.constList:
-                print("IS IN CONSTLIST")
                 return Structure.INT
             else:
-                print("GANA RUN GET_TYPE")
                 return self.memory.get_type(thing.value)
         elif thing.tokenType == TokenType.NUMBER:
-            print("IS TOKENTYPE NUMBER")
             return Structure.INT
         else:
             raise Exception(f'cant figure out what type {thing} is')
 
     def allocateArg(self, inCommand):
+
         if isinstance(inCommand, logicCommandObject):
             for command in inCommand.commands:
                 self.allocateArg(command)
@@ -179,22 +169,31 @@ class Interpreter:
                 print(Fore.YELLOW+f"warning: arg {arg} is a str and not a Token"+Fore.WHITE)
             if not isinstance(arg, Token):
                 raise Exception(str(arg.__class__)+" is not a Token")
-            print("!!!"+str(arg.value))
 
-        if inCommand.name == "up-modify-goal":
+        if inCommand.name == "defconst":
+            self.constList[inCommand.argList[0].value.split('/')[-1]] = inCommand.argList[1].value
+
+        elif inCommand.name == "up-modify-goal":
+            goal_name = inCommand.argList[0].value
+            oporator = inCommand.argList[1]
+            assign_value = inCommand.argList[2]
+
+            #alcating goal_name
             if inCommand.argList[0].value.split('/')[-1] in self.constList:
                 raise Exception("dont asign const to variable!")
 
-            if self.memory.isUsed(inCommand.argList[0].value):
-                inCommand.argList[0] = str(self.memory.getMemLoc(inCommand.argList[0].value))
-            else:
+            if not self.memory.isUsed(inCommand.argList[0].value):
                 s_type = self.get_type_of_thing(inCommand.argList[2])
-                print(f'!!!{inCommand.argList[2]}, Type: {s_type}::{type(s_type)}')
-                self.memory.malloc(inCommand.argList[0].value, s_type)
                 
+                self.memory.malloc(inCommand.argList[0].value, s_type)
+            inCommand.argList[0].value = str(self.memory.getMemLoc(inCommand.argList[0].value))
+            #alocate assign_value 
             if self.isVariable(inCommand.argList[2].value):
                 if inCommand.argList[2].value.split('/')[-1] in self.constList:
-                    inCommand.argList[2].value = self.constList[inCommand.argList[2].split('/')[-1]].value
+                    #raise Exception('const thing = '+str(self.constList[inCommand.argList[2].value.split('/')[-1]]))
+                    inCommand.argList[1].value = "c:="
+                    inCommand.argList[2].value = self.constList[inCommand.argList[2].value.split('/')[-1]]
+                    
                 else:
                     if self.memory.isUsed(inCommand.argList[2].value):
                         inCommand.argList[2] = str(self.memory.getMemLoc(inCommand.argList[2].value))
@@ -205,12 +204,13 @@ class Interpreter:
             else:
                 pass #it is a number or string and we dont need to translate to MemLoc
                 
-        else:
+        else: #alocate all non "up-modify-goal" commands
             for arg in inCommand.argList:
-                if (len(arg.value) >= 5) and (arg.value[:5] == "main/"):
+                if self.isVariable(arg.value):
                     if self.memory.isUsed(arg.value):
                         arg.value = str(self.memory.getMemLoc(arg.value))
                     else:
+                        print(self.memory.printUsedMemory())
                         raise Exception(f'arg {arg.value} is not in memory, and canot be referenced')              
                 
     def allocateMemory(self, inList):
@@ -218,7 +218,8 @@ class Interpreter:
             if isinstance(item, Wrapper):
                 self.allocateMemory(item.lineList)
             elif isinstance(item, defconstObject):
-                self.constList[item.name] = item.value
+                self.constList[item.name.value.split('/')[-1]] = item.value.value
+
             elif isinstance(item, defruleObject):
                 for condition in item.conditionList:
                     if isinstance(condition, logicCommandObject):

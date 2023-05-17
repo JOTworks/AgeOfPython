@@ -17,11 +17,8 @@ class Parcer: #TODO spell it parser
     self.aiFolder = aiFolder
 
   def consumeTokens(self):
-    #print("consumed:"+str(self.tokens[:self.tokPtr]))
     self.tokens = self.tokens[self.tokPtr:]
     self.tokPtr = 0
-
-    #print(self.tokens)
   
   def compareTokenTypes(self, tokens, throwable = False):
     #print("comparing: "+str(tokens)+" Ptr: "+str(self.tokPtr))
@@ -32,6 +29,7 @@ class Parcer: #TODO spell it parser
       #print("comparingS: "+str(self.tokens[tokPtrOffset + i].tokenType)+" Ptr: "+str(tokens[i]))
       if self.tokens[tokPtrOffset + i].tokenType != tokens[i]:
         if self.tokens[tokPtrOffset + i].tokenType == TokenType.TABS:
+          #return False
           #print("token=TABS")
           if tokPtrOffset + i > len(self.tokens)-1: 
             return False
@@ -178,7 +176,7 @@ class Parcer: #TODO spell it parser
       conditionals = []
       lines = []
       if self.commandphraseState(conditionals):
-        if self.compareTokenTypes([TokenType.COLON]):
+        if self.compareTokenTypes([TokenType.COLON, TokenType.END_LINE]):
           if self.lineState(lines, tabValue + self.tabSize):
             openObject.append(IfObject(conditionals,lines))
             self.consumeTokens()
@@ -284,8 +282,6 @@ class Parcer: #TODO spell it parser
       args = []
       if self.pyargumentphraseState(args):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
-          print("!!!!"+name)
-          print(isReservedInitFunc_str(name))
           if isReservedInitFunc_str(name):
             openObject.append(VarInit(name, args))
           else:
@@ -323,6 +319,7 @@ class Parcer: #TODO spell it parser
       elif self.varasignState( openObject, tabValue):  anotherLine = True
       elif self.commandState(openObject):  anotherLine = True
       elif self.returnState(openObject): anotherLine = True
+      self.compareTokenTypes([TokenType.END_LINE])
       self.consumeTokens()  
     return True
 
@@ -370,7 +367,6 @@ class Parcer: #TODO spell it parser
         self.consumeTokens() 
       return True
     return False
-
 
   def mainState(self, openObject):
     if self.loadState(openObject): return

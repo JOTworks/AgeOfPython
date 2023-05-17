@@ -23,7 +23,6 @@ object-data-tasks-count = Const(32)
 lumber-camp = Const(562)
 stable = Const(101)
 scout-cavalry-line = Const(448)
-g-age-status = Const(1)  ;Goal 1
 gv-dark-age = Const(0)
 gv-advancing-to-feudal = Const(1)
 gv-feudal-age = Const(2)

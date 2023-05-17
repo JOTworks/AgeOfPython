@@ -24,7 +24,7 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
             raise Exception("Malloc ERROR RAN OUT OF GOALS!")
     
     def isUsed(self, varName):
-        #print(varName)
+
         varName = varName.split(".")
         if varName[0] in self.__usedMemory:
             return True
@@ -46,13 +46,12 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
         memStartLoc = self.__usedMemory.index(varNameList[0]) 
         if (len(varNameList)==1):
             return memStartLoc
-        if(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==str(Structure.POINT)):
-            print("IS STRUCTURE POINT")
+        if(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==Structure.POINT):
             if varNameList[1]=='x' or varNameList[1]=='0':
                 return memStartLoc
             if varNameList[1]=='y' or varNameList[1]=='1':
                 return memStartLoc+1
-        if(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==str(Structure.STATE)):
+        if(len(varNameList)==2) and (self.__usedMemory[memStartLoc+1]==Structure.STATE):
             if varNameList[1]=='local_total' or varNameList[1]=='0':
                 return memStartLoc
             if varNameList[1]=='local_last' or varNameList[1]=='1':
@@ -104,7 +103,6 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
 
     def mallocFunction(self, funcName, Returns  ):
         self.checkSpace()
-
 
     def free(self, varName):
         if not varName in self.__usedMemory:

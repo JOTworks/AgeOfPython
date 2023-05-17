@@ -89,10 +89,17 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       self.popToken(self.lineNum,number,TokenType.LOAD_IF)
       return True
     return False
+  
+  def endLineState(self):
+    if self.line[:1] == '\n':
+      self.popToken(self.lineNum,1,TokenType.END_LINE)
+      self.tokens[-1].value = '/n'
+      return True
+    return False
 
   def whiteSpaceState(self):
     length = 0
-    while(self.line[:length+1].isspace()):
+    while(self.line[:length+1].isspace() and self.line[:length+1] != '\n'):
         length = length + 1
         if(length == len(self.line)):
           self.popToken(self.lineNum,length,TokenType.WHITE_SPACE)
@@ -221,6 +228,7 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     return True
 
   def mainState(self):
+    if self.endLineState(): return
     if self.whiteSpaceState(): return
     elif self.numberState(): return   
     elif self.basicState(): return

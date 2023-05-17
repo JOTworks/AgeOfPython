@@ -27,7 +27,7 @@ def print_column(rows, num_columns):
 
 def main(argv):
   #TODO: have it look for the first aop file and throw warning
-  print(argv)
+  print("ARGS: "+str(argv))
   #file_path = os.path.Path(__file__)
   #print("FILEPATH: "+str(file_path)+" ::")
   #print (file_path.name)
@@ -76,15 +76,11 @@ def main(argv):
         row.append(str(tok.line) +Fore.WHITE)
       token_list.append(row)   
     #token_list = [[str(tok.tokenType).split('.')[1], str(tok.value), str(tok.file), str(tok.line)] for tok in myScanner.tokens]
-    print_column(token_list, 5)
+    print_column(token_list, 3)
 
 
   myParcer = Parcer(myScanner.tokens, aiFolder)
   myParcer.parce()
-
-  if "-p" in arguments or "-v" in arguments:
-    print(len(myParcer.main))
-    print("\n")
 
   if "-p" in arguments or "-v" in arguments:
     print_bright("\n+===================+\n"+
@@ -114,8 +110,9 @@ def main(argv):
 
     print(myInterpreter.memory.printUsedMemory())
     print_bright("\n===Constant List===")
+    print(myInterpreter.constList)
     #sorts const list by number and strips token to number
-    constList = [[str(const), int(str(myInterpreter.constList[const]).split(' ')[0][1:])] for const in myInterpreter.constList]
+    constList = [[str(const), myInterpreter.constList[const]] for const in myInterpreter.constList]
     constList.sort(key = lambda x: x[1])
     print_column([[const[0], str(const[1])] for const in constList],4)
 
@@ -135,7 +132,7 @@ def main(argv):
   fileName = fileName.split(".")
   f = open(str(aiFolder)+'\\'+fileName[0]+".per","w")
   open(str(aiFolder)+'\\'+fileName[0]+".ai","w") #adds the ai file if it doesnt exist already
-  print(fileName[0]+".per")
+  print("FILE: "+str(fileName[0])+".per")
   f.write(myPrinter.finalString)
 
 def print_bright(string):

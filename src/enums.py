@@ -1,11 +1,13 @@
 import enum
 
 class Structure(enum.Enum):
+    CONST = 0
     INT = 1
     POINT = 2
     STATE = 4
 
 class TokenType(enum.Enum):
+    END_LINE = 0
     LEFT_PAREN = 1      #length: 1
     RIGHT_PAREN = 2     #length: 1
     LOGIC_OP = 3

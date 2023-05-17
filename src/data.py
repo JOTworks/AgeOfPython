@@ -3,6 +3,7 @@ from pdb import line_prefix
 from os import name
 from enums import TokenType, Structure
 import typing
+import copy
 import dataclasses
 import commands as c
 from colorama import Fore, Back, Style
@@ -145,7 +146,7 @@ class VarInit(PrettyPrinter):
     elif name == "State":
       self.name = Structure.STATE
     elif name == "Const":
-      raise Exception("why varInit a const bru?")
+      self.name = Structure.CONST
     else:
       raise Exception(f'{name} is not a var init type')
     self.args = args
@@ -172,8 +173,10 @@ class VarAsignObject(PrettyPrinter):
   def interpret(self):
     asignCommands = []
     if isinstance(self.expression[0], VarInit): #TODO: this is BROKEN!
-      if self.expression[0].name == "Const":
-        return defconstObject(self.variable.value.split('/')[-1], self.expression[0].args[0],"","")
+      if self.expression[0].name == Structure.CONST:
+        return defconstObject(self.variable, self.expression[0].args[0], self.line, self.file)
+        return CommandObject("defconst", [self.variable,self.expression[0].args[0]], self.line, self.file)
+        raise Exception("why are we here again??? no Const()")
       asignCommands.append(self.createAsignCommand(self.variable, "+", Token(TokenType.IDENTIFIER, self.expression[0].name, -1,''))) #creates asign command so it is allocated, but +0 so it doesnt reset every loop
     elif isinstance(self.expression[0], FuncCallObject):
       pass
@@ -184,16 +187,17 @@ class VarAsignObject(PrettyPrinter):
       if len(self.expression) == 3:
         asignCommands.append(self.createAsignCommand(self.variable, self.expression[1], self.expression[2]))
     return defruleObject(TRUE_CONDITION, asignCommands)
+  
   def createAsignCommand(self, variable, op, tempVariable):
     args = []
-    args.append(variable)
+    args.append(Token(variable.tokenType, variable.value, variable.line, variable.file))
     if tempVariable.tokenType == TokenType.NUMBER:
         if isinstance(op, Token): properOp = "c:"+ op.value
         else: properOp = "c:"+ op
     else:
         if isinstance(op, Token): properOp = "g:"+ op.value
         else: properOp = "g:"+ op
-    args.append(properOp)
+    args.append(Token(TokenType.MATHOP ,properOp, -1, ''))
     args.append(tempVariable)
     return CommandObject("up-modify-goal", args, variable.line, variable.file)
 
@@ -319,8 +323,7 @@ class CallStackItem(PrettyPrinter):
   def __init__(self, funcCall, defFuncArgs, assignVars = None):
     self.funcCall = funcCall
     self.defFuncArgs = defFuncArgs 
-    self.assignVars = assignVars 
-    
+    self.assignVars = assignVars    
 
   def isSetToFunction(self):
     if isinstance(self.expression[0], FuncCallObject):

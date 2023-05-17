@@ -6,5 +6,5 @@ def isReservedInitFunc(name):
     return False
 
 def isReservedInitFunc_str(name):
-    if name in ['Int', 'Point', 'State']: return True
+    if name in ['Int', 'Point', 'State', 'Const']: return True
     return False
