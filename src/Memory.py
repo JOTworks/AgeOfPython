@@ -35,6 +35,8 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
             raise Exception(f'{varName} is not allocated')
         memLoc = self.getMemLoc(varName)
         if isinstance(self.__usedMemory[memLoc+1], Structure):
+            if '.' in varName:
+                return Structure.INT
             return self.__usedMemory[memLoc+1]
         else:
             return Structure.INT

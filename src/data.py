@@ -26,6 +26,13 @@ class PrettyPrinter(object):
 
       return ( '\n|    '.join(lines) )
 
+def newToken(oldToken):
+  if isinstance(oldToken, Token):
+    return Token(oldToken.tokenType, oldToken.value, oldToken.line, oldToken.file)
+  else:
+    print(f"canot create newToken out of {oldToken} {oldToken.__class__}")
+    return oldToken
+
 class Token(PrettyPrinter):
   def __init__(self, tokenType, value, line, file):
     self.tokenType = tokenType
@@ -92,8 +99,8 @@ class CommandObject(PrettyPrinter):
   def __init__(self, name, argList, line, file):
     self.line = line
     self.file = file
-    self.name = name
-    self.argList = argList
+    self.name = newToken(name)
+    self.argList = [newToken(arg) for arg in argList]
   def __repr__(self):
     return ("COMMAND name:"+str(self.name)+" args:"+str(self.argList))
   def scope(self, callStack):
@@ -289,6 +296,10 @@ class ForLoopObject(ConditionalObject):
     newList.append(defruleObject(TRUE_CONDITION, [incroment_comamnd, JUMP_SECOND_COMMAND()]))        
     newList.append(defruleObject( TRUE_CONDITION, [DO_NOTHING_COMMAND]))
     return Wrapper(WhileLoopObject, newList)
+  def scope(self, callStack):
+    super().scope(callStack)
+    self.iterator.scope(callStack)
+  
 
 class DefFuncObject(PrettyPrinter):
   def __init__(self, name, argList, lineList, returnType):

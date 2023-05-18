@@ -9,13 +9,6 @@ if (true):
   (disable-self)
 
 if (true):
-  (set-goal g-local-total 0)
-  (set-goal g-local-last 0)
-  (set-goal g-remote-total 0)
-  (set-goal gl-deforest 0)
-  (disable-self)
-
-if (true):
   (chat-to-player my-player-number "Scouting with villagers and scout")
   (set-strategic-number sn-cap-civilian-explorers 0)
   (set-strategic-number sn-number-explore-groups 0)
@@ -30,6 +23,15 @@ if (true):
   (set-strategic-number sn-maximum-wood-drop-distance 10)
   ;(set-strategic-number sn-disable-villager-garrison 3)
   (disable-self)
+
+########################################################################################
+if (true):
+  (set-strategic-number sn-percent-civilian-explorers 0)
+  (set-strategic-number sn-minimum-civilian-explorers 0)
+  (set-strategic-number sn-cap-civilian-explorers 0)
+  (set-strategic-number sn-total-number-explorers 1)
+  (set-strategic-number sn-number-explore-groups 1)
+
 #if (true):
 #  (set-strategic-number sn-camp-max-distance 8)
 #  (set-strategic-number sn-initial-exploration-required 0)
@@ -77,59 +79,33 @@ if (can-train villager):
 if (can-build house)(housing-headroom < 4):
   (build house)
 
-if(can-research ri-loom)
-  (and
-    (building-type-count-total house > 1)
-    (or
-      (and
-        (not(can-build house))
-        (housing-headroom < 1)
-      )
-      (food-amount < 50)
-    )
-  ):
+if(can-research ri-loom)(and (building-type-count-total house > 1)(or (and (not(can-build house)) (housing-headroom < 1)) (food-amount < 50))):
   (research ri-loom)
   (disable-self)
-
-
 
 berry_uper = Point()
 berry_lower = Point()
 trash = 0
 
 if(resource-found food):
-  set_gather_percent(65,20,15,0)
   (up-full-reset-search)
   (up-filter-status c: status-resource c: list-active)
   (up-find-resource c: food c: 20)
   (up-get-search-state searchState)
-  printD("found %d berry bushes", searchState.remote_total)
   if(true): #flares the first run
+    (up-chat-data-to-player my-player-number "found %d berry bushes" g: searchState.remote_total)
     (up-set-target-object search-remote c: 0)    
     tempPoint = Point()
     (up-get-point position-object tempPoint)
-    printD("found %d x", tempPoint.x)
-    printD("found %d y", tempPoint.y)
+    (up-chat-data-to-player my-player-number "found %d x" g: tempPoint.x)
+    (up-chat-data-to-player my-player-number "found %d y" g: tempPoint.y)
     (up-send-flare tempPoint)
-    set_resource_boundry(berries, berry_uper, berry_lower)
+    berry_uper.x = tempPoint.x
+    berry_uper.y = tempPoint.y
+    berry_lower.x = tempPoint.x
+    berry_lower.y = tempPoint.y
+    set_resource_boundry(forage-class, berry_uper, berry_lower)
     (disable-self)
-
-#set_resource_boundry(forage-class,tempPoint,tempPoint)
-
-#move scout to 73 103
-scout-type = Const(-286)
-scout_point = Point()
-scout_point.x = 73
-scout_point.y = 103
-if(true):
-  (up-full-reset-search)
-  (up-find-local c: scout-type c: 1)
-  (up-get-search-state searchState)
-  (up-target-point scout_point action-move -1 -1)
-  (disable-self)
-
-#(load "RailBoarLure")
-
 #**************************************************************************
 # --------------------------FUNCTIONS--------------------------------------
 #**************************************************************************
@@ -143,8 +119,14 @@ def set_gather_percent(food, wood, gold, stone):
   (set-strategic-number sn-stone-gatherer-percentage stone)
 
 def set_resource_boundry(resource_type, upper_left_point, lower_right_point):
+  (up-chat-data-to-player my-player-number "UL %d x" g: upper_left_point.x)
+  (up-chat-data-to-player my-player-number "UL %d y" g: upper_left_point.y)
+  (up-chat-data-to-player my-player-number "LR %d x" g: lower_right_point.x)
+  (up-chat-data-to-player my-player-number "LR %d y" g: lower_right_point.y)
+
+  trash = 0
   boundry_moved = 1
-  while (boundry_moved):
+  while (goal boundry_moved 1):
     tracking_point = Point()
     boundry_moved = 0
     tracking_point = upper_left_point
@@ -183,5 +165,10 @@ def set_resource_boundry(resource_type, upper_left_point, lower_right_point):
         upper_left_point.y = tracking_point.y
         boundry_moved = 1
       tracking_point.x = tracking_point.x - 1
+  
+  (up-chat-data-to-player my-player-number "UL %d x" g: upper_left_point.x)
+  (up-chat-data-to-player my-player-number "UL %d y" g: upper_left_point.y)
+  (up-chat-data-to-player my-player-number "LR %d x" g: lower_right_point.x)
+  (up-chat-data-to-player my-player-number "LR %d y" g: lower_right_point.y)
 
 

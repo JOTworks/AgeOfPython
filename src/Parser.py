@@ -141,7 +141,9 @@ class Parcer: #TODO spell it parser
 
   def commandphraseState(self, openObject):
     if self.logiccommandState(openObject) or self.commandState(openObject):
-      while(self.logiccommandState(openObject) or self.commandState(openObject)): pass
+      self.compareTokenTypes([TokenType.END_LINE])
+      while(self.logiccommandState(openObject) or self.commandState(openObject)):
+        self.compareTokenTypes([TokenType.END_LINE])
       return True
     
     return False
@@ -176,7 +178,8 @@ class Parcer: #TODO spell it parser
       conditionals = []
       lines = []
       if self.commandphraseState(conditionals):
-        if self.compareTokenTypes([TokenType.COLON, TokenType.END_LINE]):
+        if self.compareTokenTypes([TokenType.COLON]):
+          self.compareTokenTypes([TokenType.END_LINE])
           if self.lineState(lines, tabValue + self.tabSize):
             openObject.append(IfObject(conditionals,lines))
             self.consumeTokens()
@@ -192,6 +195,7 @@ class Parcer: #TODO spell it parser
         lines = []
         self.commandphraseState(conditionals)
         if self.compareTokenTypes([TokenType.COLON]):
+          self.compareTokenTypes([TokenType.END_LINE])
           if self.lineState(lines, tabValue + self.tabSize):
             openObject.append(ElseObject(conditionals,lines))
             self.consumeTokens()   
@@ -206,6 +210,7 @@ class Parcer: #TODO spell it parser
       lines = []
       if self.commandphraseState(conditionals):
         if self.compareTokenTypes([TokenType.COLON]):
+          self.compareTokenTypes([TokenType.END_LINE])
           if self.lineState(lines, tabValue + self.tabSize):
             openObject.append(WhileLoopObject(conditionals,lines))
             self.consumeTokens()
@@ -221,6 +226,7 @@ class Parcer: #TODO spell it parser
       args = []
       if self.pyargumentphraseState(args):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN, TokenType.COLON]):
+          self.compareTokenTypes([TokenType.END_LINE])
           lines = []
           if self.lineState(lines, tabValue + self.tabSize):
             if len(args) == 1:
@@ -267,6 +273,7 @@ class Parcer: #TODO spell it parser
           else:
             return_type = Structure.INT
           if self.compareTokenTypes([TokenType.COLON]):
+            self.compareTokenTypes([TokenType.END_LINE])
             if self.lineState(lines, self.tabSize):
               openObject.append(DefFuncObject(name, arguments, lines, return_type)) #ERROR needs the line items in the def
               self.consumeTokens()

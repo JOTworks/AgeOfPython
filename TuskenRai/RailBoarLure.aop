@@ -182,7 +182,7 @@ if (up-compare-goal g-boar-food-left c:> 1)
 
 #SAVING SILLY VILLS FROM BOAR
 if (unit-type-count villager > 9)(dropsite-min-distance live-boar <= 12)(dropsite-min-distance live-boar > -1):
-  (up-modify-sn sn-focus-player-number c:= my-player-number)
+  #(up-modify-sn sn-focus-player-number c:= my-player-number)
   (up-full-reset-search)
   (up-set-target-point g-self-point-x)
   (up-filter-distance c: -1 c: 12)

@@ -154,9 +154,19 @@ class Interpreter:
             return Structure.INT
         else:
             raise Exception(f'cant figure out what type {thing} is')
+    def inc_memLoc_for_assign_command(self, command, inc):
+        if not isinstance(command, CommandObject): raise Exception("inc_memLoc_for_assign_command needed a command")
+        if command.name != 'up-modify-goal': raise Exception(f"inc_memLoc_for_assign_command needed up-modify-goal command not {command.name}")
+        print(str(command.argList[0]), str(command.argList[2]))
+        if isinstance(command.argList[0], Token):
+            command.argList[0].value = str(int(command.argList[0].value) + inc)
+        else: command.argList[0] = str(int(command.argList[0]) + inc)
+        if isinstance(command.argList[2], Token):
+            command.argList[2].value = str(int(command.argList[2].value) + inc)
+        else: command.argList[2] = str(int(command.argList[2]) + inc)
+        return command
 
     def allocateArg(self, inCommand):
-
         if isinstance(inCommand, logicCommandObject):
             for command in inCommand.commands:
                 self.allocateArg(command)
@@ -174,11 +184,12 @@ class Interpreter:
             self.constList[inCommand.argList[0].value.split('/')[-1]] = inCommand.argList[1].value
 
         elif inCommand.name == "up-modify-goal":
+            
             goal_name = inCommand.argList[0].value
             oporator = inCommand.argList[1]
             assign_value = inCommand.argList[2]
 
-            #alcating goal_name
+            #alocating goal_name
             if inCommand.argList[0].value.split('/')[-1] in self.constList:
                 raise Exception("dont asign const to variable!")
 
@@ -187,32 +198,44 @@ class Interpreter:
                 
                 self.memory.malloc(inCommand.argList[0].value, s_type)
             inCommand.argList[0].value = str(self.memory.getMemLoc(inCommand.argList[0].value))
+
             #alocate assign_value 
             if self.isVariable(inCommand.argList[2].value):
                 if inCommand.argList[2].value.split('/')[-1] in self.constList:
                     #raise Exception('const thing = '+str(self.constList[inCommand.argList[2].value.split('/')[-1]]))
                     inCommand.argList[1].value = "c:="
                     inCommand.argList[2].value = self.constList[inCommand.argList[2].value.split('/')[-1]]
-                    
                 else:
+                    typeLength = get_type_length(self.get_type_of_thing(inCommand.argList[2]))
                     if self.memory.isUsed(inCommand.argList[2].value):
                         inCommand.argList[2] = str(self.memory.getMemLoc(inCommand.argList[2].value))
                     else:
                         raise Exception(f'variable {inCommand.argList[2].value} has not been initialized, File:{inCommand.file} {inCommand.line}')
+                    
+                    outCommands = []
+                    for i in range(0,typeLength):
+                        newCommand = CommandObject(inCommand.name,inCommand.argList,inCommand.line,inCommand.file)
+                        newCommand = self.inc_memLoc_for_assign_command(newCommand,i)
+                        outCommands.append(newCommand)
+                    return outCommands
             elif isReservedInitFunc(inCommand.argList[2].value):
                 inCommand.argList[2] = ZERO_NUMBER_TOKEN #turned to 0 to be deleted later
             else:
                 pass #it is a number or string and we dont need to translate to MemLoc
-                
+            #adding structure asignments
         else: #alocate all non "up-modify-goal" commands
             for arg in inCommand.argList:
                 if self.isVariable(arg.value):
-                    if self.memory.isUsed(arg.value):
+                    if arg.value.split('/')[-1] in self.constList:
+                        arg.value = self.constList[arg.value.split('/')[-1]]
+                    elif self.memory.isUsed(arg.value):
                         arg.value = str(self.memory.getMemLoc(arg.value))
                     else:
-                        print(self.memory.printUsedMemory())
-                        raise Exception(f'arg {arg.value} is not in memory, and canot be referenced')              
-                
+                        arg.value = arg.value.split('/')[-1]
+                        #print(self.memory.printUsedMemory())
+                        #print(self.constList)
+                        #raise Exception(f'arg {arg.value} is not in memory, and canot be referenced')              
+        return [inCommand]        
     def allocateMemory(self, inList):
         for item in inList:
             if isinstance(item, Wrapper):
@@ -227,8 +250,10 @@ class Interpreter:
                             self.allocateArg(command)
                     else:
                         self.allocateArg(condition)
+                temp_executeList = []
                 for execute in item.executeList:
-                    self.allocateArg(execute)
+                    temp_executeList += self.allocateArg(execute)
+                item.executeList = temp_executeList
             else: raise Exception("allocateMemory() can only parce defrulesObjects, not "+str(item.__class__)+"\n"+str(item)+"\n"+str(inList))
         inListWithoutDefConst = [item for item in inList if not isinstance(item, defconstObject)]
         return inListWithoutDefConst
