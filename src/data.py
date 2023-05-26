@@ -50,15 +50,16 @@ class Token(PrettyPrinter):
       self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
 
 class Wrapper(PrettyPrinter):
-  def __init__(self, Type, lineList):
+  def __init__(self, Type, lineList, func_name = None):
     self.Type = Type
     self.lineList = lineList
+    self.func_name = func_name
   def interpret(self):
     newList = []
     for line in self.lineList:
       newList.append(line.interpret())
       #raise Exception("LINE"+str(line))
-    return Wrapper(self.Type, newList)
+    return Wrapper(self.Type, newList, self.func_name)
   def rulePosition(self,index): #TODO: this will be a problem later
     if index == 1:
       return self.lineList[0].position + 1
@@ -321,6 +322,10 @@ class DefFuncObject(PrettyPrinter):
     if not isinstance(self.lineList[-1], ReturnObject):
       newList.append(Wrapper(ReturnObject, [defruleObject( TRUE_CONDITION, [JUMP_TO_RETURN_COMMAND()])]))
     return Wrapper(DefFuncObject, newList)
+  
+#only exists to make wrapper to keep track of function arg assign commands
+class ArgAssignObject(PrettyPrinter):
+  pass
 
 class FuncCallObject(PrettyPrinter):
   def __init__(self, name, args):

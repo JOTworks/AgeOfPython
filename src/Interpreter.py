@@ -75,20 +75,21 @@ class Interpreter:
         for callStackItem in callStack:
             if funcCall.name == callStackItem.funcCall.name:
                 raise Exception("Recursion will not be suported. function "+funcCall.name+" canot call itself")
-        functionCallWrapper = Wrapper(FuncCallObject, [])
+        functionCallWrapper = Wrapper(FuncCallObject, [], funcCall.name)
+        argAssignWrapper = Wrapper(ArgAssignObject, [])
         calledFunc = self.getFunctionCopyByName(funcCall.name)
         nextCallStack = CallStackItem(funcCall, calledFunc.argList, assignVars)
-        argAssignList = []
+        argAssignWrapper.lineList = []
         for i in range(len(calledFunc.argList)):
             calledFunc.argList[i].scope(callStack + [nextCallStack])
             #passed_var_type = 
             #make it so functions pass a specific type (default is int)
             #argAssignList.append(VarAsignObject(calledFunc.argList[i], passed_var_type, -1, ''))
-            argAssignList.append(VarAsignObject(copy.deepcopy(calledFunc.argList[i]), [copy.deepcopy(funcCall.args[i])], -1, ''))
+            argAssignWrapper.lineList.append(VarAsignObject(copy.deepcopy(calledFunc.argList[i]), [copy.deepcopy(funcCall.args[i])], -1, ''))
         #for line in argAssignList:
             #line.scope(callStack + [nextCallStack])
         flat_function = self.flattenFuncCalls(calledFunc.lineList, callStack + [nextCallStack])
-        functionCallWrapper.lineList = argAssignList + flat_function
+        functionCallWrapper.lineList = [argAssignWrapper] + flat_function
         #inner_flat = self.flattenFuncCalls(calledFunc.lineList, callStack + [nextCallStack])
         #if inner_flat != None:
         #    functionCallWrapper.lineList += inner_flat
@@ -157,7 +158,6 @@ class Interpreter:
     def inc_memLoc_for_assign_command(self, command, inc):
         if not isinstance(command, CommandObject): raise Exception("inc_memLoc_for_assign_command needed a command")
         if command.name != 'up-modify-goal': raise Exception(f"inc_memLoc_for_assign_command needed up-modify-goal command not {command.name}")
-        print(str(command.argList[0]), str(command.argList[2]))
         if isinstance(command.argList[0], Token):
             command.argList[0].value = str(int(command.argList[0].value) + inc)
         else: command.argList[0] = str(int(command.argList[0]) + inc)
@@ -166,7 +166,7 @@ class Interpreter:
         else: command.argList[2] = str(int(command.argList[2]) + inc)
         return command
 
-    def allocateArg(self, inCommand):
+    def allocateArg(self, inCommand, isArgAssign = False):
         if isinstance(inCommand, logicCommandObject):
             for command in inCommand.commands:
                 self.allocateArg(command)
@@ -195,16 +195,21 @@ class Interpreter:
 
             if not self.memory.isUsed(inCommand.argList[0].value):
                 s_type = self.get_type_of_thing(inCommand.argList[2])
-                
-                self.memory.malloc(inCommand.argList[0].value, s_type)
+                if isArgAssign and inCommand.argList[2].value.split('/')[-1] in self.constList:
+                    self.constList[inCommand.argList[0].value] = self.constList[inCommand.argList[2].value.split('/')[-1]]
+                    return []
+                else:
+                    self.memory.malloc(inCommand.argList[0].value, s_type)
             inCommand.argList[0].value = str(self.memory.getMemLoc(inCommand.argList[0].value))
 
             #alocate assign_value 
             if self.isVariable(inCommand.argList[2].value):
                 if inCommand.argList[2].value.split('/')[-1] in self.constList:
-                    #raise Exception('const thing = '+str(self.constList[inCommand.argList[2].value.split('/')[-1]]))
                     inCommand.argList[1].value = "c:="
                     inCommand.argList[2].value = self.constList[inCommand.argList[2].value.split('/')[-1]]
+                elif inCommand.argList[2].value in self.constList:
+                    inCommand.argList[1].value = "c:="
+                    inCommand.argList[2].value = self.constList[inCommand.argList[2].value]
                 else:
                     typeLength = get_type_length(self.get_type_of_thing(inCommand.argList[2]))
                     if self.memory.isUsed(inCommand.argList[2].value):
@@ -228,6 +233,8 @@ class Interpreter:
                 if self.isVariable(arg.value):
                     if arg.value.split('/')[-1] in self.constList:
                         arg.value = self.constList[arg.value.split('/')[-1]]
+                    if arg.value in self.constList:
+                        arg.value = self.constList[arg.value]
                     elif self.memory.isUsed(arg.value):
                         arg.value = str(self.memory.getMemLoc(arg.value))
                     else:
@@ -235,11 +242,24 @@ class Interpreter:
                         #print(self.memory.printUsedMemory())
                         #print(self.constList)
                         #raise Exception(f'arg {arg.value} is not in memory, and canot be referenced')              
-        return [inCommand]        
+        return [inCommand]   
+
     def allocateMemory(self, inList):
         for item in inList:
             if isinstance(item, Wrapper):
-                self.allocateMemory(item.lineList)
+                if item.Type == ArgAssignObject:
+                    temp_ArgAssignCommands = []
+                    for line in item.lineList:
+                        if len(line.executeList) != 1:
+                            raise Exception("ArgAssignObjects wrapper defrules' should only have 1 execute command")
+                        line.executeList = self.allocateArg(line.executeList[0], isArgAssign=True)
+                else:
+                    self.allocateMemory(item.lineList)
+                if item.Type == FuncCallObject:
+                    #print(f"++++++++before Free {item.func_name}")
+                    #print(self.memory.printUsedMemory())
+                    self.memory.free_func_variables(self.constList, item.func_name)
+                    
             elif isinstance(item, defconstObject):
                 self.constList[item.name.value.split('/')[-1]] = item.value.value
 

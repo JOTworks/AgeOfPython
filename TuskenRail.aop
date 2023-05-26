@@ -2,6 +2,9 @@
 (load "myConst")
 (load "UserPatchConst")
 
+True = Const(1)
+False = Const(0)
+
 searchState = State()
 #Our first age status is that we are in the dark age. Post Imp games will require a different definition
 if (true):
@@ -104,7 +107,8 @@ if(resource-found food):
     berry_uper.y = tempPoint.y
     berry_lower.x = tempPoint.x
     berry_lower.y = tempPoint.y
-    set_resource_boundry(forage-class, berry_uper, berry_lower)
+    get_type_at_point(berry_uper)
+    #set_resource_boundry(forage-class, berry_uper, berry_lower)
     (disable-self)
 #**************************************************************************
 # --------------------------FUNCTIONS--------------------------------------
@@ -118,25 +122,149 @@ def set_gather_percent(food, wood, gold, stone):
   (set-strategic-number sn-gold-gatherer-percentage gold)
   (set-strategic-number sn-stone-gatherer-percentage stone)
 
-def set_resource_boundry(resource_type, upper_left_point, lower_right_point):
-  (up-chat-data-to-player my-player-number "UL %d x" g: upper_left_point.x)
-  (up-chat-data-to-player my-player-number "UL %d y" g: upper_left_point.y)
-  (up-chat-data-to-player my-player-number "LR %d x" g: lower_right_point.x)
-  (up-chat-data-to-player my-player-number "LR %d y" g: lower_right_point.y)
 
+def get_type_at_point(in_point):
+  (up-chat-data-to-player my-player-number "testing Point %d" g: in_point.x)
+  (up-chat-data-to-player my-player-number "testing Point %d" g: in_point.y)
+  id = 0
+  (up-get-point-contains in_point id c: -1)
+  (up-set-target-by-id g: id)
+  output = 0
+  (up-get-object-data object-data-class output)
+  (up-chat-data-to-player my-player-number "class: %d" g: output)
+  (up-get-object-data object-data-type output)
+  (up-chat-data-to-player my-player-number "type: %d" g: output)
+
+  #for i in range(0,1000):
+  #  if (up-get-point-contains tracking_point trash c: i):
+  #    (up-chat-data-to-player my-player-number "value: %d" g: i)
+
+def get_resource_bounds(resource_type, point_UP_LF, point_DW_RT):
+  point_test = Point()
+  point_UP_RT = Point()
+  point_DW_LF = Point()
+  move_UP = False
+  move_LF = False
+  move_RT = False
+  move_DW = False
+  isEmpty_UP = False
+  isEmpty_LF = False
+  isEmpty_RT = False
+  isEmpty_DW = False
   trash = 0
-  boundry_moved = 1
-  while (goal boundry_moved 1):
+
+  #while( not (isEmpty_UP and isEmpty_LF and isEmpty_RT and isEmpty_DW) ):
+  while(goal isEmpty_UP True):
+    move_UP = False
+    move_LF = False
+    move_RT = False
+    move_DW = False
+    
+    point_UP_LF.x = point_UP_LF.x + 1 #up
+    point_UP_LF.y = point_UP_LF.y + 1 #left
+    point_DW_RT.x = point_DW_RT.x - 1 #down
+    point_DW_RT.y = point_DW_RT.y - 1 #right
+    #these 2 points are just needed to compare the corners with
+    point_UP_RT.x = point_UP_LF.x
+    point_UP_RT.y = point_DW_RT.y
+    point_DW_LF.x = point_DW_RT.x
+    point_DW_LF.y = point_UP_LF.y
+    if (up-get-point-contains point_UP_LF trash c: resource_type):
+      move_UP = True
+      move_LF = True
+      isEmpty_UP = False
+      isEmpty_LF = False
+    if (up-get-point-contains point_UP_RT trash c: resource_type):
+      move_UP = True
+      move_RT = True
+      isEmpty_UP = False
+      isEmpty_RT = False
+    if (up-get-point-contains point_UP_LF trash c: resource_type):
+      move_DW = True
+      move_RT = True
+      isEmpty_DW = False
+      isEmpty_RT = False
+    if (up-get-point-contains point_DW_LF trash c: resource_type):
+      move_DW = True
+      move_LF = True
+      isEmpty_DW = False
+      isEmpty_LF = False
+ 
+    #left to right
+    if (goal move_UP False)(goal isEmpty_UP False):
+      test_point.x = point_UP_LF.x
+      test_point.y = point_UP_LF.y - 1
+      while(test_point.y > point_DW_RT.y):
+        if (up-get-point-contains test_point trash c: resource_type):
+          move_UP = True
+          #break
+        test_point.y = test_point.y - 1  
+    if (goal move_DW False)(goal isEmpty_DW False):
+      test_point.x = point_DW_RT.x
+      test_point.y = point_UP_LF.y - 1
+      while(test_point.y > point_DW_RT.y):
+        if (up-get-point-contains test_point trash c: resource_type):
+          move_DW = True
+          #break
+        test_point.y = test_point.y - 1
+   
+    #top to bottom
+    if (goal move_LF False)(goal isEmpty_LF False):
+      test_point.x = point_UP_LF.x - 1
+      test_point.y = point_UP_LF.y
+      while(test_point.x > point_DW_RT.x):
+        if (up-get-point-contains test_point trash c: resource_type):
+          move_LF = True
+          #break
+        test_point.x = test_point.x - 1
+    if (goal move_RT False)(goal isEmpty_RT False):
+      test_point.x = point_UP_LF.x - 1
+      test_point.y = point_DW_RT.y
+      while(test_point.x > point_DW_RT.x):
+        if (up-get-point-contains test_point trash c: resource_type):
+          move_RT = True
+          #break
+        test_point.x = test_point.x - 1
+    
+    if (goal move_UP False):
+      point_UP_LF.x = point_UP_LF.x - 1
+    if (goal move_LF False):
+      point_UP_LF.y = point_UP_LF.y - 1
+    if (goal move_DW False):
+      point_DW_RT.x = point_DW_RT.x + 1
+    if (goal move_RT False):
+      point_DW_RT.y = point_DW_RT.y + 1
+
+  state_UP_LF_DW_RT = State()
+  state_UP_LF_DW_RT.0 = point_UP_LF.y
+  state_UP_LF_DW_RT.1 = point_UP_LF.y
+  state_UP_LF_DW_RT.2 = point_UP_LF.y
+  state_UP_LF_DW_RT.3 = point_UP_LF.y
+  return state_UP_LF_DW_RT
+
+def set_resource_boundry(resource_type, upper_left_point, lower_right_point):
+  
+
+
+
+  for i in range(0,10):
+    (up-chat-data-to-player my-player-number "ran While Loop %d" g: upper_left_point.x)
     tracking_point = Point()
     boundry_moved = 0
     tracking_point = upper_left_point
-    
+    trash = 0
+    (up-get-point-contains tracking_point trash c: -1)
+    (up-chat-data-to-player my-player-number "trash %d" g: trash)
+    if (up-get-point-contains tracking_point trash c: resource_type):
+      (up-chat-data-to-player my-player-number "is correct resource_type %d" g: boundry_moved)
     tracking_point.x = tracking_point.x + 1
     side = upper_left_point.y + lower_right_point.y
+    (up-chat-data-to-player my-player-number "side = %d" g: side)
     for i in range(0,side):
+      #(up-chat-data-to-player my-player-number "ran for loop %d" g: i)
       if (up-get-point-contains tracking_point trash c: resource_type):
         upper_left_point.x = tracking_point.x
-        boundry_moved = 1
+        #boundry_moved = 1
       tracking_point.y = tracking_point.y - 1
     
     tracking_point = upper_left_point
@@ -145,7 +273,7 @@ def set_resource_boundry(resource_type, upper_left_point, lower_right_point):
     for i in range(0,side):
       if (up-get-point-contains tracking_point trash c: resource_type):
         upper_left_point.y = tracking_point.y
-        boundry_moved = 1
+        #boundry_moved = 1
       tracking_point.x = tracking_point.x - 1
     
     tracking_point = lower_right_point
@@ -154,7 +282,7 @@ def set_resource_boundry(resource_type, upper_left_point, lower_right_point):
     for i in range(0,side):
       if (up-get-point-contains tracking_point trash c: resource_type):
         upper_left_point.x = tracking_point.x
-        boundry_moved = 1
+        #boundry_moved = 1
       tracking_point.y = tracking_point.y - 1
     
     tracking_point = lower_right_point
@@ -163,12 +291,14 @@ def set_resource_boundry(resource_type, upper_left_point, lower_right_point):
     for i in range(0,side):
       if (up-get-point-contains tracking_point trash c: resource_type):
         upper_left_point.y = tracking_point.y
-        boundry_moved = 1
+        #boundry_moved = 1
       tracking_point.x = tracking_point.x - 1
-  
-  (up-chat-data-to-player my-player-number "UL %d x" g: upper_left_point.x)
-  (up-chat-data-to-player my-player-number "UL %d y" g: upper_left_point.y)
-  (up-chat-data-to-player my-player-number "LR %d x" g: lower_right_point.x)
-  (up-chat-data-to-player my-player-number "LR %d y" g: lower_right_point.y)
+    #(up-chat-data-to-player my-player-number "end of loop value %d" g: boundry_moved)
+  #(up-chat-data-to-player my-player-number "after %d" g: upper_left_point.x)
+  #(up-chat-data-to-player my-player-number "UL %d x" g: upper_left_point.x)
+  #(up-chat-data-to-player my-player-number "UL %d y" g: upper_left_point.y)
+  #(up-chat-data-to-player my-player-number "LR %d x" g: lower_right_point.x)
+  #(up-chat-data-to-player my-player-number "LR %d y" g: lower_right_point.y)
 
+#907 1056
 

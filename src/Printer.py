@@ -10,6 +10,8 @@ class Printer:
 
 
     def printDefrule(self, rule):
+        if len(rule.executeList) == 0:
+            return ';'+str(rule.position)+'\n'
         defruleStr = '(defrule '
         for item in rule.conditionList:
             defruleStr += "  "

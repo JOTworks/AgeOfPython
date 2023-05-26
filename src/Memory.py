@@ -105,19 +105,46 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
 
     def mallocFunction(self, funcName, Returns  ):
         self.checkSpace()
+    
+    def get_current_func_name(self):
+        raise Exception("DEPRICATED: only works if every function allocats something to Mem")
+        func_name = "Main"
+        funcLen = 2
+        for i in range(0,len(self.__usedMemory)):
+            temp_func = self.__usedMemory[i].split('/')
+            if len(temp_func) > funcLen:
+                func = temp_func[-2]
+                funcLen = len(temp_func)
+        return func_name
+
+    def free_func_variables(self, constList, func_name):
+        to_delete = []
+        for item in constList:
+            const_split = item.split('/')
+            if len(const_split) > 2 and const_split[-2] == func_name:
+                to_delete.append(item)
+        for item in to_delete:
+            del constList[item]
+        for i in range(0,len(self.__usedMemory)):
+            if not isinstance(self.__usedMemory[i], Structure):
+                mem_split = self.__usedMemory[i].split('/')
+                if len(mem_split) > 2 and mem_split[-2] == func_name:
+                    self.free(self.__usedMemory[i])
 
     def free(self, varName):
         if not varName in self.__usedMemory:
             raise Exception ("tried to free"+varName+"but it was not in Memory!")
         index = self.__usedMemory.index(varName)
-        if self.usedMemory[index+1] == Structure.POINT:
-            self.usedMemory[index] = ""
-            self.usedMemory[index+1] = ""
-            self.freeGoal(index+1)
-        elif self.usedMemory[index+1] == Structure.STATE:
-            self.usedMemory[index] = ""
-            self.usedMemory[index+1] = ""
-            self.usedMemory[index+2] = ""
-            self.usedMemory[index+3] = ""
+        if self.__usedMemory[index+1] == Structure.POINT:
+            self.__usedMemory[index] = ""
+            self.__usedMemory[index+1] = ""
+        elif self.__usedMemory[index+1] == Structure.STATE:
+            self.__usedMemory[index] = ""
+            self.__usedMemory[index+1] = ""
+            self.__usedMemory[index+2] = ""
+            self.__usedMemory[index+3] = ""
+        elif isinstance(self.__usedMemory[index+1],Structure):
+            raise Exception(f'structure type {self.__usedMemory[index+1]} is not implemented in Free()')
+        
         else:
-            self.usedMemory[index] = ""
+            self.__usedMemory[index] = ""

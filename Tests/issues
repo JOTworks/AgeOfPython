@@ -1,8 +1,13 @@
+TODO:
+#making sure returns work
+#logical statments in ifs
+#asigning points to each other not by each point
+#makeing sure incrament commands work
+
 #what happens when you initialzie a variable that already exists? it should be dealocated and realocated as it could be a different size.
 #right now it is simply asigned to 0 :/
 x = 4
 x = Point()
-
 
 #this should throw compiler error, z is not allocated
 x = 10
