@@ -3,6 +3,8 @@ TODO:
 #logical statments in ifs
 #asigning points to each other not by each point
 #makeing sure incrament commands work
+#somehow there are infinite loops when running functions multiple times with returns??? idk what part is the issue\
+#strings... passing strings is not working
 
 #what happens when you initialzie a variable that already exists? it should be dealocated and realocated as it could be a different size.
 #right now it is simply asigned to 0 :/

@@ -95,6 +95,8 @@ class defruleObject(PrettyPrinter):
     self.conditionList = conditionList
     self.executeList = executeList
     self.position = -1
+  def true_condition(self):
+    return (self.conditionList == TRUE_CONDITION)
 
 class CommandObject(PrettyPrinter):
   def __init__(self, name, argList, line, file):

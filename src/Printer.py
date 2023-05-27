@@ -8,8 +8,7 @@ class Printer:
         self.constList = constList
         self.finalString = ""
 
-
-    def printDefrule(self, rule):
+    def printDefrule(self, rule ):
         if len(rule.executeList) == 0:
             return ';'+str(rule.position)+'\n'
         defruleStr = '(defrule '
@@ -56,10 +55,10 @@ class Printer:
         commandStr += "\n"
         return commandStr
 
-    def printDefconst(self, const):
+    def printDefconst(self, const ):
         return "(defconst "+const.name+" "+const.value+") ;"+str(const.line)+" "+const.file+"\n"
 
-    def printWrapper(self, wrapper):
+    def printWrapper(self, wrapper ):
         for item in wrapper.lineList:
             self.printObject(item)
 
@@ -72,22 +71,20 @@ class Printer:
                 self.finalString += "(defconst "+constant+" "+self.constList[constant].value+")"
                 self.finalString += " ;"+str(self.constList[constant].line)+" "+self.constList[constant].file+"\n"
 
-
-    def printObject(self, item):
+    def printObject(self, item ):
         if isinstance(item, defruleObject):
-            self.finalString += self.printDefrule(item)
+            self.finalString += self.printDefrule(item )
         elif isinstance(item, defconstObject):
-            self.finalString += self.printDefconst(item)
+            self.finalString += self.printDefconst(item )
         elif isinstance(item, Wrapper):
-            self.printWrapper(item)
+            self.printWrapper(item )
         else:
             raise Exception("printing "+str(item.__class__)+" is not yet Iplamented!")
 
-    def print(self):
+    def print(self  = False):
         self.printConstants()
         for item in self.main:
-            self.printObject(item)
-            
+            self.printObject(item )
                     
             #function calls should be broken down by the interpreter!
             #elif isinstance(item, FuncCallObject):

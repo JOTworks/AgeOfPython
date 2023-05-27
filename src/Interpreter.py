@@ -97,7 +97,26 @@ class Interpreter:
         return functionCallWrapper
     
     def optimizeRules(self, inList):
-        return inList
+        newList = []
+        i = 0
+        while i < len(inList):
+            if isinstance(inList[i], Wrapper):
+               inList[i].lineList = self.optimizeRules(inList[i].lineList)
+               newList.append(inList[i]) 
+            elif isinstance(inList[i], defruleObject):
+                if inList[i].true_condition():
+                    new_defrule = defruleObject(TRUE_CONDITION,[])
+                    while((i < len(inList)) and isinstance(inList[i], defruleObject) and inList[i].true_condition()):
+                        new_defrule.executeList += inList[i].executeList
+                        i += 1
+                    i -= 1
+                    newList.append(new_defrule)
+                else:
+                    newList.append(inList[i])
+            else:
+                raise Exception("there is a class besides wrapper or defrule when trying to optimizeRules()\n"+str(line))
+            i += 1
+        return newList
     
     def addPositiontoDefrules(self, lineList, count):
         #newLineList = []
@@ -288,7 +307,7 @@ class Interpreter:
         self.main = self.interpretLine(self.main) #turns all objects in to wrappers full of commands
         ##self.main = self.wrapCommandsInDefrules(self.main) #turns all commands into defrules
         self.main = self.allocateMemory(self.main) #allocate memory switch out identifiers for memoryLocations.
-        ##self.main = self.optimizeRules(self.main)
+        #self.main = self.optimizeRules(self.main)
         self.addPositiontoDefrules(self.main, 0)
         self.main = self.replaceJumpValues(self.main)
         

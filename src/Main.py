@@ -117,7 +117,11 @@ def main(argv):
     print_column([[const[0], str(const[1])] for const in constList],4)
 
   myPrinter = Printer(myInterpreter.main, myInterpreter.funcList, myInterpreter.constList)
-  myPrinter.print()
+  
+  if "test" in arguments:
+    myPrinter.print(test = True)
+  else:
+    myPrinter.print()
 
   if "-r" in arguments or "-v" in arguments:
     print_bright("\n+===================+\n"+
@@ -129,11 +133,20 @@ def main(argv):
     regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
     print(regexed_finalString)
 
-  fileName = fileName.split(".")
-  f = open(str(aiFolder)+'\\'+fileName[0]+".per","w")
-  open(str(aiFolder)+'\\'+fileName[0]+".ai","w") #adds the ai file if it doesnt exist already
-  print("FILE: "+str(fileName[0])+".per")
-  f.write(myPrinter.finalString)
+  if "test" not in arguments:
+    fileName = fileName.split(".")
+    f = open(str(aiFolder)+'\\'+fileName[0]+".per","w")
+    open(str(aiFolder)+'\\'+fileName[0]+".ai","w") #adds the ai file if it doesnt exist already
+    print("FILE: "+str(fileName[0])+".per")
+    f.write(myPrinter.finalString)
+
+  pattern = r'(\;.*)'
+  replacement = '' 
+  regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
+
+  if "test":
+   print(regexed_finalString)
+   return regexed_finalString
 
 def print_bright(string):
   print(Style.BRIGHT+string+Style.NORMAL)
