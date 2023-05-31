@@ -30,8 +30,18 @@ def newToken(oldToken):
   if isinstance(oldToken, Token):
     return Token(oldToken.tokenType, oldToken.value, oldToken.line, oldToken.file)
   else:
-    print(f"canot create newToken out of {oldToken} {oldToken.__class__}")
+    tokenErrorCounter.add_error("canot create newToken out of"+str(oldToken)+" "+str(oldToken.__class__))
+    #print(f"canot create newToken out of {oldToken} {oldToken.__class__}")
     return oldToken
+
+class TokenErrorCounter():
+  def __init__(self):
+    self.errors = []
+  def add_error(self, error):
+    self.errors.append(error)
+  def __repr__(self):
+    return Fore.YELLOW + f'NewToken Errors: {len(self.errors)}' + Fore.WHITE
+tokenErrorCounter = TokenErrorCounter()
 
 class Token(PrettyPrinter):
   def __init__(self, tokenType, value, line, file):
@@ -187,9 +197,9 @@ class VarAsignObject(PrettyPrinter):
         return defconstObject(self.variable, self.expression[0].args[0], self.line, self.file)
         return CommandObject("defconst", [self.variable,self.expression[0].args[0]], self.line, self.file)
         raise Exception("why are we here again??? no Const()")
-      asignCommands.append(self.createAsignCommand(self.variable, "+", Token(TokenType.IDENTIFIER, self.expression[0].name, -1,''))) #creates asign command so it is allocated, but +0 so it doesnt reset every loop
+      asignCommands.append(self.createAsignCommand(self.variable, "+", Token(TokenType.VAR_INIT, self.expression[0].name, -1,''))) #creates asign command so it is allocated, but +0 so it doesnt reset every loop
     elif isinstance(self.expression[0], FuncCallObject):
-      pass
+      raise Exception("actual function returns not implemented yet")
       #TODO: add return value stuff: but its the returns, not the asign that needs to return
       #asignCommands.append(self.createAsignCommand(self.variable, "=", ZERO_NUMBER_TOKEN)) # shouldnt be ZNT, self.expression[0].name this donest work, needs to get the deffunc return variable not the name
     else:
@@ -201,7 +211,7 @@ class VarAsignObject(PrettyPrinter):
   def createAsignCommand(self, variable, op, tempVariable):
     args = []
     args.append(Token(variable.tokenType, variable.value, variable.line, variable.file))
-    if tempVariable.tokenType == TokenType.NUMBER:
+    if tempVariable.tokenType == TokenType.NUMBER or tempVariable.tokenType == TokenType.VAR_INIT:
         if isinstance(op, Token): properOp = "c:"+ op.value
         else: properOp = "c:"+ op
     else:

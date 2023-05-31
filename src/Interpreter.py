@@ -207,18 +207,19 @@ class Interpreter:
             goal_name = inCommand.argList[0].value
             oporator = inCommand.argList[1]
             assign_value = inCommand.argList[2]
-
+            assign_value_type = self.get_type_of_thing(inCommand.argList[2])
+            goal_name_type = self.get_type_of_thing(inCommand.argList[0])
             #alocating goal_name
             if inCommand.argList[0].value.split('/')[-1] in self.constList:
                 raise Exception("dont asign const to variable!")
 
             if not self.memory.isUsed(inCommand.argList[0].value):
-                s_type = self.get_type_of_thing(inCommand.argList[2])
                 if isArgAssign and inCommand.argList[2].value.split('/')[-1] in self.constList:
                     self.constList[inCommand.argList[0].value] = self.constList[inCommand.argList[2].value.split('/')[-1]]
                     return []
                 else:
-                    self.memory.malloc(inCommand.argList[0].value, s_type)
+                    self.memory.malloc(inCommand.argList[0].value, assign_value_type)
+                    goal_name_type = self.get_type_of_thing(inCommand.argList[0])
             inCommand.argList[0].value = str(self.memory.getMemLoc(inCommand.argList[0].value))
 
             #alocate assign_value 
@@ -237,6 +238,8 @@ class Interpreter:
                         raise Exception(f'variable {inCommand.argList[2].value} has not been initialized, File:{inCommand.file} {inCommand.line}')
                     
                     outCommands = []
+                    if goal_name_type != assign_value_type:
+                        raise Exception(f'{goal_name} of type {goal_name_type} cannot be asigned to {assign_value} of type {assign_value_type}')
                     for i in range(0,typeLength):
                         newCommand = CommandObject(inCommand.name,inCommand.argList,inCommand.line,inCommand.file)
                         newCommand = self.inc_memLoc_for_assign_command(newCommand,i)

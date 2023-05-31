@@ -32,6 +32,7 @@ class Memory: #TODO: openMemory away. we can just use used Memory for everything
 
     def get_type(self, varName):
         if not self.isUsed(varName):
+            return None
             raise Exception(f'{varName} is not allocated')
         memLoc = self.getMemLoc(varName)
         if isinstance(self.__usedMemory[memLoc+1], Structure):

@@ -10,6 +10,7 @@ import os.path
 from pathlib import Path
 from colorama import Fore, Back, Style
 import re
+from data import tokenErrorCounter
 
 def print_column(rows, num_columns):
   columned_rows = []
@@ -133,18 +134,19 @@ def main(argv):
     regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
     print(regexed_finalString)
 
-  if "test" not in arguments:
+  if "-test" not in arguments:
     fileName = fileName.split(".")
     f = open(str(aiFolder)+'\\'+fileName[0]+".per","w")
     open(str(aiFolder)+'\\'+fileName[0]+".ai","w") #adds the ai file if it doesnt exist already
+    print(tokenErrorCounter)
     print("FILE: "+str(fileName[0])+".per")
     f.write(myPrinter.finalString)
 
-  pattern = r'(\;.*)'
+  pattern = r'(\ *;.*)'
   replacement = '' 
   regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
 
-  if "test":
+  if "-test" in arguments:
    print(regexed_finalString)
    return regexed_finalString
 

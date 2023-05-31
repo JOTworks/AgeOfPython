@@ -98,13 +98,10 @@ class Parcer: #TODO spell it parser
 
   def returnState(self, openObject):
     if self.compareTokenTypes([TokenType.RETURN]):
-      print("found return")
       returns = []
       if self.compareTokenTypes([TokenType.NUMBER]) or self.compareTokenTypes([TokenType.IDENTIFIER]):
-        print("found first N/I")
         returns.append(self.tokens[self.tokPtr - 1])
       while self.compareTokenTypes([TokenType.COMMA, TokenType.NUMBER]) or self.compareTokenTypes([TokenType.COMMA, TokenType.IDENTIFIER]):
-        print("found another N/I")
         returns.append(self.tokens[self.tokPtr - 1])
       last_token = self.tokens[self.tokPtr - 1]  
       openObject.append(ReturnObject(returns, last_token.line, last_token.file))
@@ -215,9 +212,9 @@ class Parcer: #TODO spell it parser
             openObject.append(WhileLoopObject(conditionals,lines))
             self.consumeTokens()
             return True
-          else: Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
-        else: Exception("expected : got TOK:"+str(self.tokens[self.tokPtr]))    
-      else: Exception("expected commandPhrase got TOK:"+str(self.tokens[self.tokPtr]))    
+          else: raise Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
+        else: raise Exception("expected : got TOK:"+str(self.tokens[self.tokPtr]))    
+      else: raise Exception("expected commandPhrase got TOK:"+str(self.tokens[self.tokPtr]))    
     return False
 
   def forState(self, openObject,tabValue):
@@ -239,22 +236,29 @@ class Parcer: #TODO spell it parser
               Exception("wrong number of imputs in for loop range function") 
             self.consumeTokens()
             return True
-          else: Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
-        else: Exception("expected ): got TOK:"+str(self.tokens[self.tokPtr])) 
-      else: Exception("expected pyargumentphrase got TOK:"+str(self.tokens[self.tokPtr])) 
+          else: raise Exception("expected lineState got TOK:"+str(self.tokens[self.tokPtr])) 
+        else: raise Exception("expected ): got TOK:"+str(self.tokens[self.tokPtr])) 
+      else: raise Exception("expected pyargumentphrase got TOK:"+str(self.tokens[self.tokPtr])) 
     return False
 
   def varasignState(self, openObject, tabValue):
-      if self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.EQUALS]):
+      if self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.EQUALS]) or self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.DECREMENTER]) or self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.INCREMENTER]):
         variable = self.tokens[self.tokPtr-2]
+        equal_type = self.tokens[self.tokPtr-1].tokenType
         line = self.tokens[self.tokPtr-2].line
         file = self.tokens[self.tokPtr-2].file
         expression = []
-        if self.funccallState( expression, tabValue):
+        if self.funccallState( expression, tabValue): #also catched var_init
+          if equal_type == TokenType.DECREMENTER or equal_type == TokenType.INCREMENTER:
+            raise Exception("decromentors or incrementors assigneing function calls is not implemented")
           openObject.append(VarAsignObject(variable, expression, line, file ))
           self.consumeTokens()
           return True
         elif self.expargumentphraseState(expression):
+          if equal_type == TokenType.DECREMENTER:
+            expression = [newToken(variable), Token(TokenType.MATHOP, '-', '','') ] + expression
+          elif equal_type == TokenType.INCREMENTER:
+            expression = [newToken(variable), Token(TokenType.MATHOP, '+', '','') ] + expression
           openObject.append(VarAsignObject(variable, expression, line, file))
           self.consumeTokens()
           return True
@@ -281,17 +285,19 @@ class Parcer: #TODO spell it parser
             return True
     return False
   
-
-
   def funccallState(self, openObject, tabValue):
-    if self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.LEFT_PAREN]):
+    if self.compareTokenTypes([TokenType.IDENTIFIER, TokenType.LEFT_PAREN]) or self.compareTokenTypes([TokenType.VAR_INIT, TokenType.LEFT_PAREN]):
       name = self.tokens[self.tokPtr-2].value
+      type = self.tokens[self.tokPtr-2].tokenType
       args = []
       if self.pyargumentphraseState(args):
         if self.compareTokenTypes([TokenType.RIGHT_PAREN]):
-          if isReservedInitFunc_str(name):
+
+          if type == TokenType.VAR_INIT:
             openObject.append(VarInit(name, args))
           else:
+            if isReservedInitFunc_str(name):
+              raise Exception(f'{name} is a reserved init func but is not at VAR_INIT token now')
             openObject.append(FuncCallObject(name, args))
           self.consumeTokens()
           return True
@@ -311,7 +317,7 @@ class Parcer: #TODO spell it parser
         elif len(self.tokens[self.tokPtr].value) > tabValue:
           return False
         elif len(self.tokens[self.tokPtr].value) < tabValue:
-          print("TAB:"+ str(len(self.tokens[self.tokPtr].value))+" TABValue:"+ str(tabValue)+" line:"+str(self.tokens[self.tokPtr].line)+str(self.tokens[self.tokPtr].file))
+          #print("TAB:"+ str(len(self.tokens[self.tokPtr].value))+" TABValue:"+ str(tabValue)+" line:"+str(self.tokens[self.tokPtr].line)+str(self.tokens[self.tokPtr].file))
           return True
       else: #should only run if line by itself
         if self.compareTokenTypes([TokenType.TABS]):

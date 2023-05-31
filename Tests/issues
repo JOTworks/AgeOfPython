@@ -1,8 +1,6 @@
 TODO:
 #making sure returns work
 #logical statments in ifs
-#asigning points to each other not by each point
-#makeing sure incrament commands work
 #somehow there are infinite loops when running functions multiple times with returns??? idk what part is the issue\
 #strings... passing strings is not working
 

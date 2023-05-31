@@ -54,3 +54,4 @@ class TokenType(enum.Enum):
     RETURN_VAR_TOKEN = 42
     RETURN_POINT = 43
     ARROW_SMALL = 44
+    VAR_INIT = 45

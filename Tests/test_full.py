@@ -16,7 +16,11 @@ tokenEquals = Token(TokenType.OPERATOR, "=", 0, "main")
 tokenPlus = Token(TokenType.OPERATOR, "+", 0, "main")
 
 @pytest.mark.parametrize("test_input,expected", [
-("test_variable_asign.aop", test_strings.string_variable_asign)
+("test_variable_asign.aop", test_strings.string_variable_asign),
+("test_while_loop.aop", test_strings.string_while_loop),
+("test_if.aop", test_strings.string_if),
+("test_nested_if.aop", test_strings.string_nested_if),
+("test_incroment.aop", test_strings.string_incroment),
 ])
 def test_varAsignToCommands(test_input, expected):
   final_string = main([".\src\Main.py",test_input,"-test"])

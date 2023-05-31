@@ -53,11 +53,9 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       return True
     elif self.line[:2] == '+=':
       self.popToken(self.lineNum,2,TokenType.INCREMENTER)
-      raise Exception("+= not supported")
       return True
     elif self.line[:2] == '-=':
       self.popToken(self.lineNum,2,TokenType.DECREMENTER)
-      raise Exception("-= not supported")
       return True      
     elif self.line[:1] in {'/', '*', '-', '+'}:
       self.popToken(self.lineNum,1,TokenType.MATHOP)
@@ -198,6 +196,8 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       identifierType = TokenType.LOAD_RANDOM
     elif self.line[:length] == "load":
       identifierType = TokenType.LOAD
+    elif self.line[:length] in {'Point','State','Int','Const'}:
+      identifierType = TokenType.VAR_INIT
     elif self.line[:length] in {'or','and','not','nor','xor','nand', 'xnor'}:
       identifierType = TokenType.LOGIC_OP
     elif self.line[:length] == "else:":

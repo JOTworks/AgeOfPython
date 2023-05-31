@@ -20,19 +20,17 @@ if (up-find-local c: town-center c: 1):
   (up-chat-data-to-player my-player-number "tc_location y %d" g: tc_location.y)
   (disable-self)
 
-if (true):
+if (true): # set counts
   round_count_2 = 0
   round_count_10 = 0
   round_count_100 = 0
   round_count_1000 = 0
   (disable-self)
-
-if (true):
-  round_count_2 = round_count_2 + 1
-  round_count_10 = round_count_10 + 1
-  round_count_100 = round_count_100 + 1
-  round_count_1000 = round_count_1000 + 1
-  
+if (true): #count counts
+  round_count_2 += 1
+  round_count_10 += 1
+  round_count_100 += 1
+  round_count_1000 += 1
   if (up-compare-goal round_count_2 c:>= 2):
     round_count_2 = 0
   if (up-compare-goal round_count_10 c:>= 10):
@@ -42,9 +40,7 @@ if (true):
   if (up-compare-goal round_count_1000 c:>= 1000):
     round_count_1000 = 0
 
-(up-chat-data-to-player my-player-number "round_count_2  %d" g: round_count_2 )
-
-if (true):
+if (true): #set strategic-number starting
   (chat-to-player my-player-number "Scouting with villagers and scout")
   (set-strategic-number sn-cap-civilian-explorers 0)
   (set-strategic-number sn-number-explore-groups 0)
@@ -58,34 +54,11 @@ if (true):
   (set-strategic-number sn-maximum-stone-drop-distance 10)
   (set-strategic-number sn-maximum-wood-drop-distance 10)
   ;(set-strategic-number sn-disable-villager-garrison 3)
-  (disable-self)
-
-########################################################################################
-if (true):
   (set-strategic-number sn-percent-civilian-explorers 0)
   (set-strategic-number sn-minimum-civilian-explorers 0)
   (set-strategic-number sn-cap-civilian-explorers 0)
   (set-strategic-number sn-total-number-explorers 1)
   (set-strategic-number sn-number-explore-groups 1)
-
-#if (true):
-#  (set-strategic-number sn-camp-max-distance 8)
-#  (set-strategic-number sn-initial-exploration-required 0)
-#  (set-strategic-number sn-food-dropsite-distance -1)
-#  (set-strategic-number sn-wood-dropsite-distance -1)
-#  (set-strategic-number sn-stone-dropsite-distance 100) ;priotitize gold over stone
-#  (set-strategic-number sn-gold-dropsite-distance 35)
-#  (set-strategic-number sn-maximum-food-drop-distance 15)
-#  (set-strategic-number sn-maximum-wood-drop-distance 15)
-#  (set-strategic-number sn-maximum-stone-drop-distance 25)
-#  (set-strategic-number sn-maximum-gold-drop-distance 25)
-#  (set-strategic-number sn-maximum-hunt-drop-distance 15)
-#  (set-strategic-number sn-maximum-fish-boat-drop-distance 15)
-#  (set-strategic-number sn-mill-max-distance 15)
-#  (set-strategic-number sn-cap-civilian-builders 100)
-#  (disable-self)
-
-if (true):
   (set-strategic-number sn-cap-civilian-builders 100)
   (set-strategic-number sn-percent-civilian-builders 100)
   (set-strategic-number sn-initial-exploration-required 0)
@@ -123,23 +96,21 @@ berry_uper = Point()
 berry_lower = Point()
 trash = 0
 
-if(resource-found food):
+if(resource-found food): #calculate berry bushes
   (up-full-reset-search)
   (up-filter-status c: status-resource c: list-active)
   (up-find-resource c: food c: 20)
   (up-get-search-state searchState)
   if(true): #flares the first run
-    (up-chat-data-to-player my-player-number "found %d berry bushes" g: searchState.remote_total)
+    #(up-chat-data-to-player my-player-number "found %d berry bushes" g: searchState.remote_total)
     (up-set-target-object search-remote c: 0)    
     tempPoint = Point()
     (up-get-point position-object tempPoint)
-    (up-chat-data-to-player my-player-number "found %d x" g: tempPoint.x)
-    (up-chat-data-to-player my-player-number "found %d y" g: tempPoint.y)
+    #(up-chat-data-to-player my-player-number "found %d x" g: tempPoint.x)
+    #(up-chat-data-to-player my-player-number "found %d y" g: tempPoint.y)
     (up-send-flare tempPoint)
-    berry_uper.x = tempPoint.x
-    berry_uper.y = tempPoint.y
-    berry_lower.x = tempPoint.x
-    berry_lower.y = tempPoint.y
+    berry_uper = tempPoint
+    berry_lower = tempPoint
     get_type_at_point(berry_uper)
     berry_state = State()
     berry_state = get_resource_bounds(forage-class, berry_uper, berry_lower)
@@ -154,7 +125,7 @@ if(resource-found food):
     #set_resource_boundry(forage-class, berry_uper, berry_lower)
     (disable-self)
 
-if(resource-found food)(goal round_count_2 0):
+if(resource-found food):#(goal round_count_10 0): #recalculate berry bushes
   berry_state = get_resource_bounds(forage-class, berry_uper, berry_lower)
   berry_uper.x = berry_state.0
   berry_uper.y = berry_state.1
@@ -173,7 +144,6 @@ def set_gather_percent(food, wood, gold, stone):
   (set-strategic-number sn-gold-gatherer-percentage gold)
   (set-strategic-number sn-stone-gatherer-percentage stone)
 
-#it gets the p
 def get_type_at_point(in_point):
   (up-chat-data-to-player my-player-number "testing Point %d" g: in_point.x)
   (up-chat-data-to-player my-player-number "testing Point %d" g: in_point.y)
@@ -189,7 +159,6 @@ def get_type_at_point(in_point):
   #for i in range(0,1000):
   #  if (up-get-point-contains tracking_point trash c: i):
   #    (up-chat-data-to-player my-player-number "value: %d" g: i)
-
 
 def get_resource_bounds(resource_type, point_UP_LF, point_DW_RT):
   test_point = Point()
@@ -214,31 +183,35 @@ def get_resource_bounds(resource_type, point_UP_LF, point_DW_RT):
     move_RT = False
     move_DW = False
     
-    point_UP_LF.x = point_UP_LF.x + 1 #up
-    point_UP_LF.y = point_UP_LF.y + 1 #left
-    point_DW_RT.x = point_DW_RT.x - 1 #down
-    point_DW_RT.y = point_DW_RT.y - 1 #right
+    point_UP_LF.x += 1 #up
+    point_UP_LF.y += 1 #left
+    point_DW_RT.x -= 1 #down
+    point_DW_RT.y -= 1 #right
     #these 2 points are just needed to compare the corners with
     point_UP_RT.x = point_UP_LF.x
     point_UP_RT.y = point_DW_RT.y
     point_DW_LF.x = point_DW_RT.x
     point_DW_LF.y = point_UP_LF.y
     if (up-get-point-contains point_UP_LF trash c: resource_type):
+      (chat-to-player my-player-number "UP_LF corner YES")
       move_UP = True
       move_LF = True
       isEmpty_UP = False
       isEmpty_LF = False
     if (up-get-point-contains point_UP_RT trash c: resource_type):
+      (chat-to-player my-player-number "UP_RT corner YES")
       move_UP = True
       move_RT = True
       isEmpty_UP = False
       isEmpty_RT = False
-    if (up-get-point-contains point_UP_LF trash c: resource_type):
+    if (up-get-point-contains point_DW_RT trash c: resource_type):
+      (chat-to-player my-player-number "DW_RT corner YES")
       move_DW = True
       move_RT = True
       isEmpty_DW = False
       isEmpty_RT = False
     if (up-get-point-contains point_DW_LF trash c: resource_type):
+      (chat-to-player my-player-number "DW_LF corner YES")
       move_DW = True
       move_LF = True
       isEmpty_DW = False
@@ -252,7 +225,7 @@ def get_resource_bounds(resource_type, point_UP_LF, point_DW_RT):
         if (up-get-point-contains test_point trash c: resource_type):
           move_UP = True
           #break
-        test_point.y = test_point.y - 1  
+        test_point.y -= 1 
     if (goal move_DW False)(goal isEmpty_DW False):
       test_point.x = point_DW_RT.x
       test_point.y = point_UP_LF.y - 1
@@ -260,7 +233,7 @@ def get_resource_bounds(resource_type, point_UP_LF, point_DW_RT):
         if (up-get-point-contains test_point trash c: resource_type):
           move_DW = True
           #break
-        test_point.y = test_point.y - 1
+        test_point.y -= 1
    
     #top to bottom
     if (goal move_LF False)(goal isEmpty_LF False):
@@ -270,7 +243,7 @@ def get_resource_bounds(resource_type, point_UP_LF, point_DW_RT):
         if (up-get-point-contains test_point trash c: resource_type):
           move_LF = True
           #break
-        test_point.x = test_point.x - 1
+        test_point.x -= 1
     if (goal move_RT False)(goal isEmpty_RT False):
       test_point.x = point_UP_LF.x - 1
       test_point.y = point_DW_RT.y
@@ -278,18 +251,18 @@ def get_resource_bounds(resource_type, point_UP_LF, point_DW_RT):
         if (up-get-point-contains test_point trash c: resource_type):
           move_RT = True
           #break
-        test_point.x = test_point.x - 1
+        test_point.x -= 1
     
     if (goal move_UP False):
-      point_UP_LF.x = point_UP_LF.x - 1
+      point_UP_LF.x -= 1
     if (goal move_LF False):
-      point_UP_LF.y = point_UP_LF.y - 1
+      point_UP_LF.y -= 1
     if (goal move_DW False):
-      point_DW_RT.x = point_DW_RT.x + 1
+      point_DW_RT.x += 1
     if (goal move_RT False):
-      point_DW_RT.y = point_DW_RT.y + 1
+      point_DW_RT.y += 1
   
-  (up-chat-data-to-player my-player-number "wwooooord %d" g: point_UP_LF.x)
+  (chat-to-player my-player-number "wwooooord")
   (up-chat-data-to-player my-player-number ": UP %d" g: point_UP_LF.x)
   (up-chat-data-to-player my-player-number "  LT %d" g: point_UP_LF.y)
   (up-chat-data-to-player my-player-number "  DW %d" g: point_DW_RT.x)
@@ -302,5 +275,54 @@ def get_resource_bounds(resource_type, point_UP_LF, point_DW_RT):
   
   return state_UP_LF_DW_RT
 
-
+#def find_next_house_point(house_position, resource_center):
+#  #if central
+#  return_point = house_position
+#  house_position_y_min_1 = house_position.y-1
+#  if(resource_center.y == house_position.y or resource_center.y == house_position_y_min_1):
+#    if resource_center.x > house_position.x:
+#      return_point.x += 3
+#    else :
+#      return_point.x -= 3
+#    return return_point
+#  house_position_x_plus_1 = house_position.x+1
+#  if(resource_center.x == house_position.x or resource_center.x == house_position_x_plus_1):
+#    if resource_center.y > house_position.y:
+#      return_point.y += 3
+#    else :
+#      return_point.y -= 3
+#    return return_point
+#  
+#  #if diagnal
+#  if(resource_center.y < house_position.y):
+#    if(resource_center.x < house_position.x):
+#      if(resource_center.x-house_position.x <= resource_center.y-house_position.y):
+#        return_point.x -= 3
+#        return_point.y -= 1
+#      else :
+#        return_point.x -= 1
+#        return_point.y -= 3
+#    else :
+#      if(house_position.x-resource_center.x <= resource_center.y-house_position.y):
+#        return_point.x += 3
+#        return_point.y -= 1
+#      else :
+#        return_point.x -= 3
+#        return_point.y += 1
+#  else :
+#    if(resource_center.x < house_position.x):
+#      if(house_position.x-resource_center.x <= resource_center.y-house_position.y):
+#        return_point.x -= 1
+#        return_point.y += 3
+#      else :
+#        return_point.x -= 3
+#        return_point.y += 1
+#    else :
+#      if(resource_center.x-house_position.x <= resource_center.y-house_position.y):
+#        return_point.x += 1
+#        return_point.y += 3
+#      else :
+#        return_point.x += 3
+#        return_point.y += 1
+#  return return_point
 
