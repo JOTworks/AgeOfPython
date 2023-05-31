@@ -1,0 +1,64 @@
+; **********************************************************************************
+; First stab at boar hunting.
+; **********************************************************************************
+
+(defrule
+	(goal g-boar-status gv-need-boar)
+	(up-gaia-type-count c: boar-class > 0)
+	=>
+	(set-goal g-boar-status gv-boar-found)
+	(chat-local-to-self "Boar found.")
+)
+
+(defrule
+	(up-gaia-type-count c: boar-class > 0) ;if there is a boar-like animal
+	(unit-type-count villager > 3) ;set early because the AI takes its sweet time really doing it
+	(goal g-boar-status gv-boar-found)
+	=>
+	; (up-find-remote c: boar-class	c: 1) ;Find a boar/elephant
+	; (up-get-object-data object-data-id g-boar-id) ;Store the boar unique ID in a goal
+	; (up-set-target-by-id g: g-boar-id)
+	; (up-chat-data-to-self "Boar targeted! ID: %d" g: g-boar-id)
+	(set-goal g-boar-status gv-boar-picked)
+)
+
+(defrule
+	(goal g-boar-status gv-boar-picked) 
+	=>
+	; (set-strategic-number sn-enable-boar-hunting 2) ;Yes hunt boar, no hunt deer
+	; (set-strategic-number sn-minimum-boar-lure-group-size 1)
+	; (set-strategic-number sn-minimum-number-hunters 1)
+	; (up-find-local c: villager-class c: 1) ;grab a villager (nothing about health)
+	; (up-set-target-by-id g: g-boar-id)
+	; (up-target-objects 1 action-default -1 -1)
+	; (set-goal g-boar-status gv-boar-lured)
+	; (up-chat-data-to-self "Sending vill for boar %d" g: g-boar-id)
+	(set-strategic-number sn-enable-boar-hunting 2) ;We’re doing nothing but boar hunting now
+    (set-strategic-number sn-minimum-number-hunters 6)
+    (up-retask-gatherers food c: 1)
+	(set-strategic-number sn-minimum-boar-lure-group-size 1) ;set to 1 to start luring
+)
+
+
+(defrule
+	(goal g-boar-status gv-boar-lured)
+	(up-remaining-boar-amount < 150) ; Early because it takes its time
+	=>
+	(set-goal g-boar-status gv-need-boar)
+)
+	
+;Force drop while eating boar
+(defrule
+	(food-amount < 60)
+	(up-compare-goal g-boar-status > gv-boar-found)
+	=>
+	(up-drop-resources food c: 10)
+)
+
+; If no boar can be seen, turn deer hunting back on and boar hunting back off
+(defrule
+	(up-gaia-type-count c: boar-class == 0)
+	=>
+	(set-strategic-number sn-enable-boar-hunting 0)
+	(chat-local-to-self "Giving up on boar hunting")
+)

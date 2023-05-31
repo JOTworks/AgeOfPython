@@ -1,0 +1,68 @@
+
+#testing pushs
+(load "myConst")
+(load "UserPatchConst")
+
+True = Const(1)
+False = Const(0)
+
+searchState = State()
+
+berry_uper = Point()
+berry_lower = Point()
+trash = 0
+
+if(resource-found food): #calculate berry bushes
+  (up-full-reset-search)
+  (up-filter-status c: status-resource c: list-active)
+  (up-find-resource c: food c: 20)
+  (up-get-search-state searchState)
+  if(true): #flares the first run
+    #(up-chat-data-to-player my-player-number "found %d berry bushes" g: searchState.remote_total)
+    (up-set-target-object search-remote c: 0)    
+    tempPoint = Point()
+    (up-get-point position-object tempPoint)
+    #(up-chat-data-to-player my-player-number "found %d x" g: tempPoint.x)
+    #(up-chat-data-to-player my-player-number "found %d y" g: tempPoint.y)
+    (up-send-flare tempPoint)
+    berry_uper = tempPoint
+    berry_lower = tempPoint
+    berry_state = State()
+    berry_state = get_resource_bounds_fake(907, berry_uper, berry_lower)
+    berry_uper.x = berry_state.0
+    berry_uper.y = berry_state.1
+    berry_lower.x = berry_state.2
+    berry_lower.y = berry_state.3
+    #(up-chat-data-to-player my-player-number "upper %d x" g: berry_uper.x)
+    #(up-chat-data-to-player my-player-number "upper %d y" g: berry_uper.y)
+    #(up-chat-data-to-player my-player-number "lower %d x" g: berry_lower.x)
+    #(up-chat-data-to-player my-player-number "lower %d y" g: berry_lower.y)
+    #set_resource_boundry(forage-class, berry_uper, berry_lower)
+    (disable-self)
+
+if(resource-found food):#(goal round_count_10 0): #recalculate berry bushes
+  berry_state = get_resource_bounds_fake(907, tempPoint, tempPoint)
+  #berry_state = get_resource_bounds(forage-class, berry_uper, berry_lower)
+  berry_state = get_resource_bounds_fake(907, berry_uper, berry_lower)
+  berry_uper.x = berry_state.0
+  berry_uper.y = berry_state.1
+  berry_lower.x = berry_state.2
+  berry_lower.y = berry_state.3
+  
+#**************************************************************************
+# --------------------------FUNCTIONS--------------------------------------
+#**************************************************************************
+
+def get_resource_bounds_fake(resource_type, point_UP_LF, point_DW_RT):
+  (chat-to-player my-player-number "Fwwooooord")
+  (up-chat-data-to-player my-player-number ": UP %d" g: point_UP_LF.x)
+  (up-chat-data-to-player my-player-number "  LT %d" g: point_UP_LF.y)
+  (up-chat-data-to-player my-player-number "  DW %d" g: point_DW_RT.x)
+  (up-chat-data-to-player my-player-number "  RT %d" g: point_DW_RT.y)
+  state_UP_LF_DW_RT = State()
+  state_UP_LF_DW_RT.0 = point_UP_LF.x
+  state_UP_LF_DW_RT.1 = point_UP_LF.y
+  state_UP_LF_DW_RT.2 = point_DW_RT.x
+  state_UP_LF_DW_RT.3 = point_DW_RT.y
+  
+  return state_UP_LF_DW_RT

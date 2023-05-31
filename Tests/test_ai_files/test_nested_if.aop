@@ -1,0 +1,6 @@
+x = 1
+y = 1
+if (goal x 0):
+  if (goal y 0):
+    (do-nothing)
+
