@@ -11,16 +11,24 @@ from pathlib import Path
 from colorama import Fore, Back, Style
 import re
 from data import tokenErrorCounter
+from math import ceil, floor
 
 def print_column(rows, num_columns):
   columned_rows = []
-  length_column = int(len(rows)/num_columns)
+  length_column = ceil(len(rows) / num_columns)
+  extra_rows_needed = len(rows) % num_columns
+  if extra_rows_needed > 0:
+    for i in range(num_columns - extra_rows_needed):
+      rows.append(['-', '-', '\x1b[37m-', '-\x1b[37m'])
   col_line = ["  \u2502"]
   for i in range(length_column):
     single_row = []
     for j in range(num_columns):
       single_row += col_line
-      single_row += rows[i+(j*length_column)]
+      try:
+        single_row += rows[i+(j*length_column)]
+      except Exception as e:
+        print(f'EXECPTION:{e}')
     columned_rows.append(single_row)
   widths = [max(map(len, col)) for col in zip(*columned_rows)]
   for row in columned_rows:
@@ -61,9 +69,7 @@ def main(argv):
 
 
   if "-s" in arguments or "-v" in arguments:
-    print_bright("\n+===================+\n"+
-                   "|  Scanner Results  |\n"+
-                   "+===================+")
+    print_bordered("Scanner Results")
     token_list = []
     last_file_line = ''
     for tok in myScanner.tokens:
@@ -84,9 +90,7 @@ def main(argv):
   myParcer.parce()
 
   if "-p" in arguments or "-v" in arguments:
-    print_bright("\n+===================+\n"+
-                   "|  Parcer Results   |\n"+
-                   "+===================+")
+    print_bordered("Parcer Results")
     for myObject in myParcer.main:
       pprint(myObject, indent=2, width=20)
 
@@ -97,9 +101,7 @@ def main(argv):
   myInterpreter.interpret()
 
   if "-i" in arguments or "-v" in arguments:
-    print_bright("\n+===================+\n"+
-                  "|Interpreter Results|\n"+
-                  "+===================+")
+    print_bordered("Interpreter Results")
     for myObject in myInterpreter.main:
       pprint(myObject, indent=2, width=20)
   if "-f" in arguments or "-v" in arguments:
@@ -125,9 +127,7 @@ def main(argv):
     myPrinter.print()
 
   if "-r" in arguments or "-v" in arguments:
-    print_bright("\n+===================+\n"+
-                   "|  Printer Result   |\n"+ 
-                   "+===================+")
+    print_bordered("Printer Result")
 
     pattern = r'(\;.*)'
     replacement = Fore.GREEN+Style.DIM+r'\1'+Fore.WHITE+Style.NORMAL
@@ -152,6 +152,30 @@ def main(argv):
 
 def print_bright(string):
   print(Style.BRIGHT+string+Style.NORMAL)
+
+def print_bordered(string):
+  bordered_string = ['','','']
+  min_width = 20
+  border_length = max(min_width, len(string)+2)
+  right_side_padding = max(0,floor((border_length-len(string))/2))
+  left_side_padding = right_side_padding + (border_length-len(string))%2
+  #left side
+  bordered_string[0]+="+"
+  bordered_string[1]+="|"
+  bordered_string[2]+="+"
+  #middle
+  bordered_string[1]+= " "*(left_side_padding)
+  for i in range(border_length):
+    bordered_string[0]+="="
+    bordered_string[1]+= string[i] if i < len(string) else ""
+    bordered_string[2]+="="
+  bordered_string[1]+= " "*(right_side_padding)
+  #right side
+  bordered_string[0]+="+\n"
+  bordered_string[1]+="|\n"
+  bordered_string[2]+="+"
+  return print_bright("".join(bordered_string))
+
 
 if __name__ == '__main__':
   main(sys.argv)
