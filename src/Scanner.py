@@ -270,9 +270,11 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
         if self.tokens[len(self.tokens)-2].tokenType == TokenType.TABS:
           del self.tokens[len(self.tokens)-2]
         else: print("ERROR in SCAN, tried to delete tabs but was different tokenType")
+    
     while(len(self.line)>0):
-      
       #deals with block comments and block strings
+      if self.line.isspace(): #strips empty ends of lines after blocks
+        return
       if self.in_block:
         if self.in_block in self.line:
           index = self.line.index(self.in_block)
@@ -314,5 +316,12 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       lineNum = lineNum + 1
       self.scanLine(line, lineNum)
 
-    self.stripTokens(TokenType.WHITE_SPACE)
-    self.stripTokens(TokenType.COMMENT)
+    Tokens_to_remove = [
+      TokenType.WHITE_SPACE,
+      TokenType.COMMENT,
+      TokenType.BLOCK,
+      TokenType.BLOCK_START,
+      TokenType.BLOCK_END,
+    ]
+    for token in Tokens_to_remove:
+      self.stripTokens(token)

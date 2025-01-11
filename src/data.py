@@ -45,12 +45,12 @@ tokenErrorCounter = TokenErrorCounter()
 
 class Token(PrettyPrinter):
   
-  def __init__(self, tokenType, value, line, file):
-    self.tokenType = tokenType
-    self.value = value
-    self.line = line
-    self.file = file
-    self.lineNum = 0
+  def __init__(self, tokenType:TokenType, value:str, line:int, file:str):
+    self.tokenType:TokenType = tokenType
+    self.value:str = value
+    self.line:int = line
+    self.file:str = file
+    self.lineNum:int = 0
   def __repr__(self):
     
     return("["+str(self.print_value()) +" "+str(self.tokenType).split('.')[1]+' '+self.file+str(self.line)+"]")

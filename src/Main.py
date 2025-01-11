@@ -173,6 +173,8 @@ def display_scanner(myScanner):
   token_list = []
   last_file_line = ''
   for tok in myScanner.tokens:
+    print(tok)
+  for tok in myScanner.tokens:
     val = str(tok.print_value())
     if len(val) > max_value_len:
       val = val[:max_value_len-2]+'~'+str(len(val))
