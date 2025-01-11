@@ -55,3 +55,6 @@ class TokenType(enum.Enum):
     RETURN_POINT = 43
     ARROW_SMALL = 44
     VAR_INIT = 45
+    BLOCK = 46
+    BLOCK_END = 47
+    BLOCK_START = 48

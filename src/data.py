@@ -44,6 +44,7 @@ class TokenErrorCounter():
 tokenErrorCounter = TokenErrorCounter()
 
 class Token(PrettyPrinter):
+  
   def __init__(self, tokenType, value, line, file):
     self.tokenType = tokenType
     self.value = value
@@ -51,13 +52,20 @@ class Token(PrettyPrinter):
     self.file = file
     self.lineNum = 0
   def __repr__(self):
-    tempValue = self.value
-    if self.value == '\n':
-      tempValue = '/n'
-    return("["+str(tempValue) +" "+str(self.tokenType).split('.')[1]+' '+self.file+str(self.line)+"]")
+    
+    return("["+str(self.print_value()) +" "+str(self.tokenType).split('.')[1]+' '+self.file+str(self.line)+"]")
   def scope(self, callStack):
     if self.tokenType == TokenType.IDENTIFIER:
       self.value = "/".join([o.funcCall.name for o in callStack])+"/"+ self.value
+  def print_value(self):
+    tempValues = {
+      '\n':'/n',
+      '"""':'3dQ',
+      "'''":'3sQ',
+    }
+    if self.value in tempValues.keys():
+      return tempValues[self.value]
+    return self.value
 
 class Wrapper(PrettyPrinter):
   def __init__(self, Type, lineList, func_name = None):

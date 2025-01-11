@@ -13,48 +13,12 @@ import re
 from data import tokenErrorCounter
 from math import ceil, floor
 
-def print_column(rows, num_columns):
-  columned_rows = []
-  length_column = ceil(len(rows) / num_columns)
-  extra_rows_needed = len(rows) % num_columns
-  if extra_rows_needed > 0:
-    for i in range(num_columns - extra_rows_needed):
-      rows.append(['-', '-', '\x1b[37m-', '-\x1b[37m'])
-  col_line = ["  \u2502"]
-  for i in range(length_column):
-    single_row = []
-    for j in range(num_columns):
-      single_row += col_line
-      try:
-        single_row += rows[i+(j*length_column)]
-      except Exception as e:
-        print(f'EXECPTION:{e}')
-    columned_rows.append(single_row)
-  widths = [max(map(len, col)) for col in zip(*columned_rows)]
-  for row in columned_rows:
-    print("  ".join((val.ljust(width) for val, width in zip(row, widths))))
-
 def main(argv):
-  #TODO: have it look for the first aop file and throw warning
-  print("ARGS: "+str(argv))
-  #file_path = os.path.Path(__file__)
-  #print("FILEPATH: "+str(file_path)+" ::")
-  #print (file_path.name)
-  if len(argv) < 2:
-    raise Exception("needs argument of ai file name")
-  fileName = argv[1].split('.')[0] #gets rid of anything after the first '.'
-  arguments = argv[2:]
-  #############################################################
-  aiFolder = Path(__file__).parent.resolve()
-  limit = 0
-  while (aiFolder.name != "ai"):
-    aiFolder = aiFolder.parent
-    #print(aiFolder)
-    limit += 1
-    if limit > 100:
-      raise Exception("AgeOfPython needs to be in the ai folder AoE2DE/reasources/_common/ai/")
+
+  fileName, arguments = setup_args(argv) 
+  ai_folder = get_ai_folder()
     
-  if "-h" in arguments or "-help" in arguments or "help" in arguments or "?" in arguments:
+  if "h" in arguments or "?" in arguments:
     print_bright("\n===HELP===")
     print("-s Scanner\n"+
           "-p Parcer\n"+
@@ -62,34 +26,18 @@ def main(argv):
           "-f Function List\n"+
           "-m Memory\n"+
           "-r Printer\n"+
-          "-v everything\n"       
+          "-v everything\n"+
+          "-t test\n"       
           )
-  myScanner = Scanner(str(fileName), aiFolder)
+    
+  myScanner = Scanner(str(fileName), ai_folder)
   myScanner.scan()
+  if "s" in arguments or "v" in arguments:
+    display_scanner(myScanner)
 
-
-  if "-s" in arguments or "-v" in arguments:
-    print_bordered("Scanner Results")
-    token_list = []
-    last_file_line = ''
-    for tok in myScanner.tokens:
-      row = [str(tok.tokenType).split('.')[1], str(tok.value)]
-      if str(tok.file)+str(tok.line) != last_file_line:
-        last_file_line = str(tok.file)+str(tok.line)
-        row.append(Fore.WHITE + str(tok.file))
-        row.append(str(tok.line) +Fore.WHITE)
-      else:
-        row.append(Fore.LIGHTBLACK_EX + str(tok.file))
-        row.append(str(tok.line) +Fore.WHITE)
-      token_list.append(row)   
-    #token_list = [[str(tok.tokenType).split('.')[1], str(tok.value), str(tok.file), str(tok.line)] for tok in myScanner.tokens]
-    print_column(token_list, 3)
-
-
-  myParcer = Parcer(myScanner.tokens, aiFolder)
+  myParcer = Parcer(myScanner.tokens, ai_folder)
   myParcer.parce()
-
-  if "-p" in arguments or "-v" in arguments:
+  if "p" in arguments or "v" in arguments:
     print_bordered("Parcer Results")
     for myObject in myParcer.main:
       pprint(myObject, indent=2, width=20)
@@ -100,17 +48,18 @@ def main(argv):
   myInterpreter = Interpreter(myParcer.main)
   myInterpreter.interpret()
 
-  if "-i" in arguments or "-v" in arguments:
+  if "i" in arguments or "v" in arguments:
     print_bordered("Interpreter Results")
     for myObject in myInterpreter.main:
       pprint(myObject, indent=2, width=20)
-  if "-f" in arguments or "-v" in arguments:
+
+  if "f" in arguments or "v" in arguments:
     print_bright("\n===Function List===")
     for func in myInterpreter.funcList:
       pprint(func, indent=2, width=20)
-  if "-m" in arguments or "-v" in arguments:
-    print_bright("\n===Used Memory===")
 
+  if "m" in arguments or "v" in arguments:
+    print_bright("\n===Used Memory===")
     print(myInterpreter.memory.printUsedMemory())
     print_bright("\n===Constant List===")
     print(myInterpreter.constList)
@@ -121,23 +70,20 @@ def main(argv):
 
   myPrinter = Printer(myInterpreter.main, myInterpreter.funcList, myInterpreter.constList)
   
-  if "test" in arguments:
-    myPrinter.print(test = True)
-  else:
-    myPrinter.print()
-
-  if "-r" in arguments or "-v" in arguments:
+  if "r" in arguments or "v" in arguments:
     print_bordered("Printer Result")
-
     pattern = r'(\;.*)'
     replacement = Fore.GREEN+Style.DIM+r'\1'+Fore.WHITE+Style.NORMAL
     regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
     print(regexed_finalString)
-
-  if "-test" not in arguments:
+  
+  if "t" in arguments:
+    myPrinter.print_all(test = True) #currently test dosn't do anything
+  else:
+    myPrinter.print_all()
     fileName = fileName.split(".")
-    f = open(str(aiFolder)+'\\'+fileName[0]+".per","w")
-    open(str(aiFolder)+'\\'+fileName[0]+".ai","w") #adds the ai file if it doesnt exist already
+    f = open(str(ai_folder)+'\\'+fileName[0]+".per","w")
+    open(str(ai_folder)+'\\'+fileName[0]+".ai","w") #adds the ai file if it doesnt exist already
     print(tokenErrorCounter)
     print("FILE: "+str(fileName[0])+".per")
     f.write(myPrinter.finalString)
@@ -146,9 +92,33 @@ def main(argv):
   replacement = '' 
   regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
 
-  if "-test" in arguments:
+  if "t" in arguments:
    print(regexed_finalString)
    return regexed_finalString
+
+def setup_args(argv):
+  arguments = []
+  if len(argv) < 2:
+    raise Exception("needs argument of ai file name")
+  fileName = argv[1].split('.')[0]
+  for arg in argv[2:]:
+    if arg[0] == '-':
+      for letter in arg[1:]:
+        arguments.append(letter)
+    else:
+      raise Exception("Invalid argument, needs to start with -: "+arg)
+    print(arguments)
+  return fileName, arguments
+
+def get_ai_folder():
+  ai_folder = Path(__file__).parent.resolve()
+  limit = 0
+  while (ai_folder.name != "ai"):
+    ai_folder = ai_folder.parent
+    limit += 1
+    if limit > 100:
+      raise Exception("AgeOfPython needs to be in the ai folder AoE2DE/reasources/_common/ai/")
+  return ai_folder
 
 def print_bright(string):
   print(Style.BRIGHT+string+Style.NORMAL)
@@ -176,6 +146,46 @@ def print_bordered(string):
   bordered_string[2]+="+"
   return print_bright("".join(bordered_string))
 
+def print_column(rows, num_columns):
+  columned_rows = []
+  length_column = ceil(len(rows) / num_columns)
+  extra_rows_needed = len(rows) % num_columns
+  if extra_rows_needed > 0:
+    for i in range(num_columns - extra_rows_needed):
+      rows.append(['-', '-', '\x1b[37m-', '-\x1b[37m'])
+  col_line = ["  \u2502"]
+  for i in range(length_column):
+    single_row = []
+    for j in range(num_columns):
+      single_row += col_line
+      try:
+        single_row += rows[i+(j*length_column)]
+      except Exception as e:
+        print(f'EXECPTION:{e}')
+    columned_rows.append(single_row)
+  widths = [max(map(len, col)) for col in zip(*columned_rows)]
+  for row in columned_rows:
+    print("  ".join((val.ljust(width) for val, width in zip(row, widths))))
+
+def display_scanner(myScanner):
+  print_bordered("Scanner Results")
+  max_value_len = 18
+  token_list = []
+  last_file_line = ''
+  for tok in myScanner.tokens:
+    val = str(tok.print_value())
+    if len(val) > max_value_len:
+      val = val[:max_value_len-2]+'~'+str(len(val))
+    row = [str(tok.tokenType).split('.')[1], val]
+    if str(tok.file)+str(tok.line) != last_file_line:
+      last_file_line = str(tok.file)+str(tok.line)
+      row.append(Fore.WHITE + str(tok.file))
+      row.append(str(tok.line) +Fore.WHITE)
+    else:
+      row.append(Fore.LIGHTBLACK_EX + str(tok.file))
+      row.append(str(tok.line) +Fore.WHITE)
+    token_list.append(row)   
+  print_column(token_list, 3)
 
 if __name__ == '__main__':
   main(sys.argv)

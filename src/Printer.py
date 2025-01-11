@@ -81,10 +81,10 @@ class Printer:
         else:
             raise Exception("printing "+str(item.__class__)+" is not yet Iplamented!")
 
-    def print(self  = False):
+    def print_all(self, test = False):
         self.printConstants()
         for item in self.main:
-            self.printObject(item )
+            self.printObject(item)
                     
             #function calls should be broken down by the interpreter!
             #elif isinstance(item, FuncCallObject):

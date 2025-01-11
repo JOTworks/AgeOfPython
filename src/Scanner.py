@@ -1,7 +1,6 @@
 from data import Token
 from enums import TokenType
 from pprint import pprint
-
 class Scanner: #TODO: add extra line at end of file for mid token parces to fail instead of OOI crash
   def __init__(self, fileName, aiFolder):
     self.aiFolder = aiFolder
@@ -9,8 +8,13 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     self.line = ""
     self.lineIndent = [] #position is line number, value is number of spaces
     self.tokens = []
+    self.in_block:str = ''
   
-  def stripTokens(self, tokenType):
+  def stripTokens(self, tokenType: TokenType) -> list:
+    """
+    Removes all tokens of 1 type from the tokens list.
+    tokenType: token to be removed from tokens list
+    """
     strippedTokens = []
     for token in self.tokens:
       if token.tokenType != tokenType:
@@ -18,7 +22,16 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     self.tokens = strippedTokens
     return strippedTokens
 
-  def popToken(self,line,length,type):
+  def popToken(self,line:str,length:int,type:TokenType):
+    """
+    removes characters and cretes it into token
+    line: line of code (is edited)
+    Length: number of characters to remove from line and make into token
+    type: type of token to be created
+    """
+    if length == 0:
+      print("length 0 in popToken")
+      return
     newToken = Token(type,self.line[:length],line,self.fileName)
     self.tokens.append(newToken)
     self.line = self.line[length:]
@@ -68,6 +81,12 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
   def commentState(self):
     if self.line[:1] in {';' , '#'}:
       self.popToken(self.lineNum,len(self.line),TokenType.COMMENT)
+      return True
+    return False
+  
+  def BlockState(self):
+    if self.line[:3] in {'"""' , "'''"}:
+      self.popToken(self.lineNum,3,TokenType.BLOCK_START)
       return True
     return False
 
@@ -230,6 +249,9 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
   def mainState(self):
     if self.endLineState(): return
     if self.whiteSpaceState(): return
+    if self.BlockState():
+      self.in_block = self.tokens[-1].value
+      return
     elif self.numberState(): return   
     elif self.basicState(): return
     elif self.loadState(): return
@@ -238,10 +260,10 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     elif self.stringState(): return
     self.popToken(self.lineNum,1,TokenType.UNCAUGHT)
 
-  def scanLine(self, line, lineNum):
+  def scanLine(self, line:str, lineNum:int):
     self.line = line
     self.lineNum = lineNum
-    if line.isspace(): #strips empty lines
+    if self.line.isspace(): #strips empty lines
       return
     if self.tabState():
       if self.loadState() or self.commentState():
@@ -249,7 +271,23 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
           del self.tokens[len(self.tokens)-2]
         else: print("ERROR in SCAN, tried to delete tabs but was different tokenType")
     while(len(self.line)>0):
-      self.mainState()
+      
+      #deals with block comments and block strings
+      if self.in_block:
+        if self.in_block in self.line:
+          index = self.line.index(self.in_block)
+          if index != 0: 
+            self.popToken(self.lineNum,index,TokenType.BLOCK)
+          self.popToken(self.lineNum,len(self.in_block),TokenType.BLOCK_END)
+          self.in_block = ''
+        else: #rest of line is in block
+          if self.line[-1] == '\n':
+            self.popToken(self.lineNum,len(self.line)-1,TokenType.BLOCK)
+            self.popToken(self.lineNum,1,TokenType.BLOCK)
+          else:
+            self.popToken(self.lineNum,len(self.line),TokenType.BLOCK)
+      else:
+        self.mainState()
       #print(self.line)
     #print(self.line)
   
@@ -272,7 +310,7 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     lines = f.readlines()
 
     lineNum = 0
-    for line in lines: #TODO: accept multiline strings and comments
+    for line in lines:
       lineNum = lineNum + 1
       self.scanLine(line, lineNum)
 
