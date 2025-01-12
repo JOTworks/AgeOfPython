@@ -1,0 +1,9 @@
+#test comments 1
+"""
+testing this is a bloc
+"""
+#test comments 2
+x = 3 """in line block
+
+#test comments
+

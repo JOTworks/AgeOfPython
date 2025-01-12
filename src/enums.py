@@ -58,3 +58,4 @@ class TokenType(enum.Enum):
     BLOCK = 46
     BLOCK_END = 47
     BLOCK_START = 48
+    COMMAND = 49

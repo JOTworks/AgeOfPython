@@ -20,30 +20,18 @@ class Parcer: #TODO spell it parser
     self.tokens = self.tokens[self.tokPtr:]
     self.tokPtr = 0
   
+  def reset_tokPtr(self):
+    self.tokPtr = 0
+
   def compareTokenTypes(self, tokens, throwable = False):
-    #print("comparing: "+str(tokens)+" Ptr: "+str(self.tokPtr))
     tokPtrOffset = self.tokPtr
     for i in range(len(tokens)):
       if tokPtrOffset + i > len(self.tokens)-1: 
         return False
       #print("comparingS: "+str(self.tokens[tokPtrOffset + i].tokenType)+" Ptr: "+str(tokens[i]))
       if self.tokens[tokPtrOffset + i].tokenType != tokens[i]:
-        if self.tokens[tokPtrOffset + i].tokenType == TokenType.TABS:
-          #return False
-          #print("token=TABS")
-          if tokPtrOffset + i > len(self.tokens)-1: 
-            return False
-          #print("comparingA: "+str(self.tokens[tokPtrOffset + i +1].tokenType)+" Ptr: "+str(tokens[i]))
-          if self.tokens[tokPtrOffset + i +1].tokenType != tokens[i]:
-            #print("CompareAfterTabFalse")
-            if(throwable):
-              raise Exception("compareTokenTypes Failed")
-            return False #self.tokens[i] #this is where i would have info to throw error?
-          tokPtrOffset += 1 #if token was tabs but next one is corect, need to incorment to consume tabs
-        else:
-          #print("CompareFalse")
           return False
-    #print("CompareTRUE")
+
     self.tokPtr = tokPtrOffset
     self.tokPtr += len(tokens)
     return True
@@ -108,7 +96,7 @@ class Parcer: #TODO spell it parser
       return True
 
   def commandState(self, openObject):
-    if self.compareTokenTypes([TokenType.LEFT_PAREN, TokenType.IDENTIFIER]):
+    if self.compareTokenTypes([TokenType.LEFT_PAREN, TokenType.COMMAND]):
       commandName = self.tokens[self.tokPtr - 1].value
       commandLine = self.tokens[self.tokPtr - 1].line
       commandFile = self.tokens[self.tokPtr - 1].file
@@ -170,7 +158,6 @@ class Parcer: #TODO spell it parser
     return False
 
   def ifState(self, openObject, tabValue):
-    exist = False #todo: test code without this line
     if self.compareTokenTypes([TokenType.IF]):
       conditionals = []
       lines = []
@@ -276,13 +263,11 @@ class Parcer: #TODO spell it parser
             raise Exception("need to use Structure enum instead of settint return_type to a string")
           else:
             return_type = Structure.INT
-          if self.compareTokenTypes([TokenType.COLON]):
-            self.compareTokenTypes([TokenType.END_LINE])
+          if self.compareTokenTypes([TokenType.COLON,TokenType.END_LINE]):
             if self.lineState(lines, self.tabSize):
               openObject.append(DefFuncObject(name, arguments, lines, return_type)) #ERROR needs the line items in the def
               self.consumeTokens()
-    
-            return True
+              return True
     return False
   
   def funccallState(self, openObject, tabValue):
@@ -311,18 +296,16 @@ class Parcer: #TODO spell it parser
       anotherLine = False
       if self.tokPtr > len(self.tokens)-1:
         return True
-      if tabValue > 0: 
-        if self.tokens[self.tokPtr].tokenType != TokenType.TABS:
-          return True
-        elif len(self.tokens[self.tokPtr].value) > tabValue:
-          return False
-        elif len(self.tokens[self.tokPtr].value) < tabValue:
-          #print("TAB:"+ str(len(self.tokens[self.tokPtr].value))+" TABValue:"+ str(tabValue)+" line:"+str(self.tokens[self.tokPtr].line)+str(self.tokens[self.tokPtr].file))
-          return True
-      else: #should only run if line by itself
-        if self.compareTokenTypes([TokenType.TABS]):
-          raise Exception("TAB FOUND WHEN TABS=0 FAIL STATE "+str(self.tokens[self.tokPtr]))
-          return False
+      
+      #tabs shanaigans
+      if self.tokens[self.tokPtr].tokenType != TokenType.TABS:
+        raise Exception("expected TABS for Line Start got "+str(self.tokens[self.tokPtr]))
+      if len(self.tokens[self.tokPtr].value) > tabValue:
+        return False
+      elif len(self.tokens[self.tokPtr].value) < tabValue: #done with lines
+        return True
+      self.compareTokenTypes([TokenType.TABS])
+
       if self.ifState( openObject, tabValue): 
         self.elseState( openObject, tabValue)
         anotherLine = True
@@ -382,12 +365,16 @@ class Parcer: #TODO spell it parser
     return False
 
   def mainState(self, openObject):
+    
+    if not self.compareTokenTypes([TokenType.TABS]):
+      raise Exception("expected TABS got "+str(self.tokens[self.tokPtr]))
     if self.loadState(openObject): return
     if self.loadIfState(openObject): return
     if self.defconstState(openObject): return
     if self.defruleState(openObject): return
     if self.deffuncState(openObject): return
     
+    self.reset_tokPtr() #bring back the tabs for the linestate()
     curLen = len(self.main)
     if self.lineState(openObject, 0): 
       if curLen != len(self.main):

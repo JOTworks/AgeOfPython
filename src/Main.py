@@ -130,20 +130,20 @@ def print_bordered(string):
   right_side_padding = max(0,floor((border_length-len(string))/2))
   left_side_padding = right_side_padding + (border_length-len(string))%2
   #left side
-  bordered_string[0]+="+"
-  bordered_string[1]+="|"
-  bordered_string[2]+="+"
+  bordered_string[0]+="\u2554"
+  bordered_string[1]+="\u2551"
+  bordered_string[2]+="\u255A"
   #middle
   bordered_string[1]+= " "*(left_side_padding)
   for i in range(border_length):
-    bordered_string[0]+="="
+    bordered_string[0]+="\u2550"
     bordered_string[1]+= string[i] if i < len(string) else ""
-    bordered_string[2]+="="
+    bordered_string[2]+="\u2550"
   bordered_string[1]+= " "*(right_side_padding)
   #right side
-  bordered_string[0]+="+\n"
-  bordered_string[1]+="|\n"
-  bordered_string[2]+="+"
+  bordered_string[0]+="\u2557\n"
+  bordered_string[1]+="\u2551\n"
+  bordered_string[2]+="\u255D"
   return print_bright("".join(bordered_string))
 
 def print_column(rows, num_columns):

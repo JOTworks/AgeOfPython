@@ -1,0 +1,7 @@
+def addition(x):
+    y = x + 1
+    return y
+
+
+z = 0
+z = addition(4)

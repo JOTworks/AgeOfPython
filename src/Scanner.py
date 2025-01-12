@@ -1,6 +1,7 @@
 from data import Token
 from enums import TokenType
 from pprint import pprint
+import pickle
 class Scanner: #TODO: add extra line at end of file for mid token parces to fail instead of OOI crash
   def __init__(self, fileName, aiFolder):
     self.aiFolder = aiFolder
@@ -29,9 +30,6 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     Length: number of characters to remove from line and make into token
     type: type of token to be created
     """
-    if length == 0:
-      print("length 0 in popToken")
-      return
     newToken = Token(type,self.line[:length],line,self.fileName)
     self.tokens.append(newToken)
     self.line = self.line[length:]
@@ -136,9 +134,10 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
           self.popToken(self.lineNum,length,TokenType.TABS)
           return True
     if length == 0:
-      return False
+      self.popToken(self.lineNum,length,TokenType.TABS)
+      return True
     if length > len(self.line):
-      print("error")
+      raise Exception("tabState: lenght is greater then line length")
     self.popToken(self.lineNum,length,TokenType.TABS)
     return True
 
@@ -180,6 +179,10 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     if length > len(self.line):
       print("error")
     identifierType = TokenType.IDENTIFIER
+
+    # Load from a file
+    with open('command_names.pkl', 'rb') as file:
+        command_names = pickle.load(file)
     #TODO: add all the COMPARE ops with have C G and S
     if self.line[:length] in {"c:=","c:+","c:-","c:*","c:z/","c:/","c:mod","c:min","c:max","c:neg","c:%/","c:%*",
                               "g:=","g:+","g:-","g:*","g:z/","g:/","g:mod","g:min","g:max","g:neg","g:%/","g:%*",
@@ -221,7 +224,8 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       identifierType = TokenType.LOGIC_OP
     elif self.line[:length] == "else:":
       raise Exception("Sorry you need a space beteen else and : at line"+str(self.lineNum)+str(self.fileName))  
-
+    elif self.line[:length] in command_names:
+      identifierType = TokenType.COMMAND
 
 
 
@@ -273,8 +277,6 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     
     while(len(self.line)>0):
       #deals with block comments and block strings
-      if self.line.isspace(): #strips empty ends of lines after blocks
-        return
       if self.in_block:
         if self.in_block in self.line:
           index = self.line.index(self.in_block)
@@ -288,6 +290,8 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
             self.popToken(self.lineNum,1,TokenType.BLOCK)
           else:
             self.popToken(self.lineNum,len(self.line),TokenType.BLOCK)
+        if self.line.isspace(): #strips empty ends of lines after blocks
+          return
       else:
         self.mainState()
       #print(self.line)
@@ -319,9 +323,9 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     Tokens_to_remove = [
       TokenType.WHITE_SPACE,
       TokenType.COMMENT,
-      TokenType.BLOCK,
-      TokenType.BLOCK_START,
-      TokenType.BLOCK_END,
+      #TokenType.BLOCK,
+      #TokenType.BLOCK_START,
+      #TokenType.BLOCK_END,
     ]
     for token in Tokens_to_remove:
       self.stripTokens(token)

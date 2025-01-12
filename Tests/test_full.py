@@ -22,8 +22,8 @@ tokenPlus = Token(TokenType.OPERATOR, "+", 0, "main")
 ("test_nested_if.aop", test_strings.string_nested_if),
 ("test_incroment.aop", test_strings.string_incroment),
 ])
-def test_varAsignToCommands(test_input, expected):
-  final_string = main([".\src\Main.py",test_input,"-test"])
+def test_full_file(test_input, expected):
+  final_string = main([".\src\Main.py",test_input,"-t"])
   print_file = expected
   assert final_string == print_file
 
