@@ -59,3 +59,5 @@ class TokenType(enum.Enum):
     BLOCK_END = 47
     BLOCK_START = 48
     COMMAND = 49
+    INDENT = 50
+    DEDENT = 51

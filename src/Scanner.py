@@ -11,17 +11,82 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     self.tokens = []
     self.in_block:str = ''
   
-  def stripTokens(self, tokenType: TokenType) -> list:
+  def combine_block_lines(self):
+    strippedTokens = []
+    block = ''
+    block_start = False
+    for token in self.tokens:
+      if token.tokenType == TokenType.BLOCK_START:
+        if block_start:
+          raise Exception("combine_block_lines: block_start already started at line"+str(token.line)+str(token.file))
+        block_start = True
+      
+      elif token.tokenType == TokenType.BLOCK_END:
+        if not block_start:
+          raise Exception("combine_block_lines: block_end without block_start at line"+str(token.line)+str(token.file))
+        block_start = False
+        strippedTokens.append(Token(TokenType.BLOCK,block,token.line,token.file))
+      
+      elif token.tokenType == TokenType.BLOCK:
+        if not block_start:
+          raise Exception("combine_block_lines: block without block_start at line"+str(token.line)+str(token.file))
+        block += token.value
+      
+      else:
+        strippedTokens.append(token)
+    self.tokens = strippedTokens
+
+  def remove_all_tokens(self, tokenTypes) -> list:
     """
     Removes all tokens of 1 type from the tokens list.
     tokenType: token to be removed from tokens list
     """
+    if not isinstance(tokenTypes,list):
+      tokenTypes = [tokenTypes]
+    for tokenType in tokenTypes:
+      if not isinstance(tokenType,TokenType):
+        raise Exception(f"remove_all_tokens: {tokenType} is not TokenType")
+      strippedTokens = []
+      for token in self.tokens:
+        if token.tokenType != tokenType:
+          strippedTokens.append(token)
+      self.tokens = strippedTokens
+
+  
+  def untabulate_prentheticals(self):
+    parentheses = []
     strippedTokens = []
     for token in self.tokens:
-      if token.tokenType != tokenType:
+      if token.tokenType == TokenType.LEFT_PAREN:
+        parentheses.append(token)
+      elif token.tokenType == TokenType.RIGHT_PAREN:
+        if len(parentheses) == 0:
+          raise Exception("untabulate_prentheticals: right parenthetical without left parenthetical at line"+str(token.line)+str(token.file))
+        parentheses.pop()
+      #dont add tabs inside of parenthesis
+      if not (len(parentheses) != 0 and token.tokenType in [TokenType.TABS, TokenType.END_LINE]):
         strippedTokens.append(token)
     self.tokens = strippedTokens
-    return strippedTokens
+
+  def tabs_to_indent_and_dedent(self):
+    indent_lengths = []
+    strippedTokens = []
+    for token in self.tokens:
+      if token.tokenType == TokenType.TABS:
+        #INDENT
+        if len(token.value) > sum(indent_lengths):
+          indent_lengths.append(len(token.value)-sum(indent_lengths))
+          strippedTokens.append(Token(TokenType.INDENT,token.value,token.line,token.file))
+        #DEDENT
+        if len(token.value) < sum(indent_lengths):
+          if len(token.value) != sum(indent_lengths[:-1]):
+            raise Exception("tabs_to_indent_and_dedent: indent lengths are not equal at line"+str(token.line)+str(token.file))
+          indent_lengths.pop() 
+          strippedTokens.append(Token(TokenType.DEDENT,token.value,token.line,token.file))
+      else:
+        strippedTokens.append(token)
+    self.tokens = strippedTokens
+
 
   def popToken(self,line:str,length:int,type:TokenType):
     """
@@ -134,8 +199,7 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
           self.popToken(self.lineNum,length,TokenType.TABS)
           return True
     if length == 0:
-      self.popToken(self.lineNum,length,TokenType.TABS)
-      return True
+      return False
     if length > len(self.line):
       raise Exception("tabState: lenght is greater then line length")
     self.popToken(self.lineNum,length,TokenType.TABS)
@@ -181,7 +245,7 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     identifierType = TokenType.IDENTIFIER
 
     # Load from a file
-    with open('command_names.pkl', 'rb') as file:
+    with open('./scraping/command_names.pkl', 'rb') as file:
         command_names = pickle.load(file)
     #TODO: add all the COMPARE ops with have C G and S
     if self.line[:length] in {"c:=","c:+","c:-","c:*","c:z/","c:/","c:mod","c:min","c:max","c:neg","c:%/","c:%*",
@@ -298,6 +362,7 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
     #print(self.line)
   
   def scan(self):
+    #OPEN FILE
     fullPath = "FILE NOT FOUND"
     self.fileName = self.fileName.replace("/","\\")
     for file in list(self.aiFolder.glob('**/*.per')):
@@ -315,17 +380,15 @@ class Scanner: #TODO: add extra line at end of file for mid token parces to fail
       raise Exception ("Unable to open file:"+fullPath+", make sure you are not using paths")
     lines = f.readlines()
 
+    #SCAN
     lineNum = 0
     for line in lines:
       lineNum = lineNum + 1
       self.scanLine(line, lineNum)
 
-    Tokens_to_remove = [
-      TokenType.WHITE_SPACE,
-      TokenType.COMMENT,
-      #TokenType.BLOCK,
-      #TokenType.BLOCK_START,
-      #TokenType.BLOCK_END,
-    ]
-    for token in Tokens_to_remove:
-      self.stripTokens(token)
+    #STRIP
+    self.combine_block_lines()
+    self.remove_all_tokens([TokenType.WHITE_SPACE,TokenType.COMMENT])
+    self.untabulate_prentheticals()
+    self.tabs_to_indent_and_dedent()
+    
