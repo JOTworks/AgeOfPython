@@ -1,6 +1,4 @@
 from Interpreter import Interpreter
-from Scanner import Scanner
-from Parser import Parcer
 from Asserter import Asserter
 from Printer import Printer
 from termcolor import colored
@@ -74,7 +72,8 @@ def parse_multiple_files(base_file, ai_folder):
                       node.targets[0].id = alias_asnames[node.targets[0].id]
                     module.body.append(node)
                 elif isinstance(node, ast.ImportFrom):
-                    if node.module not in ['aoe2scriptFunctions','aoe2scriptEnums']:
+                    print(f"!!!!!!{node.module}")
+                    if not ('aoe2scriptEnums' in node.module or 'aoe2scriptFunctions' in node.module):
                       parse_file(node.module, ai_folder, node.names)
             if len(alias_names) > 0 and '*' not in alias_names:
               raise Exception(f"{alias_names} not found in {file_name}")

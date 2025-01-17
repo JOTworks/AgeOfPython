@@ -204,6 +204,8 @@ def make_parameter_class_lines(parameter_name,parameter_storage: ParameterStorag
     return lines
 
 def get_arg_type(arg, p_dict):
+    if arg == "String":
+        return "str"
     if not p_dict[arg].options:
         return "int"
     if len(p_dict[arg].options) == 0:
@@ -273,11 +275,8 @@ def generate_aoe2scriptFunctions():
 
 """
 #TODO:
- - pull command meta data
- - create command file:
-    - add function hints
-    - add param hints
-    - add param types and names
+ -- pull the object https://airef.github.io/tables/objects.html
+ and populate unitID buildingID and and sort out any other categories
 """
 #save_command_names()
 #save_parameter_names()
@@ -285,9 +284,3 @@ def generate_aoe2scriptFunctions():
 #save_parameter_options()
 generate_aoe2scriptEnums()
 generate_aoe2scriptFunctions()
-#parameter_dict = open_file('parameter_dict.pkl')
-#for p in parameter_dict:
-#    pprint(p)
-#    pprint(parameter_dict[p])
-#    input("Press Enter to continue...")
-#pprint(len(parameter_dict))
