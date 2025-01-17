@@ -1,14 +1,10 @@
-x = 1 
-y = 1 
+import test_if
 
-if (goal x 0):
-  if (goal y 0):
-    (do-nothing)
 
 x = 1 
 y = 1 
 
-if (goal x 0):
-  if (goal y 0):
-    (do-nothing)
+if x == 0:
+  if y == 0:
+    pass
 

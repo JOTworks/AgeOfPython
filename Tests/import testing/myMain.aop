@@ -1,0 +1,8 @@
+
+
+#from test_strings import string_while_loop as swl, string_variable_asign as sva
+#import test_function as tf
+
+
+x = Const(1)
+
