@@ -16,10 +16,28 @@ class ParameterStorage:
         self.options = options
 
 class CommandStorage:
-    def __init__(self,args , command_description = None, ):
+    def __init__(self, args, command_description,type,version,category,complexity):
         self.args = args
         self.description = command_description
-        
+        self.type = type
+        self.version = version
+        self.category = category
+        self.complexity = complexity
+
+class StrategicNumberStorage:
+    def __init__(self, id, description, default, min, max, min_req, max_req, category, effective, network, defined, active):
+        self.id = id
+        self.description = description
+        self.default = default
+        self.min = min
+        self.max = max
+        self.min_req = min_req
+        self.max_req = max_req
+        self.category = category
+        self.effective = effective #indicates whether the strategic number has an impact on AI behavior.
+        self.network = network #indicates whether the strategic number is sent along the network to clients to prevent out of sync issues.
+        self.defined = defined #indicates whether the name of the strategic number is predefined in the AI engine and doesn't require a defconst to be used.
+        self.active = active #indicates that the strategic number cannot be used like an extra goal because it's value impacts the game
 
 def save_to_file(data, file_name):
     if not file_name.endswith('.pkl'):
@@ -59,13 +77,54 @@ def good_soup(url_list, class_to_wait:str = None, wait_time:int = 1):
         return soup[0]
     return soup
 
+# strategic numbers ----------------------------------------
+def save_strategic_number_names():
+    soup = good_soup("https://airef.github.io/strategic-numbers/sn-index.html")
+    data_table = soup.find("table", attrs={"id": "index-table"}).find_all("tr")
+    sn_touples = [(data.find_all("td")[0].get_text(strip=True), data.find_all("td")[1].get_text(strip=True)) for data in data_table[1:]]
+    save_to_file(sn_touples, 'sn_touples_id_name.pkl')
+
+def to_bool(string):
+    if 'yes' in string.lower():
+        return True
+    elif 'no' in string.lower():
+        return False
+    else:
+        raise Exception(f"{string} does not contain yes or no!")
+
+def save_strategic_number_info(test = None):
+    sn_touples = open_file('sn_touples_id_name.pkl')
+    if test:
+        sn_touples = sn_touples[:test]
+    soups = good_soup(["https://airef.github.io/strategic-numbers/sn-details.html#"+name for id, name in sn_touples],wait_time=.2)
+    strategic_number_dict = {}
+    for touple, soup in zip(sn_touples, soups):
+        id, name = touple
+        description = get_description_text(soup)
+        info_table = find_info_table(name,soup)
+        info_default = info_table.find_all('tr')[0].find_all('td')[1].get_text(strip=True)
+        info_range_req = info_table.find_all('tr')[1].find_all('td')[1].get_text(strip=True)
+        info_min_req, info_max_req = map(int, info_range_req.split(' to '))
+        info_range = info_table.find_all('tr')[2].find_all('td')[1].get_text(strip=True)
+        info_min, info_max = map(int, info_range.split(' to '))
+        info_category = info_table.find_all('tr')[3].find_all('td')[1].get_text(strip=True)
+        info_effective = to_bool(info_table.find_all('tr')[4].find_all('td')[1].get_text(strip=True))
+        info_network = to_bool(info_table.find_all('tr')[5].find_all('td')[1].get_text(strip=True))
+        info_defined = to_bool(info_table.find_all('tr')[6].find_all('td')[1].get_text(strip=True))
+        info_active = to_bool(info_table.find_all('tr')[7].find_all('td')[1].get_text(strip=True))
+        strategic_number_dict[name] = StrategicNumberStorage(id, description, info_default,info_min,info_max,info_min_req,info_max_req,info_category, info_effective, info_network, info_defined, info_active)
+    save_to_file(strategic_number_dict, 'strategic_number_dict.pkl')
+
+# commands ----------------------------------------
 def save_command_names():
     soup = good_soup("https://airef.github.io/commands/commands-index.html", class_to_wait = "command-name")
     command_names = [c.text for c in soup.find_all(attrs={'class' : 'command-name'}, recursive=True)]
     save_to_file(command_names, 'command_names.pkl')
 
-def save_command_parameters(): 
+def save_command_parameters(test = None): 
     command_names = open_file('command_names.pkl')
+    if test:
+        command_names = command_names[:test]
     soups = good_soup(["https://airef.github.io/commands/commands-details.html#"+name for name in command_names],wait_time=.2)
     command_dict = {}
     if len(command_names) != len(soups):
@@ -73,14 +132,73 @@ def save_command_parameters():
     for name, soup in zip(command_names, soups):
         command_description = get_description_text(soup)
         command_params = [c.text for c in soup.find_all(attrs={'class' : 'param'}, recursive=True)]
-        command_dict[name] = CommandStorage(command_params, command_description)
+        info_table = find_info_table(name,soup)
+        info_title = info_table.find_all('tr')[0].find_all('td')[0].get_text(strip=True)
+        info_value = info_table.find_all('tr')[0].find_all('td')[1].get_text(strip=True)
+
+        info_version = info_table.find_all('tr')[1].find_all('td')[1].get_text(strip=True)
+        info_category = info_table.find_all('tr')[2].find_all('td')[1].get_text(strip=True)
+        info_complexity = info_table.find_all('tr')[3].find_all('td')[1].get_text(strip=True)
+        info_value = info_table.find_all('tr')[0].find_all('td')[1].get_text(strip=True)
+
+        if info_title != "Command Type":
+            raise Exception(f"{name}: exspected {info_title} to be Command Type")
+        if info_value.split('.')[0] not in ['Action','Fact','Both']:
+            raise Exception(f"{name}: exspected {info_value} to start with Action, Fact, or Both")
+        command_dict[name] = CommandStorage(command_params, 
+                                            command_description, 
+                                            info_value.split('.')[0],
+                                            info_version,info_category,info_complexity)
         save_to_file(command_dict, 'command_dict.pkl')
 
+# Parameters ----------------------------------------
 def save_parameter_names():
     soup = good_soup("https://airef.github.io/parameters/parameters-index.html")
     data_table = soup.find("table", attrs={"id": "index-table"}).find_all("tr")
     parameter_names = [data.find_all("td")[0].get_text(strip=True) for data in data_table[1:]]
     save_to_file(parameter_names, 'parameter_names.pkl')
+
+def save_parameter_options(test = None): 
+    '''
+    compareOp - spaces 
+    ActionId, Formation, OrderId - has -1
+    buildingID, EventType - only has 1 entry
+    alot have result of
+    ['Version Introduced', 'Related Parameters', 'Used In These Commands']
+    because there is not a param list. they should be blank? or accecp a number perhapse?
+    '''
+    parameter_names = open_file('parameter_names.pkl')
+    if test:
+        parameter_names = parameter_names[:test]
+    soups = good_soup(["https://airef.github.io/parameters/parameters-details.html#"+name for name in parameter_names],wait_time=1)
+    parameter_dict = {}
+    if len(parameter_names) != len(soups):
+        raise ValueError("Number of parameter names and soups do not match")
+    for name, soup in zip(parameter_names, soups):
+        
+        data_table = find_data_table(name,soup)
+        info_table = find_info_table(name,soup)
+
+        parameter_storage = ParameterStorage(None,None,get_description_text(soup))
+
+        if data_table:
+            description_column_index = find_description_column(data_table)
+            id_column_index = find_id_column(data_table)
+            if name == "compareOp":
+                description_column_index -= 2
+
+            parameter_options = [data.find_all("td")[description_column_index-1].get_text(strip=True) for data in data_table.find_all('tr')[1:]]
+            option_ids = [data.find_all("td")[id_column_index].get_text(strip=True) for data in data_table.find_all('tr')[1:]]
+            parameter_storage.options = dict(zip(parameter_options, option_ids))
+        if info_table:
+            info_title = info_table.find_all('tr')[0].find_all('td')[0].get_text(strip=True)
+            info_value = info_table.find_all('tr')[0].find_all('td')[1].get_text(strip=True)
+            parameter_storage.range = f'{info_title}: {info_value}'
+        
+        parameter_dict[name] = parameter_storage
+            
+        
+    save_to_file(parameter_dict, 'parameter_dict.pkl')
 
 def find_description_column(data_table):
     header_row = data_table.find('tr').find_all('th')
@@ -139,48 +257,6 @@ def get_description_text(soup):
             p_tags.append(tag.get_text(strip=True))
     
     return ' '.join(p_tags)
-
-def save_parameter_options(test = None): #WIP
-    '''
-    compareOp - spaces 
-    ActionId, Formation, OrderId - has -1
-    buildingID, EventType - only has 1 entry
-    alot have result of
-    ['Version Introduced', 'Related Parameters', 'Used In These Commands']
-    because there is not a param list. they should be blank? or accecp a number perhapse?
-    '''
-    parameter_names = open_file('parameter_names.pkl')
-    if test:
-        parameter_names = parameter_names[:test]
-    soups = good_soup(["https://airef.github.io/parameters/parameters-details.html#"+name for name in parameter_names],wait_time=1)
-    parameter_dict = {}
-    if len(parameter_names) != len(soups):
-        raise ValueError("Number of parameter names and soups do not match")
-    for name, soup in zip(parameter_names, soups):
-        
-        data_table = find_data_table(name,soup)
-        info_table = find_info_table(name,soup)
-
-        parameter_storage = ParameterStorage(None,None,get_description_text(soup))
-
-        if data_table:
-            description_column_index = find_description_column(data_table)
-            id_column_index = find_id_column(data_table)
-            if name == "compareOp":
-                description_column_index -= 2
-
-            parameter_options = [data.find_all("td")[description_column_index-1].get_text(strip=True) for data in data_table.find_all('tr')[1:]]
-            option_ids = [data.find_all("td")[id_column_index].get_text(strip=True) for data in data_table.find_all('tr')[1:]]
-            parameter_storage.options = dict(zip(parameter_options, option_ids))
-        if info_table:
-            info_title = info_table.find_all('tr')[0].find_all('td')[0].get_text(strip=True)
-            info_value = info_table.find_all('tr')[0].find_all('td')[1].get_text(strip=True)
-            parameter_storage.range = f'{info_title}: {info_value}'
-        
-        parameter_dict[name] = parameter_storage
-            
-        
-    save_to_file(parameter_dict, 'parameter_dict.pkl')
 
 
 def make_parameter_class_lines(parameter_name,parameter_storage: ParameterStorage):
@@ -251,6 +327,7 @@ def make_import_lines():
         "import enum",
     ]
 
+# Generate files ----------------------------------------
 def generate_aoe2scriptEnums():
     p_dict = open_file('parameter_dict.pkl')
     lines = []
@@ -273,14 +350,14 @@ def generate_aoe2scriptFunctions():
     with open(output_path, 'w') as file:
         file.write('\n'.join(lines))
 
-"""
-#TODO:
- -- pull the object https://airef.github.io/tables/objects.html
- and populate unitID buildingID and and sort out any other categories
-"""
+def generate_aoe2scriptStrategicNumbers():
+    pass
+
+#save_strategic_number_names()
+save_strategic_number_info(test = 5)
 #save_command_names()
 #save_parameter_names()
 #save_command_parameters()
 #save_parameter_options()
-generate_aoe2scriptEnums()
-generate_aoe2scriptFunctions()
+#generate_aoe2scriptEnums()
+#generate_aoe2scriptFunctions()

@@ -769,7 +769,6 @@ class PlayerNumber(enum):
     this_any_human_enemy = 109
     this_any_human_neutral = 110
     this_any_neutral = 111
-    my_player_number = "my-player-number"
 class PlayerStance(enum):
     ally = 0
     neutral = 1

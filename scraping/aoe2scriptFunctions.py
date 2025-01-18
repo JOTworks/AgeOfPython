@@ -309,14 +309,14 @@ def cc_players_unit_type_count(PlayerNumber: PlayerNumber,UnitId: UnitId,compare
  An integer value. Used for many different purposes. 
 """
     pass
-def chat_local(String: int,):
+def chat_local(String: str,):
     """
  Displays the given string (a message in quotation marks) as a local chat message to all players. Local chat messages display chat messages in white rather than with the AI's player color, making this command strictly inferior tochat-to-all. If the chat message string starts with numerals, that number will be sent as a taunt to all players and the starting numerals will be removed from the message. For example, "1 TC" will send taunt 1 to all players and send the message " TC" to all players. 
 :param String: Range: A string (quoted text).
  Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
 """
     pass
-def chat_local_to_self(String: int,):
+def chat_local_to_self(String: str,):
     """
  Displays a given string (a message in quotation marks) as local chat message. The message is displayed only if the user is the same player as the computer player sending the message. For debugging purposes only. Local chat messages display chat messages in white rather than with the AI's player color, making this command strictly inferior tochat-to-playerwith my-player-number as the player Id. If the chat message string starts with numerals, that number will be sent as a taunt to self and the starting numerals will be removed from the message. For example, "1 TC" will send taunt 1 to self and send the message " TC" to self. 
 :param String: Range: A string (quoted text).
@@ -339,7 +339,7 @@ def chat_local_using_range(LanguageId: int,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def chat_to_all(String: int,):
+def chat_to_all(String: str,):
     """
  Sends a given string (a message in quotation marks) as a chat message to all players. If the chat message string starts with numerals, that number will be sent as a taunt to all players and the starting numerals will be removed from the message. For example, "1 TC" will send taunt 1 to all players and send the message " TC" to all players. 
 :param String: Range: A string (quoted text).
@@ -362,7 +362,7 @@ def chat_to_all_using_range(LanguageId: int,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def chat_to_allies(String: int,):
+def chat_to_allies(String: str,):
     """
  Sends a given string as a chat message to allies. If the chat message string starts with numerals, that number will be sent as a taunt to all allies and the starting numerals will be removed from the message. For example, "1 TC" will send taunt 1 to all allies and send the message " TC" to all allies. 
 :param String: Range: A string (quoted text).
@@ -385,7 +385,7 @@ def chat_to_allies_using_range(LanguageId: int,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def chat_to_enemies(String: int,):
+def chat_to_enemies(String: str,):
     """
  Sends a given string as a chat message to enemies. If the chat message string starts with numerals, that number will be sent as a taunt to all enemies and the starting numerals will be removed from the message. For example, "1 TC" will send taunt 1 to all enemies and send the message " TC" to all enemies. 
 :param String: Range: A string (quoted text).
@@ -408,7 +408,7 @@ def chat_to_enemies_using_range(LanguageId: int,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def chat_to_player(PlayerNumber: PlayerNumber,String: int,):
+def chat_to_player(PlayerNumber: PlayerNumber,String: str,):
     """
  Sends a given string as a chat message to a given player. If the chat message string starts with numerals, that number will be sent as a taunt to the specified player and the starting numerals will be removed from the message. For example, "1 TC" will send taunt 1 to the specified player and send the message " TC" to the specified player. The fact allows "my-player-number", "focus-player", "target-player", and "any"/"every" wildcard parameters forPlayerNumber. It also allows for scenario-player-# and lobby-player-#, where # is between 1 and 8. scenario-player-# refers to the player color (where red = scenario-player-2), and lobby-player-# refers to the player slot (where the lobby host or human player playing a single player campaign is always lobby-player-1). It also allows the use of rule variables forPlayerNumber, such as "this-any-ally" or "this-any-enemy". 
 :param PlayerNumber: Range: A valid player number.
@@ -760,7 +760,7 @@ def idle_farm_count(compareOp: compareOp,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def log(String: int,):
+def log(String: str,):
     """
  Writes the given string to a log file. Used purely for testing purposes. Works only if logging is enabled. Logging is disabled in 1.0c (the old CD version of the game) and Userpatch. Useup-log-datainstead. However, logging can be enabled in DE. To do this, you need to launch the game with the parameters LOGSYSTEMS=AIScript and VERBOSELOGGING (case sensitive). To do this with the Steam version, open your Steam games library with the Steam client, right click on Age of Empires II: Definitive Edition in the left sidebar that lists the games you own, and click Properties. In the Properties window, under the General tab, type the parameters above separated by spaces. Then, when you launch the game these parameters will be active. The log produced in DE will be found in the Steam user folder, usually something like "C:\Users\[user ID]\Games\Age of Empires 2 DE\logs" but note that this log isn't just used by the AI (it would be best to log something identifying the AI log at the start of the game), some of these logs with VERBOSELOGGING can get quite large so it might be a good idea to periodically clean out the folder. 
 :param String: Range: A string (quoted text).
@@ -1629,21 +1629,21 @@ def up_cc_add_resource(ResourceType: ResourceType,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def up_cc_send_cheat(String: int,):
+def up_cc_send_cheat(String: str,):
     """
  Send a message in order to execute a cheat code. Cheats must be enabled for this to take effect. 
 :param String: Range: A string (quoted text).
  Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
 """
     pass
-def up_change_name(String: int,):
+def up_change_name(String: str,):
     """
  Change the name of the AI during gameplay. When you use (up-change-name -1), the AI's name will be set to one of that civilization's first 8 built-in historical names in an semi-random manner, same as the names used in the default AI. The name is guaranteed to be unique among other AIs that use this command, but not necessarily with Petersen's selection. 
 :param String: Range: A string (quoted text).
  Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
 """
     pass
-def up_chat_data_to_all(String: int,Value: int,):
+def up_chat_data_to_all(String: str,Value: int,):
     """
  Send a chat message with a formatted value to everyone. 
 :param String: Range: A string (quoted text).
@@ -1652,7 +1652,7 @@ def up_chat_data_to_all(String: int,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def up_chat_data_to_player(PlayerNumber: PlayerNumber,String: int,Value: int,):
+def up_chat_data_to_player(PlayerNumber: PlayerNumber,String: str,Value: int,):
     """
  Send a chat message with a formatted value to a player. The Action allows "my-player-number", "focus-player", "target-player", and "any"/"every" wildcard parameters forPlayerNumber. It also allows the use of rule variables forPlayerNumber, such as "this-any-ally" or "this-any-enemy". It also allows for scenario-player-# and lobby-player-#, where # is between 1 and 8. scenario-player-# refers to the player color (where red = scenario-player-2), and lobby-player-# refers to the player slot (where the lobby host or human player playing a single player campaign is always lobby-player-1). 
 :param PlayerNumber: Range: A valid player number.
@@ -1663,7 +1663,7 @@ def up_chat_data_to_player(PlayerNumber: PlayerNumber,String: int,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def up_chat_data_to_self(String: int,Value: int,):
+def up_chat_data_to_self(String: str,Value: int,):
     """
  Send a chat message with a formatted value locally. 
 :param String: Range: A string (quoted text).
@@ -2449,7 +2449,7 @@ def up_lerp_tiles(Point1:Point,Point2:Point,Value: int,):
  An integer value. Used for many different purposes. 
 """
     pass
-def up_log_data(Option: int,String: int,Value: int,):
+def up_log_data(Option: int,String: str,Value: int,):
     """
  Write a formatted text line to aoelog.txt. Set Option to 1 in order to write plain text. You must close the game in order to open aoelog.txt, which is located in the game folder, usually at "C:\Program Files (x86)\Microsoft Games\Age of Empires II". Please consider game performance when writing data. To log a message without referencing any data, simply leave the %d out of the chat message and use 'c: 0' as the last two parameters. In DE, this command does not write the data to an aoelog.txt file. Instead, you need to launch the game with the parameters 'LOGSYSTEMS=AIScript' and 'VERBOSELOGGING' (case sensitive)To do this with the Steam version, open your Steam games library with the Steam client, right click on Age of Empires II: Definitive Edition in the left sidebar that lists the games you own, and click Properties. In the Properties window, under the General tab, type the parameters above separated by spaces. Then, when you launch the game these parameters will be active. DE will not create the log file until the game has closed. The log produced in DE will be found in the Steam user folder, usually something like "C:\Users\[user ID]\Games\Age of Empires 2 DE\logs" but note that this log isn't just used by the AI (it would be best to log something identifying the AI log at the start of the game), some of these logs with VERBOSELOGGING can get quite large so it might be a good idea to periodically clean out the folder. 
 :param Option: Range: varies
@@ -3234,7 +3234,7 @@ def fe_sub_game_type(compareOp: compareOp,SubGameType: SubGameType,):
  A sub-game type. Sub-games are loaded whenever the checkbox for these sub-game modes are checked in the lobby screen, rather than being selected from the game type dropdown. Multiple sub-games modes can be true at once in a game. 
 """
     pass
-def xs_script_call(String: int,):
+def xs_script_call(String: str,):
     """
  DE only. Call an XS script function from an .xs file. It is not necessary to defconst the function name. If the function name is misspelled or a function with that name doesn't exist in any included .xs files, the command will do nothing, without reporting an error. For more info on XS scripting, see this exhaustive guide:link. The function must be from a .xs file that has been "included" (loaded) by the AI script. To include a .xs file in an AI script, use the include command, like (include "Example XS File.xs"). Note that the filetype (.xs) must be included in the include command, and the filepath must be inside quotes. By default, .xs files must be placed in the game's xs folder, located at: "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\_common\xs", but you can also load .xs files with a relative filepath name, using ".." to go up a filepath level from the xs folder and then follow the rest of the filepath to get to your .xs file. For example, to include a .xs file stored in your "My AI" folder within the default AI installation directory, you can use (include "../ai/My AI/Example XS File.xs"). Once you have included your .xs file, you can use xs-script-call to call any function from that file that doesn't have any parameters. So, if you have the code below in your XS file, you can call the helloWorld() function, but not the max() function. xs-script-call can be used as either a Fact or an Action, and it'll execute the function either way. However, if used as a Fact, xs-script-call will be a Fact that is considered false if your function returns 0, returns "false", or is a void function that doesn't return anything. Because of this, if you want to use xs-script-call successfully anywhere in a rule, it's a good idea to make this function a bool function that returns "true" or an int function that returns any non-zero value. The AI can't do anything with the value that is returned from this function, but the xs-script-call Fact itself will return true. If you do need an AI to be able use an integer result from an XS function, you can use the xsSetGoal() or xsSetStrategicNumber() functions within an XS function to modify the value of a goal or SN, which the AI script can then check. Likewise, xsGetGoal() and xsGetStrategicNumber() functions can allow an XS function to get the current value of a goal or SN. If you call an XS function more than once, it's a good idea to defconst it (see the examples below). Otherwise, each time you call the function in the AI script it will add an entry to the string table. Here is some example .xs code which is used in the examples section below: //This code is saved in a file called Example XS File.xsfloat max(float a = 0.0, float b = 2.0) {if(a > b)return (a);elsereturn (b);}bool helloWorld() {xsChatData("Hello World");return (true);}int rand() {int rand = xsGetRandomNumber(); //generates a random number between 0 and 32766rand++; //increase random number range to between 1 and 32767 so that zero isn't returned, making a xs-script-call condition falsexsSetGoal(510, rand);return (rand);}  
 :param String: Range: A string (quoted text).
