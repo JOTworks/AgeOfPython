@@ -8,9 +8,30 @@ import pickle
 import os
 from pprint import pprint
 from typing import Dict
+from itertools import chain
 
+class ObjectStorage:
+    def __init__(self, id, name, ai_name, line, obj_class, cmd_id, category, age, dead_id):
+        self.id = id
+        self.name = name
+        self.ai_name = ai_name
+        self.line = line
+        self.obj_class = obj_class.split(' (')[0]
+        self.obj_class_id = obj_class.split('(')[1].replace(')','')
+        self.cmd_id = cmd_id
+        self.category = category
+        self.age = age
+        self.dead_id = dead_id
+class TechnologyStorage:
+    def __init__(self, id, name, ai_name, building, age, civ):
+        self.id = id
+        self.name = name
+        self.ai_name = ai_name
+        self.building = building
+        self.age = age
+        self.civ = civ
 class ParameterStorage:
-    def __init__(self, options: Dict[int, str], range, parameter_description = None):
+    def __init__(self, options, range, parameter_description = None):
         self.description = parameter_description
         self.range = range
         self.options = options
@@ -25,8 +46,9 @@ class CommandStorage:
         self.complexity = complexity
 
 class StrategicNumberStorage:
-    def __init__(self, id, description, default, min, max, min_req, max_req, category, effective, network, defined, active):
+    def __init__(self, name, id, description, default, min, max, min_req, max_req, category, effective, network, defined, active):
         self.id = id
+        self.name = name
         self.description = description
         self.default = default
         self.min = min
@@ -77,20 +99,49 @@ def good_soup(url_list, class_to_wait:str = None, wait_time:int = 1):
         return soup[0]
     return soup
 
+# object codes ----------------------------------------
+def save_object_codes():
+    soup = good_soup("https://airef.github.io/tables/objects.html")
+    data_tables = soup.find_all("table", attrs={"class": "objects-table"})
+    object_dict = {}
+
+    for row in chain(*[table.find_all('tr')[1:] for table in data_tables]):
+        cells = [cell.get_text(strip=True) for cell in row.find_all('td')]
+        id, name, ai_name, line, obj_class, cmd_id, category, age, dead_id, proj_id, chem_proj_id, version, notes = cells
+        if "DE" in id:
+            id = id.split("DE: ")[-1]
+        ai_name = ai_name.replace('-','_')
+        line = line.replace('-','_')
+        obj_class = obj_class.replace('-','_')
+        object_dict[ai_name] = ObjectStorage(id, name, ai_name, line, obj_class, cmd_id, category, age, dead_id)
+    save_to_file(object_dict, 'object_dict.pkl')
+
+# technologies codes ----------------------------------------
+def save_tech_codes():
+    soup = good_soup("https://airef.github.io/tables/techs.html")
+    data_tables = soup.find_all("table", attrs={"class": "techs-table"})
+    tech_dict = {}
+    for row in chain(*[table.find_all('tr')[1:] for table in data_tables]):
+        cells = [cell.get_text(strip=True) for cell in row.find_all('td')]
+        id, name, ai_name, building, age, civ, version, note = cells
+        ai_name = ai_name.replace('-','_')
+        tech_dict[ai_name] = TechnologyStorage(id, name, ai_name, building, age, civ)
+    save_to_file(tech_dict, 'tech_dict.pkl')
+
 # strategic numbers ----------------------------------------
 def save_strategic_number_names():
     soup = good_soup("https://airef.github.io/strategic-numbers/sn-index.html")
     data_table = soup.find("table", attrs={"id": "index-table"}).find_all("tr")
     sn_touples = [(data.find_all("td")[0].get_text(strip=True), data.find_all("td")[1].get_text(strip=True)) for data in data_table[1:]]
-    save_to_file(sn_touples, 'sn_touples_id_name.pkl')
+    save_to_file(sn_touples, 'sn_touples_id_name.pkl')#needs to keep - becuase result is used in url later
 
 def to_bool(string):
-    if 'yes' in string.lower():
+    if 'yes' == string.lower():
         return True
     elif 'no' in string.lower():
         return False
     else:
-        raise Exception(f"{string} does not contain yes or no!")
+        return False
 
 def save_strategic_number_info(test = None):
     sn_touples = open_file('sn_touples_id_name.pkl')
@@ -100,6 +151,7 @@ def save_strategic_number_info(test = None):
     strategic_number_dict = {}
     for touple, soup in zip(sn_touples, soups):
         id, name = touple
+        name = name.replace('-','_')
         description = get_description_text(soup)
         info_table = find_info_table(name,soup)
         info_default = info_table.find_all('tr')[0].find_all('td')[1].get_text(strip=True)
@@ -112,14 +164,14 @@ def save_strategic_number_info(test = None):
         info_network = to_bool(info_table.find_all('tr')[5].find_all('td')[1].get_text(strip=True))
         info_defined = to_bool(info_table.find_all('tr')[6].find_all('td')[1].get_text(strip=True))
         info_active = to_bool(info_table.find_all('tr')[7].find_all('td')[1].get_text(strip=True))
-        strategic_number_dict[name] = StrategicNumberStorage(id, description, info_default,info_min,info_max,info_min_req,info_max_req,info_category, info_effective, info_network, info_defined, info_active)
+        strategic_number_dict[name] = StrategicNumberStorage(name, id, description, info_default,info_min,info_max,info_min_req,info_max_req,info_category, info_effective, info_network, info_defined, info_active)
     save_to_file(strategic_number_dict, 'strategic_number_dict.pkl')
 
 # commands ----------------------------------------
 def save_command_names():
     soup = good_soup("https://airef.github.io/commands/commands-index.html", class_to_wait = "command-name")
     command_names = [c.text for c in soup.find_all(attrs={'class' : 'command-name'}, recursive=True)]
-    save_to_file(command_names, 'command_names.pkl')
+    save_to_file(command_names, 'command_names.pkl')#needs to keep - becuase result is used in url later
 
 def save_command_parameters(test = None): 
     command_names = open_file('command_names.pkl')
@@ -156,7 +208,7 @@ def save_parameter_names():
     soup = good_soup("https://airef.github.io/parameters/parameters-index.html")
     data_table = soup.find("table", attrs={"id": "index-table"}).find_all("tr")
     parameter_names = [data.find_all("td")[0].get_text(strip=True) for data in data_table[1:]]
-    save_to_file(parameter_names, 'parameter_names.pkl')
+    save_to_file(parameter_names, 'parameter_names.pkl')#needs to keep - becuase result is used in url later
 
 def save_parameter_options(test = None): 
     '''
@@ -261,11 +313,12 @@ def get_description_text(soup):
 
 def make_parameter_class_lines(parameter_name,parameter_storage: ParameterStorage):
     lines = []
-    lines.append(f"class {parameter_name}(enum):")
-    if parameter_name in ['typeOp','mathOp','compareOp']:
-        lines.append('    pass')
-        return lines
     parameter_options_dict = parameter_storage.options
+
+    if isinstance(parameter_options_dict, str): #TODO: this is janky but wnated to show what needs to be in or goal id instead of enum  
+        return [f"class {parameter_name}:",'    pass #'+parameter_options_dict]
+    lines.append(f"class {parameter_name}(enum):")
+    
     if not parameter_options_dict:
         lines.append('    pass #empty options_dict')
         return lines
@@ -328,11 +381,179 @@ def make_import_lines():
     ]
 
 # Generate files ----------------------------------------
+class UniqueParamGenerator:
+    unique_names = [
+        'typeOp',
+        'mathOp',
+        'compareOp',
+        'UnitId',
+        'BuildingId',
+        'ClassId',
+        'TechId',
+        'SnId',
+        'TypeId', #object id
+        'ObjectId', #object id
+        'ItemId', #object id or Tech id
+        'OnMainland',
+        'Perimeter',
+    ]
+    goal_id_names = [
+        'GoalId',
+        'VictoryType', #goal id to store VictoryCondition
+        'VictoryTime', #goal id
+        'VictoryPlayer', #goal id
+        'ThreatTime', #goal id
+        'ThreatTarget', #goal id
+        'ThreatSource', #goal id
+        'ThreatPlayer', #goal id
+        'EscrowGoalId', 
+        'OptionGoalId',
+        'OutputGoalId',
+    ]
+    int_names = [
+        'Value', # -32768 to 32767 or -2,147,483,648 to 2,147,483,647
+        'TimerId', #1-50
+        'EventId', #0-255
+        'SignalId', #0-255 th same as eventId right now as signals are the only event type
+        'GroupId', #0-19
+        'Id', #objects indevidual id on the map
+        'Index', #0 to 239 for the search-local list. 0 to 39 for the search-remote list.
+        'MinGarrison', #-1 to 32767, -1 sets no limit
+        'MaxGarrison', #-1 to 32767, -1 sets no limit
+        'MaxDistance', #-1 to 32767, -1 sets no limit
+        'MinDistance', #-1 to 32767, -1 sets no limit
+        'Percent', #0-100
+        'RuleDelta',
+        'RuleId',
+        'SharedGoalId', #1-256 seperate goals
+        'TauntId', #1 to 255 theoreticaly i could make this an enum with all the taunts in it.
+    ]
+    banned_names = [
+        'RuleId',
+        'RuleDelta',
+        'SharedGoalId',
+    ]
+    class_names = [
+        'Point',
+        'String',
+    ]
+    clear_names = [
+        'LocalIndex',
+        'LocalList',
+        'RemoteIndex',
+        'RemoteList',
+    ]
+    dont_understand = [
+        'ColorId', #player color and buffer related
+        'Defconst', #string related'
+        'FactParameter', #dependent on FactId value, all possibilities can be found at https://airef.github.io/parameters/parameters-details.html#FactId
+        'Flag', #bitwize minipulation of goals. greate for optimization im sure
+        'LanguageId', #dealing with language files
+        'Option', #changes based on command its in, but usualy int options? could be enumerated per command
+    ]
+
+    def __init__(self):
+        self.names = self.unique_names + self.goal_id_names + self.int_names + self.dont_understand + self.clear_names + self.class_names
+        self.object_dict = open_file('object_dict.pkl') 
+        self.tech_dict = open_file('tech_dict.pkl') 
+        self.strategic_number_dict = open_file('strategic_number_dict.pkl') 
+        self.parameter_dict = open_file('parameter_dict.pkl') 
+    
+    def get_Perimeter(self):
+        return {
+            'Inner':1,
+            'Outer':2,
+        }
+    def get_OnMainland(self):
+        return {
+            'On':0,
+            'Off':1,
+            'Ignore':-1,
+        }
+    def get_compareOp(self):
+        return {
+            'not-equal': 18,
+            'less-or-equal': 19,
+            'greater-than': 20,
+            'greater-or-equal': 21,
+            'equal': 22,
+            'not-equal': 23,
+        }
+    def get_mathOp(self):
+        return {
+            'eql': 0,
+            'add': 1,
+            'sub': 2,
+            'mul': 3,
+            'div_fl': 9,
+            'div_rd': 4,
+            'mod': 7,
+            'min': 5,
+            'max': 6,
+            'neg': 8,
+            'per': 11,
+            'per_of': 10,
+        }
+    def get_typeOp(self):
+        return {}
+    def get_ObjectId(self):
+        return dict([(object_storage.ai_name, object_storage.id) for object_storage in self.object_dict.values()])
+    def get_TypeId(self):
+        return self.get_ObjectId()
+    def get_ItemId(self):
+        return self.get_ObjectId() | self.get_TechId()
+    def get_TechId(self):
+        return dict([(tech.ai_name, tech.id) if tech.ai_name else (tech.name.replace(' ','_'), tech.id) for tech in self.tech_dict.values()])
+    def get_SnId(self):
+        return dict([(sn.name, sn.id) for sn in self.strategic_number_dict.values()])
+    def get_ClassId(self):
+        return dict([(object_storage.obj_class, object_storage.obj_class_id) for object_storage in self.object_dict.values()])
+    def get_BuildingId(self):
+        building_id_dict = {}
+        for object_storage in self.object_dict.values():
+            if object_storage.category == "Buildings":
+                building_id_dict[object_storage.ai_name] = object_storage.id
+        return building_id_dict
+    def get_UnitId(self):
+        unit_id_dict = {}
+        for object_storage in self.object_dict.values():
+            if object_storage.category != "Buildings":
+                if object_storage.ai_name:
+                    unit_id_dict[object_storage.ai_name] = object_storage.id
+                else:
+                    unit_id_dict[object_storage.name.replace(' ','_')] = object_storage.id
+        return unit_id_dict
+    def create_options_dict(self, name):
+        if name in self.class_names:
+            return name
+        if name in self.banned_names:
+            return 'USER SHOULD NEVER USE THIS!'
+        if name in self.int_names:
+            return 'int'
+        if name in self.goal_id_names:
+            return 'var'
+        if name in self.dont_understand:
+            return 'unImplemented'
+        if name in self.clear_names:
+            return {
+                'keep':0,
+                'clear':1,
+            }
+        if name in self.unique_names:
+            method = getattr(self, "get_"+name)
+            return method()
+
+        raise Exception(f"Name {name} not found in UniqueParamGenerator")
+
 def generate_aoe2scriptEnums():
     p_dict = open_file('parameter_dict.pkl')
     lines = []
     lines += make_import_lines()
+    unique_param_generator = UniqueParamGenerator()
     for parameter_name, parameter_storage in p_dict.items():
+        assert isinstance(parameter_storage,ParameterStorage)
+        if parameter_name in unique_param_generator.names:
+            parameter_storage.options = unique_param_generator.create_options_dict(parameter_name)
         lines += make_parameter_class_lines(parameter_name, parameter_storage)
     
     output_path = os.path.join(os.path.dirname(__file__), 'aoe2scriptEnums.py')
@@ -353,11 +574,13 @@ def generate_aoe2scriptFunctions():
 def generate_aoe2scriptStrategicNumbers():
     pass
 
+#save_object_codes()
+#save_tech_codes()
 #save_strategic_number_names()
-save_strategic_number_info(test = 5)
+#save_strategic_number_info()
 #save_command_names()
 #save_parameter_names()
 #save_command_parameters()
 #save_parameter_options()
-#generate_aoe2scriptEnums()
+generate_aoe2scriptEnums()
 #generate_aoe2scriptFunctions()
