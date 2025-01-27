@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AST Viewer</title>
+    <style>
+        .collapsible {
+            cursor: pointer;
+            padding: 10px;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .content {
+            padding: 0 18px;
+            display: none;
+            overflow: hidden;
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <h2>AST Viewer</h2>
+    <div id="ast-container"></div>
+
+    <script>
+        function createCollapsibleElement(key, value, index = null) {
+            const button = document.createElement('button');
+            button.className = 'collapsible';
+            let buttonText = key;
+
+            if (index !== null) {
+                buttonText = `${index}: ${key} (${value._type})`;
+            } else if (value && value._type) {
+                buttonText = `${key} (${value._type})`;
+            }
+
+            button.textContent = buttonText;
+
+            const content = document.createElement('div');
+            content.className = 'content';
+
+            if (typeof value === 'object' && value !== null) {
+                for (const [k, v] of Object.entries(value)) {
+                    if (k === 'body' && Array.isArray(v)) {
+                        v.forEach((item, idx) => {
+                            content.appendChild(createCollapsibleElement(k, item, idx));
+                        });
+                    } else if (k === '_type' || k === 'ctx' ) {
+                    } else {
+                        if (`${v}` == '[object Object]') {
+                            button.textContent = button.textContent + ` (${k})`
+                        }
+                        else {
+                            button.textContent = button.textContent + ` (${k}: ${v})`
+                        }
+                        content.appendChild(createCollapsibleElement(k, v));
+                        
+                    }
+                }
+            } else {
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(value, null, 2);
+                content.appendChild(pre);
+            }
+
+            button.addEventListener('click', function() {
+                this.classList.toggle('active');
+                const content = this.nextElementSibling;
+                if (content.style.display === 'block') {
+                    content.style.display = 'none';
+                } else {
+                    content.style.display = 'block';
+                }
+            });
+
+            const container = document.createElement('div');
+            container.appendChild(button);
+            container.appendChild(content);
+
+            return container;
+        }
+
+        fetch('ast.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const container = document.getElementById('ast-container');
+                for (const [key, value] of Object.entries(data)) {
+                    container.appendChild(createCollapsibleElement(key, value));
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                const container = document.getElementById('ast-container');
+                container.textContent = 'Error loading AST data. Please check the console for more details.';
+            });
+    </script>
+</body>
+</html>

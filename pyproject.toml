@@ -1,0 +1,16 @@
+[project]
+name = "AgeOfPython"
+version = "0.0.1"
+description = "compile python code to aoe2script"
+readme = "README.md"
+requires-python = ">=3.6"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "colorama>=0.4.6",
+    "pytest>=7.0.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = "src"

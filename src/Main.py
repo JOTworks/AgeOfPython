@@ -1,18 +1,18 @@
-from Interpreter import Interpreter
 from Asserter import Asserter
 from Printer import Printer
-from termcolor import colored
+from Compiler import Compiler
 import sys
 from pprint import pprint
 import os.path
 from pathlib import Path
 from colorama import Fore, Back, Style
 import re
-from data import tokenErrorCounter
 from math import ceil, floor
 import ast
 import os
 from collections import namedtuple
+import json
+from scraper import *
 
 def get_file_path(file_name, ai_folder): #TODO: issue if 2 files have same name
   #OPEN FILE
@@ -72,7 +72,6 @@ def parse_multiple_files(base_file, ai_folder):
                       node.targets[0].id = alias_asnames[node.targets[0].id]
                     module.body.append(node)
                 elif isinstance(node, ast.ImportFrom):
-                    print(f"!!!!!!{node.module}")
                     if not ('aoe2scriptEnums' in node.module or 'aoe2scriptFunctions' in node.module):
                       parse_file(node.module, ai_folder, node.names)
             if len(alias_names) > 0 and '*' not in alias_names:
@@ -86,8 +85,8 @@ def parse_multiple_files(base_file, ai_folder):
     parse_file(base_file, ai_folder, [ast.alias("*")], base_file = True)
     return asts
 
+
 def main(argv):
-  
   file_name, arguments = setup_args(argv) 
   ai_folder = get_ai_folder()
     
@@ -111,6 +110,11 @@ def main(argv):
   # 
   asts = parse_multiple_files(file_name, ai_folder)
 
+  
+  file_path = get_file_path('aoe2scriptFunctions.py', ai_folder)
+  with open(file_path, "r") as f:
+    aoe_func_tree = ast.parse(f.read(), filename=file_path)
+    #aoe_constant_tree = get ast from the enums file
   trees = {
     "main_tree":asts.pop(file_name),
     "function_tree":ast.Module(body=[]), 
@@ -124,7 +128,9 @@ def main(argv):
     elif isinstance(node, ast.ImportFrom):
       trees['main_tree'].body.remove(node)
     elif isinstance(node, ast.Assign):
-      print("i need to know if this is a constant") #constant_tree.body.append(node)
+      if isinstance(node.value, ast.Call) and node.value.func.id == "Const":
+        trees['constant_tree'].body.append(node)
+        trees['main_tree'].body.remove(node)
   for tree_filename, tree in asts.items():
     for node in tree.body:
       if isinstance(node, ast.FunctionDef):
@@ -138,35 +144,25 @@ def main(argv):
     for key, value in trees.items():
       print_bordered(str(key))
       print(ast.dump(value, indent=4))
+      print("_________")
 
-  myAsserter = Asserter()
-  myAsserter.check(trees)
+  #TODO: add ast tree viewer back in
+  #ast_json = parse_and_convert_to_json(trees['main_tree']) 
+  #with open('ast.json', 'w') as f:
+  #    f.write(ast_json)
 
-  return
-  myInterpreter = Interpreter(myParcer.main)
-  myInterpreter.interpret()
+  #myAsserter = Asserter()
+  #myAsserter.check(trees)
+  
+  compiler = Compiler()
+  trees['main_tree'] = compiler.compile(trees['main_tree'])
 
-  if "i" in arguments or "v" in arguments:
-    print_bordered("Interpreter Results")
-    for myObject in myInterpreter.main:
-      pprint(myObject, indent=2, width=20)
+  if "p" in arguments or "v" in arguments:
+    print_bordered('altered tree')
+    print(ast.dump(trees['main_tree'], indent=4))
 
-  if "f" in arguments or "v" in arguments:
-    print_bright("\n===Function List===")
-    for func in myInterpreter.funcList:
-      pprint(func, indent=2, width=20)
-
-  if "m" in arguments or "v" in arguments:
-    print_bright("\n===Used Memory===")
-    print(myInterpreter.memory.printUsedMemory())
-    print_bright("\n===Constant List===")
-    print(myInterpreter.constList)
-    #sorts const list by number and strips token to number
-    constList = [[str(const), myInterpreter.constList[const]] for const in myInterpreter.constList]
-    constList.sort(key = lambda x: x[1])
-    print_column([[const[0], str(const[1])] for const in constList],4)
-
-  myPrinter = Printer(myInterpreter.main, myInterpreter.funcList, myInterpreter.constList)
+  myPrinter = Printer(trees['main_tree'], trees['function_tree'], trees['constant_tree'])
+  myPrinter.print_all()
   
   if "r" in arguments or "v" in arguments:
     print_bordered("Printer Result")
@@ -179,11 +175,10 @@ def main(argv):
     myPrinter.print_all(test = True) #currently test dosn't do anything
   else:
     myPrinter.print_all()
-    fileName = fileName.split(".")
-    f = open(str(ai_folder)+'\\'+fileName[0]+".per","w")
-    open(str(ai_folder)+'\\'+fileName[0]+".ai","w") #adds the ai file if it doesnt exist already
-    print(tokenErrorCounter)
-    print("FILE: "+str(fileName[0])+".per")
+    file_name = file_name.split(".")
+    f = open(str(ai_folder)+'\\'+file_name[0]+".per","w")
+    open(str(ai_folder)+'\\'+file_name[0]+".ai","w") #adds the ai file if it doesnt exist already
+    print("FILE: "+str(file_name[0])+".per")
     f.write(myPrinter.finalString)
 
   pattern = r'(\ *;.*)'
@@ -198,7 +193,7 @@ def setup_args(argv):
   arguments = []
   if len(argv) < 2:
     raise Exception("needs argument of ai file name")
-  fileName = argv[1].split('.')[0]
+  file_name = argv[1].split('.')[0]
   for arg in argv[2:]:
     if arg[0] == '-':
       for letter in arg[1:]:
@@ -206,7 +201,7 @@ def setup_args(argv):
     else:
       raise Exception("Invalid argument, needs to start with -: "+arg)
     print(arguments)
-  return fileName, arguments
+  return file_name, arguments
 
 def get_ai_folder():
   ai_folder = Path(__file__).parent.resolve()

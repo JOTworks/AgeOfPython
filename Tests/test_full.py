@@ -5,7 +5,7 @@ sys.path.append('./Tests/test_ai_files')
 from Interpreter import Interpreter
 from data import *
 from data import VarAsignObject
-from Main import main
+from AOP.AgeOfPython.Main import main
 import test_strings
 import pytest
 from Scanner import Scanner

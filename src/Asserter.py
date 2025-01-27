@@ -1,4 +1,3 @@
-from data import *
 import ast
 import colorama
 from colorama import Fore, Style

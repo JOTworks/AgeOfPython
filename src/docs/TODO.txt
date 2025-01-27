@@ -1,8 +1,50 @@
+TESTING
+- for each compile function, create a input code, and save the output code as a test. then i can see if it ever changes
+- memory needs unit test, and needs to be done for minimum viable product.
+- features should have own branch that is flattened when merged.
+- every bug fix commit should come with its own test, in case it ever brakes again.
+- 
+
+figure out how to do all the pythonic stuff from https://www.youtube.com/watch?v=PwGKhvqJCQM
+IMPORT PROBLEMS!!!
+use Ruff formater.
+pydantic.
+
+
+#TODO:
+
+File Loading
+ -- fix the finding of py files to parce
+ -- figure out how Aoe2 needs to have the .per files orginized
+
+Scraper
+ -- fix wallId
+ -- SnId is a parameter that can just sotre all the SNs
+ -- pull the object https://airef.github.io/tables/objects.html
+ and populate unitID buildingID and and sort out any other categories
+ -- pull the loadif parameters
+
+Create class definitions:
+  Point, State, Array, maybe Const?
+
+
+
+ISSUES FROM THE LAST VERSION THAT COULD BE IRELEVENT now
+
+TODO:
+#making sure returns work
+#logical statments in ifs
+#somehow there are infinite loops when running functions multiple times with returns??? idk what part is the issue\
+#strings... passing strings is not working
+
 #what happens when you initialzie a variable that already exists? it should be dealocated and realocated as it could be a different size.
 #right now it is simply asigned to 0 :/
 x = 4
 x = Point()
 
+#this should throw compiler error, z is not allocated
+x = 10
+x = z
 
 #while loop does not scope variable out properly
 while (boundry_moved):

@@ -1,4 +1,17 @@
-from aoe2scriptEnums import *
+from scraper import *
+
+class Point():
+    def __init__(self, x, y):
+        pass
+class State():
+    def __init__(self, one, two, three, four):
+        pass
+class Const():
+    def __init__(self, num):
+        pass
+
+class_constructers = ['Point','State','Const']
+
 def acknowledge_event(EventType: EventType,EventId: int,):
     """
  Acknowledges a received event by resetting the associated flag. Scenario triggers that execute an AI Script Goal effect are the only events that AI scripts can detect. This command, along withevent-detected, is used to detect an AI Script Goal effect from a scenario trigger, often with the intention of changing the AI behavior after the scenario trigger has fired. The scenario designer chooses an AI Trigger number for the AI Script Goal effect in the scenario editor. Then, the event-detected command in the AI script will detect when this trigger effect happens. The event-detected command will remain true after the AI Script Goal trigger effect fires, so acknowledge-event is used to reset the event-detected flag so that event-detected will no longer be true, similar to how thedisable-timercommand clears a timer that has triggered or how theacknowledge-tauntcommand accepts the taunt message. 
@@ -761,11 +774,6 @@ def idle_farm_count(compareOp: compareOp,Value: int,):
 """
     pass
 def log(String: str,):
-    """
- Writes the given string to a log file. Used purely for testing purposes. Works only if logging is enabled. Logging is disabled in 1.0c (the old CD version of the game) and Userpatch. Useup-log-datainstead. However, logging can be enabled in DE. To do this, you need to launch the game with the parameters LOGSYSTEMS=AIScript and VERBOSELOGGING (case sensitive). To do this with the Steam version, open your Steam games library with the Steam client, right click on Age of Empires II: Definitive Edition in the left sidebar that lists the games you own, and click Properties. In the Properties window, under the General tab, type the parameters above separated by spaces. Then, when you launch the game these parameters will be active. The log produced in DE will be found in the Steam user folder, usually something like "C:\Users\[user ID]\Games\Age of Empires 2 DE\logs" but note that this log isn't just used by the AI (it would be best to log something identifying the AI log at the start of the game), some of these logs with VERBOSELOGGING can get quite large so it might be a good idea to periodically clean out the folder. 
-:param String: Range: A string (quoted text).
- Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
-"""
     pass
 def log_trace(Value: int,):
     """
@@ -2450,15 +2458,6 @@ def up_lerp_tiles(Point1:Point,Point2:Point,Value: int,):
 """
     pass
 def up_log_data(Option: int,String: str,Value: int,):
-    """
- Write a formatted text line to aoelog.txt. Set Option to 1 in order to write plain text. You must close the game in order to open aoelog.txt, which is located in the game folder, usually at "C:\Program Files (x86)\Microsoft Games\Age of Empires II". Please consider game performance when writing data. To log a message without referencing any data, simply leave the %d out of the chat message and use 'c: 0' as the last two parameters. In DE, this command does not write the data to an aoelog.txt file. Instead, you need to launch the game with the parameters 'LOGSYSTEMS=AIScript' and 'VERBOSELOGGING' (case sensitive)To do this with the Steam version, open your Steam games library with the Steam client, right click on Age of Empires II: Definitive Edition in the left sidebar that lists the games you own, and click Properties. In the Properties window, under the General tab, type the parameters above separated by spaces. Then, when you launch the game these parameters will be active. DE will not create the log file until the game has closed. The log produced in DE will be found in the Steam user folder, usually something like "C:\Users\[user ID]\Games\Age of Empires 2 DE\logs" but note that this log isn't just used by the AI (it would be best to log something identifying the AI log at the start of the game), some of these logs with VERBOSELOGGING can get quite large so it might be a good idea to periodically clean out the folder. 
-:param Option: Range: varies
- A value that determines different ways the command will work. Here is a list:  
-:param String: Range: A string (quoted text).
- Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
-:param Value: Range: A 16-bit signed integer (-32768 to 32767). Values for goals and extended strategic numbers (SNs 242-511) have a 32-bit signed integer range instead (-2,147,483,648 to 2,147,483,647).
- An integer value. Used for many different purposes. 
-"""
     pass
 def up_modify_escrow(Resource: Resource,mathOp: mathOp,Value: int,):
     """
@@ -3235,9 +3234,4 @@ def fe_sub_game_type(compareOp: compareOp,SubGameType: SubGameType,):
 """
     pass
 def xs_script_call(String: str,):
-    """
- DE only. Call an XS script function from an .xs file. It is not necessary to defconst the function name. If the function name is misspelled or a function with that name doesn't exist in any included .xs files, the command will do nothing, without reporting an error. For more info on XS scripting, see this exhaustive guide:link. The function must be from a .xs file that has been "included" (loaded) by the AI script. To include a .xs file in an AI script, use the include command, like (include "Example XS File.xs"). Note that the filetype (.xs) must be included in the include command, and the filepath must be inside quotes. By default, .xs files must be placed in the game's xs folder, located at: "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\_common\xs", but you can also load .xs files with a relative filepath name, using ".." to go up a filepath level from the xs folder and then follow the rest of the filepath to get to your .xs file. For example, to include a .xs file stored in your "My AI" folder within the default AI installation directory, you can use (include "../ai/My AI/Example XS File.xs"). Once you have included your .xs file, you can use xs-script-call to call any function from that file that doesn't have any parameters. So, if you have the code below in your XS file, you can call the helloWorld() function, but not the max() function. xs-script-call can be used as either a Fact or an Action, and it'll execute the function either way. However, if used as a Fact, xs-script-call will be a Fact that is considered false if your function returns 0, returns "false", or is a void function that doesn't return anything. Because of this, if you want to use xs-script-call successfully anywhere in a rule, it's a good idea to make this function a bool function that returns "true" or an int function that returns any non-zero value. The AI can't do anything with the value that is returned from this function, but the xs-script-call Fact itself will return true. If you do need an AI to be able use an integer result from an XS function, you can use the xsSetGoal() or xsSetStrategicNumber() functions within an XS function to modify the value of a goal or SN, which the AI script can then check. Likewise, xsGetGoal() and xsGetStrategicNumber() functions can allow an XS function to get the current value of a goal or SN. If you call an XS function more than once, it's a good idea to defconst it (see the examples below). Otherwise, each time you call the function in the AI script it will add an entry to the string table. Here is some example .xs code which is used in the examples section below: //This code is saved in a file called Example XS File.xsfloat max(float a = 0.0, float b = 2.0) {if(a > b)return (a);elsereturn (b);}bool helloWorld() {xsChatData("Hello World");return (true);}int rand() {int rand = xsGetRandomNumber(); //generates a random number between 0 and 32766rand++; //increase random number range to between 1 and 32767 so that zero isn't returned, making a xs-script-call condition falsexsSetGoal(510, rand);return (rand);}  
-:param String: Range: A string (quoted text).
- Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
-"""
     pass

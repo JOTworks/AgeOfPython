@@ -2,14 +2,14 @@
 # all of the parameter types from the website with their IDs.
 # mathops and comparison ops are handdled by the intepreter.
 #
-import enum
-class compareOp(enum):
+from enum import Enum
+class compareOp(Enum):
     not_equal = 23
     less_or_equal = 19
     greater_than = 20
     greater_or_equal = 21
     equal = 22
-class mathOp(enum):
+class mathOp(Enum):
     eql = 0
     add = 1
     sub = 2
@@ -22,9 +22,9 @@ class mathOp(enum):
     neg = 8
     per = 11
     per_of = 10
-class typeOp(enum):
+class typeOp(Enum):
     pass #empty options_dict
-class ActionId(enum):
+class ActionId(Enum):
     _1 = -1
     actionid_attack = 600
     actionid_defend = 601
@@ -49,19 +49,19 @@ class ActionId(enum):
     actionid_research = 620
     actionid_unload = 621
     actionid_relic = 631
-class Age(enum):
+class Age(Enum):
     dark_age = 0
     feudal_age = 1
     castle_age = 2
     imperial_age = 3
     post_imperial_age = 105
-class AttackStance(enum):
+class AttackStance(Enum):
     _1 = -1
     stance_aggressive = 0
     stance_defensive = 1
     stance_stand_ground = 2
     stance_no_attack = 3
-class AttrId(enum):
+class AttrId(Enum):
     attribute_hp = 0
     attribute_los = 1
     attribute_obj_max = 2
@@ -108,7 +108,7 @@ class AttrId(enum):
     attribute_max_dup_missiles = 107
     attribute_garrison_heal_rate = 108
     attribute_regenration_rate = 109
-class BuildingId(enum):
+class BuildingId(Enum):
     town_center = 109
     town_center_foundation = 621
     house = 70
@@ -144,7 +144,7 @@ class BuildingId(enum):
     donjon = 1665
     gate_ascending_closed = 64
     gate_ascending_open = 78
-    gate,gate_ascending = 487
+    gate_gate_ascending = 487
     gate_descending_closed = 88
     gate_descending = 490
     gate_horizontal_closed = 659
@@ -153,7 +153,7 @@ class BuildingId(enum):
     gate_vertical_closed = 667
     gate_vertical_open = 673
     gate_vertical = 673
-class Civ(enum):
+class Civ(Enum):
     gaia = 0
     briton = 1
     frankish = 2
@@ -203,7 +203,7 @@ class Civ(enum):
     achaemenids = 46
     athenians = 47
     spartans = 48
-class ClassId(enum):
+class ClassId(Enum):
     archery_class = 900
     cavalry_archer_class = 936
     archery_cannon_class = 944
@@ -228,7 +228,7 @@ class ClassId(enum):
     tower_class = 952
     gate_class = 939
     miscellaneous_class = 911
-class CmdId(enum):
+class CmdId(Enum):
     cmdid_flag = 0
     cmdid_livestock_gaia = 1
     cmdid_civilian_building = 2
@@ -242,23 +242,23 @@ class CmdId(enum):
     cmdid_military_building = 10
 class ColorId:
     pass #unImplemented
-class Commodity(enum):
+class Commodity(Enum):
     food = 0
     wood = 1
     stone = 2
 class Defconst:
     pass #unImplemented
-class Difficulty(enum):
+class Difficulty(Enum):
     extreme = -1
     hardest = 0
     hard = 1
     moderate = 2
     easy = 3
     easiest = 4
-class DiffParameterId(enum):
+class DiffParameterId(Enum):
     ability_to_maintain_distance = 0
     ability_to_dodge_missiles = 1
-class DUCAction(enum):
+class DUCAction(Enum):
     action_default = 0
     action_move = 1
     action_patrol = 2
@@ -280,7 +280,7 @@ class DUCAction(enum):
     action_none = 18
     action_attack_move = 19
     action_transform = 20
-class EffectId(enum):
+class EffectId(Enum):
     effect_set_attribute = 0
     effect_mod_resource = 1
     effect_enable_object = 2
@@ -295,13 +295,13 @@ class EscrowGoalId:
     pass #var
 class EventId:
     pass #int
-class EventType(enum):
+class EventType(Enum):
     trigger = 0
-class ExploredState(enum):
+class ExploredState(Enum):
     explored_no = 0
     explored_active = 15
     explored_yes = 128
-class FactId(enum):
+class FactId(Enum):
     game_time = 0
     population_cap = 1
     population_headroom = 2
@@ -359,20 +359,20 @@ class FactId(enum):
     treaty_time = 54
 class FactParameter:
     pass #unImplemented
-class FindPlayerMethod(enum):
+class FindPlayerMethod(Enum):
     find_attacker = 0
     find_random = 1
     find_closest = 2
     find_ordered = 3
 class Flag:
     pass #unImplemented
-class Formation(enum):
+class Formation(Enum):
     _1 = -1
     formation_line = 2
     formation_box = 4
     formation_stagger = 7
     formation_flank = 8
-class GameType(enum):
+class GameType(Enum):
     random_map = 0
     regicide = 1
     death_match = 2
@@ -389,7 +389,7 @@ class GoalId:
     pass #var
 class GroupId:
     pass #int
-class GroupType(enum):
+class GroupType(Enum):
     group_type_land_attack = 100
     group_type_land_explore = 101
     group_type_water_attack = 102
@@ -400,20 +400,20 @@ class GroupType(enum):
     group_type_forward_builder = 107
     group_type_monk = 108
     group_type_land_trade = 109
-class GuardFlag(enum):
+class GuardFlag(Enum):
     guard_flag_victory = 1
     guard_flag_resource = 2
     guard_flag_inverse = 4
 class Id:
     pass #int
-class IdleType(enum):
+class IdleType(Enum):
     idle_type_villager = 0
     idle_type_trade_cart = 1
     idle_type_fishing_ship = 2
     idle_type_trade_cog = 3
 class Index:
     pass #int
-class ItemId(enum):
+class ItemId(Enum):
     archer = 4
     crossbowman = 24
     arbalest = 492
@@ -426,7 +426,7 @@ class ItemId(enum):
     slinger = 185
     genitour = 1010
     elite_genitour = 1012
-     = 206
+    VMDL = 206
     elephant_archer = 873
     elite_elephant_archer = 875
     militiaman = 74
@@ -640,7 +640,7 @@ class ItemId(enum):
     donjon = 1665
     gate_ascending_closed = 64
     gate_ascending_open = 78
-    gate,gate_ascending = 487
+    gate_gate_ascending = 487
     gate_descending_closed = 88
     gate_descending = 490
     gate_horizontal_closed = 659
@@ -891,7 +891,7 @@ class ItemId(enum):
     ri_siege_engineers = 377
 class LanguageId:
     pass #unImplemented
-class LineId(enum):
+class LineId(Enum):
     stone_wall_line = -399
     watch_tower_line = -398
     archer_line = -299
@@ -981,28 +981,28 @@ class LineId(enum):
     ancient_galley_line = -215
     incendiary_ship_line = -214
     catapult_ship_line = -213
-class LocalIndex(enum):
+class LocalIndex(Enum):
     keep = 0
     clear = 1
-class LocalList(enum):
+class LocalList(Enum):
     keep = 0
     clear = 1
-class MapSize(enum):
+class MapSize(Enum):
     miniature_map = 80
-    tiny_map,_tiny = 120
-    small_map,_small = 144
-    medium_map,_medium = 168
-    normal_map,_normal = 200
-    large_map,_large = 220
-    huge_map,_giant = 240
+    tiny_map_tiny = 120
+    small_map_small = 144
+    medium_map_medium = 168
+    normal_map_normal = 200
+    large_map_large = 220
+    huge_map_giant = 240
     giant_map = 252
     massive_map = 276
     enormous_map = 300
     colossal_map = 320
     incredible_map = 360
     monstrous_map = 400
-    ludicrous_map,_ludicrous,_ludikris = 480
-class MapType(enum):
+    ludicrous_map_ludicrous_ludikris = 480
+class MapType(Enum):
     scenario_map = -1
     arabia = 9
     archipelago = 10
@@ -1129,7 +1129,7 @@ class MinDistance:
     pass #int
 class MinGarrison:
     pass #int
-class ObjectData(enum):
+class ObjectData(Enum):
     object_data_index = -1
     object_data_id = 0
     object_data_type = 1
@@ -1221,7 +1221,7 @@ class ObjectData(enum):
     object_data_charge_attack_amount = 87
     object_data_charge_attack_regeneration_rate = 88
     object_data_charge_attack_event_type = 89
-class ObjectId(enum):
+class ObjectId(Enum):
     archer = 4
     crossbowman = 24
     arbalest = 492
@@ -1234,7 +1234,7 @@ class ObjectId(enum):
     slinger = 185
     genitour = 1010
     elite_genitour = 1012
-     = 206
+    VMDL = 206
     elephant_archer = 873
     elite_elephant_archer = 875
     militiaman = 74
@@ -1448,7 +1448,7 @@ class ObjectId(enum):
     donjon = 1665
     gate_ascending_closed = 64
     gate_ascending_open = 78
-    gate,gate_ascending = 487
+    gate_gate_ascending = 487
     gate_descending_closed = 88
     gate_descending = 490
     gate_horizontal_closed = 659
@@ -1458,16 +1458,16 @@ class ObjectId(enum):
     gate_vertical_open = 673
     gate_vertical = 673
     flare = 274
-class ObjectList(enum):
+class ObjectList(Enum):
     list_active = 0
     list_inactive = 1
-class ObjectStatus(enum):
+class ObjectStatus(Enum):
     status_pending = 0
     status_ready = 2
     status_resource = 3
     status_down = 4
     status_gather = 5
-class OnMainland(enum):
+class OnMainland(Enum):
     On = 0
     Off = 1
     Ignore = -1
@@ -1475,7 +1475,7 @@ class Option:
     pass #unImplemented
 class OptionGoalId:
     pass #var
-class OrderId(enum):
+class OrderId(Enum):
     _1 = -1
     orderid_attack = 700
     orderid_defend = 701
@@ -1504,15 +1504,15 @@ class OutputGoalId:
     pass #var
 class Percent:
     pass #int
-class Perimeter(enum):
+class Perimeter(Enum):
     Inner = 1
     Outer = 2
-class PlacementType(enum):
+class PlacementType(Enum):
     place_normal = 0
     place_forward = 1
     place_control = 2
     place_point = 3
-class PlayerNumber(enum):
+class PlayerNumber(Enum):
     this_any_ally = 101
     this_any_computer = 102
     this_any_computer_ally = 103
@@ -1524,14 +1524,14 @@ class PlayerNumber(enum):
     this_any_human_enemy = 109
     this_any_human_neutral = 110
     this_any_neutral = 111
-class PlayerStance(enum):
+class PlayerStance(Enum):
     ally = 0
     neutral = 1
     any = 2
     enemy = 3
 class Point:
     pass #Point
-class PositionType(enum):
+class PositionType(Enum):
     position_center = 0
     position_opposite = 1
     position_corner = 2
@@ -1546,10 +1546,10 @@ class PositionType(enum):
     position_focus = 11
     position_object = 12
     position_point = 13
-class ProgressType(enum):
+class ProgressType(Enum):
     progress_type_train = 102
     progress_type_research = 103
-class ProjectileType(enum):
+class ProjectileType(Enum):
     projectile_town_center = 0
     projectile_castle = 1
     projectile_watch_tower = 2
@@ -1558,23 +1558,23 @@ class ProjectileType(enum):
     projectile_siege = 5
     projectile_fortification = 6
     projectile_any = 7
-class PriorityType(enum):
+class PriorityType(Enum):
     priority_offense = 0
     priority_defense = 1
-class RemoteIndex(enum):
+class RemoteIndex(Enum):
     keep = 0
     clear = 1
-class RemoteList(enum):
+class RemoteList(Enum):
     keep = 0
     clear = 1
-class ResearchState(enum):
+class ResearchState(Enum):
     research_disabled = -1
     research_unavailable = 0
     research_available = 1
     research_pending = 2
     research_complete = 3
     research_queued = 4
-class Resource(enum):
+class Resource(Enum):
     food = 0
     wood = 1
     stone = 2
@@ -1583,7 +1583,7 @@ class Resource(enum):
     boar_hunting = 5
     deer_hunting = 6
     live_boar = 7
-class ResourceType(enum):
+class ResourceType(Enum):
     amount_food = 0
     amount_wood = 1
     amount_stone = 2
@@ -1860,7 +1860,7 @@ class RuleDelta:
     pass #USER SHOULD NEVER USE THIS!
 class RuleId:
     pass #USER SHOULD NEVER USE THIS!
-class ScoutMethod(enum):
+class ScoutMethod(Enum):
     scout_center = 0
     scout_opposite = 1
     scout_corner = 2
@@ -1868,14 +1868,14 @@ class ScoutMethod(enum):
     scout_border = 4
     scout_mirror = 5
     scout_flank = 6
-class SearchOrder(enum):
+class SearchOrder(Enum):
     search_order_none = 0
     search_order_asc = 1
     search_order_desc = 2
-class SearchSource(enum):
+class SearchSource(Enum):
     search_local = 1
     search_remote = 2
-class SetId(enum):
+class SetId(Enum):
     monk_set = 970
     trebuchet_set = 971
     huskarl_set = 972
@@ -1901,7 +1901,7 @@ class SharedGoalId:
     pass #USER SHOULD NEVER USE THIS!
 class SignalId:
     pass #int
-class SnId(enum):
+class SnId(Enum):
     sn_add_starting_resource_food = 138
     sn_add_starting_resource_gold = 139
     sn_add_starting_resource_stone = 140
@@ -2209,7 +2209,7 @@ class SnId(enum):
     unknown_sn_199 = 199
     unknown_sn_200 = 200
     unknown_sn_211 = 211
-class StartingResources(enum):
+class StartingResources(Enum):
     low_resources = 1
     medium_resources = 2
     high_resources = 3
@@ -2218,14 +2218,14 @@ class StartingResources(enum):
     random_resources = 6
 class String:
     pass #String
-class SubGameType(enum):
+class SubGameType(Enum):
     sub_game_type_empire_wars = 1
     sub_game_type_sudden_death = 1
     sub_game_type_regicide = 1
     sub_game_type_king_of_the_hill = 1
 class TauntId:
     pass #int
-class TechId(enum):
+class TechId(Enum):
     ri_crossbow = 100
     ri_elite_skirmisher = 98
     ri_arbalest = 237
@@ -2465,7 +2465,7 @@ class TechId(enum):
     ri_arrowslits = 608
     ri_chemistry = 47
     ri_siege_engineers = 377
-class Terrain(enum):
+class Terrain(Enum):
     terrain_grass = 0
     terrain_water = 1
     terrain_water_beach = 2
@@ -2518,11 +2518,11 @@ class ThreatTime:
     pass #var
 class TimerId:
     pass #int
-class TimerState(enum):
+class TimerState(Enum):
     timer_disabled = 0
     timer_triggered = 1
     timer_running = 2
-class TypeId(enum):
+class TypeId(Enum):
     archer = 4
     crossbowman = 24
     arbalest = 492
@@ -2535,7 +2535,7 @@ class TypeId(enum):
     slinger = 185
     genitour = 1010
     elite_genitour = 1012
-     = 206
+    VMDL = 206
     elephant_archer = 873
     elite_elephant_archer = 875
     militiaman = 74
@@ -2749,7 +2749,7 @@ class TypeId(enum):
     donjon = 1665
     gate_ascending_closed = 64
     gate_ascending_open = 78
-    gate,gate_ascending = 487
+    gate_gate_ascending = 487
     gate_descending_closed = 88
     gate_descending = 490
     gate_horizontal_closed = 659
@@ -2759,7 +2759,7 @@ class TypeId(enum):
     gate_vertical_open = 673
     gate_vertical = 673
     flare = 274
-class UnitId(enum):
+class UnitId(Enum):
     archer = 4
     crossbowman = 24
     arbalest = 492
@@ -2954,7 +2954,7 @@ class UnitId(enum):
     flare = 274
 class Value:
     pass #int
-class VictoryCondition(enum):
+class VictoryCondition(Enum):
     standard = 0
     conquest = 1
     time_limit = 2
@@ -2966,5 +2966,377 @@ class VictoryTime:
     pass #var
 class VictoryType:
     pass #var
-class WallId(enum):
+class WallId(Enum):
     stone_wall_line = -399
+class AOE2FUNC(Enum):
+    acknowledge_event = 0
+    acknowledge_taunt = 1
+    attack_now = 2
+    attack_soldier_count = 3
+    attack_warboat_count = 4
+    build = 5
+    build_forward = 6
+    build_gate = 7
+    build_wall = 8
+    building_available = 9
+    building_count = 10
+    building_count_total = 11
+    building_type_count = 12
+    building_type_count_total = 13
+    buy_commodity = 14
+    can_afford_building = 15
+    can_afford_complete_wall = 16
+    can_afford_research = 17
+    can_afford_unit = 18
+    can_build = 19
+    can_build_gate = 20
+    can_build_gate_with_escrow = 21
+    can_build_wall = 22
+    can_build_wall_with_escrow = 23
+    can_build_with_escrow = 24
+    can_buy_commodity = 25
+    can_research = 26
+    can_research_with_escrow = 27
+    can_sell_commodity = 28
+    can_spy = 29
+    can_spy_with_escrow = 30
+    can_train = 31
+    can_train_with_escrow = 32
+    cc_add_resource = 33
+    cc_players_building_count = 34
+    cc_players_building_type_count = 35
+    cc_players_unit_count = 36
+    cc_players_unit_type_count = 37
+    chat_local = 38
+    chat_local_to_self = 39
+    chat_local_using_id = 40
+    chat_local_using_range = 41
+    chat_to_all = 42
+    chat_to_all_using_id = 43
+    chat_to_all_using_range = 44
+    chat_to_allies = 45
+    chat_to_allies_using_id = 46
+    chat_to_allies_using_range = 47
+    chat_to_enemies = 48
+    chat_to_enemies_using_id = 49
+    chat_to_enemies_using_range = 50
+    chat_to_player = 51
+    chat_to_player_using_id = 52
+    chat_to_player_using_range = 53
+    chat_trace = 54
+    cheats_enabled = 55
+    civ_selected = 56
+    civilian_population = 57
+    clear_tribute_memory = 58
+    commodity_buying_price = 59
+    commodity_selling_price = 60
+    current_age = 61
+    current_age_time = 62
+    current_score = 63
+    death_match_game = 64
+    defend_soldier_count = 65
+    defend_warboat_count = 66
+    delete_building = 67
+    delete_unit = 68
+    difficulty = 69
+    disable_rule = 70
+    disable_self = 71
+    disable_timer = 72
+    do_nothing = 73
+    doctrine = 74
+    dropsite_min_distance = 75
+    enable_rule = 76
+    enable_timer = 77
+    enable_wall_placement = 78
+    enemy_buildings_in_town = 79
+    enemy_captured_relics = 80
+    escrow_amount = 81
+    event_detected = 82
+    false = 83
+    fe_break_point = 84
+    fe_cc_effect_amount = 85
+    fe_cc_effect_percent = 86
+    fe_filter_garrisoned = 87
+    fe_set_signal = 88
+    fe_sub_game_type = 89
+    food_amount = 90
+    game_time = 91
+    game_type = 92
+    gate_count = 93
+    generate_random_number = 94
+    goal = 95
+    gold_amount = 96
+    hold_koh_ruin = 97
+    hold_relics = 98
+    housing_headroom = 99
+    idle_farm_count = 100
+    log = 101
+    log_trace = 102
+    map_size = 103
+    map_type = 104
+    military_population = 105
+    player_computer = 106
+    player_human = 107
+    player_in_game = 108
+    player_number = 109
+    player_resigned = 110
+    player_valid = 111
+    players_building_count = 112
+    players_building_type_count = 113
+    players_civ = 114
+    players_civilian_population = 115
+    players_current_age = 116
+    players_current_age_time = 117
+    players_military_population = 118
+    players_population = 119
+    players_score = 120
+    players_stance = 121
+    players_tribute = 122
+    players_tribute_memory = 123
+    players_unit_count = 124
+    players_unit_type_count = 125
+    population = 126
+    population_cap = 127
+    population_headroom = 128
+    random_number = 129
+    regicide_game = 130
+    release_escrow = 131
+    research = 132
+    research_available = 133
+    research_completed = 134
+    resign = 135
+    resource_found = 136
+    sell_commodity = 137
+    set_author_email = 138
+    set_author_name = 139
+    set_author_version = 140
+    set_difficulty_parameter = 141
+    set_doctrine = 142
+    set_escrow_percentage = 143
+    set_goal = 144
+    set_shared_goal = 145
+    set_signal = 146
+    set_stance = 147
+    set_strategic_number = 148
+    shared_goal = 149
+    sheep_and_forage_too_far = 150
+    soldier_count = 151
+    spy = 152
+    stance_toward = 153
+    starting_age = 154
+    starting_resources = 155
+    stone_amount = 156
+    strategic_number = 157
+    taunt = 158
+    taunt_detected = 159
+    taunt_using_range = 160
+    timer_triggered = 161
+    town_under_attack = 162
+    trace_fact = 163
+    train = 164
+    tribute_to_player = 165
+    true = 166
+    unit_available = 167
+    unit_count = 168
+    unit_count_total = 169
+    unit_type_count = 170
+    unit_type_count_total = 171
+    up_add_cost_data = 172
+    up_add_object_by_id = 173
+    up_add_object_cost = 174
+    up_add_point = 175
+    up_add_research_cost = 176
+    up_allied_goal = 177
+    up_allied_resource_amount = 178
+    up_allied_resource_percent = 179
+    up_allied_sn = 180
+    up_assign_builders = 181
+    up_attacker_class = 182
+    up_bound_point = 183
+    up_bound_precise_point = 184
+    up_build = 185
+    up_build_line = 186
+    up_building_type_in_town = 187
+    up_buy_commodity = 188
+    up_can_build = 189
+    up_can_build_line = 190
+    up_can_research = 191
+    up_can_search = 192
+    up_can_train = 193
+    up_cc_add_resource = 194
+    up_cc_send_cheat = 195
+    up_change_name = 196
+    up_chat_data_to_all = 197
+    up_chat_data_to_player = 198
+    up_chat_data_to_self = 199
+    up_clean_search = 200
+    up_compare_const = 201
+    up_compare_flag = 202
+    up_compare_goal = 203
+    up_compare_sn = 204
+    up_compare_text = 205
+    up_copy_point = 206
+    up_create_group = 207
+    up_cross_tiles = 208
+    up_defender_count = 209
+    up_delete_distant_farms = 210
+    up_delete_idle_units = 211
+    up_delete_objects = 212
+    up_disband_group_type = 213
+    up_drop_resources = 214
+    up_enemy_buildings_in_town = 215
+    up_enemy_units_in_town = 216
+    up_enemy_villagers_in_town = 217
+    up_filter_distance = 218
+    up_filter_exclude = 219
+    up_filter_garrison = 220
+    up_filter_include = 221
+    up_filter_range = 222
+    up_filter_status = 223
+    up_find_flare = 224
+    up_find_local = 225
+    up_find_next_player = 226
+    up_find_player = 227
+    up_find_player_flare = 228
+    up_find_remote = 229
+    up_find_resource = 230
+    up_find_status_local = 231
+    up_find_status_remote = 232
+    up_full_reset_search = 233
+    up_gaia_type_count = 234
+    up_gaia_type_count_total = 235
+    up_garrison = 236
+    up_gather_inside = 237
+    up_get_attacker_class = 238
+    up_get_cost_delta = 239
+    up_get_event = 240
+    up_get_fact = 241
+    up_get_fact_max = 242
+    up_get_fact_min = 243
+    up_get_fact_sum = 244
+    up_get_focus_fact = 245
+    up_get_group_size = 246
+    up_get_guard_state = 247
+    up_get_indirect_goal = 248
+    up_get_object_data = 249
+    up_get_object_target_data = 250
+    up_get_object_type_data = 251
+    up_get_path_distance = 252
+    up_get_player_color = 253
+    up_get_player_fact = 254
+    up_get_point = 255
+    up_get_point_contains = 256
+    up_get_point_distance = 257
+    up_get_point_elevation = 258
+    up_get_point_terrain = 259
+    up_get_point_zone = 260
+    up_get_precise_time = 261
+    up_get_projectile_player = 262
+    up_get_rule_id = 263
+    up_get_search_state = 264
+    up_get_shared_goal = 265
+    up_get_signal = 266
+    up_get_target_fact = 267
+    up_get_threat_data = 268
+    up_get_timer = 269
+    up_get_treaty_data = 270
+    up_get_upgrade_id = 271
+    up_get_victory_data = 272
+    up_get_victory_limit = 273
+    up_group_size = 274
+    up_guard_unit = 275
+    up_idle_unit_count = 276
+    up_jump_direct = 277
+    up_jump_dynamic = 278
+    up_jump_rule = 279
+    up_lerp_percent = 280
+    up_lerp_tiles = 281
+    up_log_data = 282
+    up_modify_escrow = 283
+    up_modify_flag = 284
+    up_modify_goal = 285
+    up_modify_group_flag = 286
+    up_modify_sn = 287
+    up_object_data = 288
+    up_object_target_data = 289
+    up_object_type_count = 290
+    up_object_type_count_total = 291
+    up_path_distance = 292
+    up_pending_objects = 293
+    up_pending_placement = 294
+    up_player_distance = 295
+    up_players_in_game = 296
+    up_point_contains = 297
+    up_point_distance = 298
+    up_point_elevation = 299
+    up_point_explored = 300
+    up_point_terrain = 301
+    up_point_zone = 302
+    up_projectile_detected = 303
+    up_projectile_target = 304
+    up_release_escrow = 305
+    up_remaining_boar_amount = 306
+    up_remove_objects = 307
+    up_request_hunters = 308
+    up_research = 309
+    up_research_status = 310
+    up_reset_attack_now = 311
+    up_reset_building = 312
+    up_reset_cost_data = 313
+    up_reset_filters = 314
+    up_reset_group = 315
+    up_reset_placement = 316
+    up_reset_scouts = 317
+    up_reset_search = 318
+    up_reset_target_priorities = 319
+    up_reset_unit = 320
+    up_resource_amount = 321
+    up_resource_percent = 322
+    up_retask_gatherers = 323
+    up_retreat_now = 324
+    up_retreat_to = 325
+    up_sell_commodity = 326
+    up_send_flare = 327
+    up_send_scout = 328
+    up_set_attack_stance = 329
+    up_set_defense_priority = 330
+    up_set_event = 331
+    up_set_group = 332
+    up_set_indirect_goal = 333
+    up_set_offense_priority = 334
+    up_set_placement_data = 335
+    up_set_precise_target_point = 336
+    up_set_shared_goal = 337
+    up_set_signal = 338
+    up_set_target_by_id = 339
+    up_set_target_object = 340
+    up_set_target_point = 341
+    up_set_timer = 342
+    up_setup_cost_data = 343
+    up_store_map_name = 344
+    up_store_object_name = 345
+    up_store_player_chat = 346
+    up_store_player_name = 347
+    up_store_tech_name = 348
+    up_store_text = 349
+    up_store_type_name = 350
+    up_target_objects = 351
+    up_target_point = 352
+    up_timer_status = 353
+    up_train = 354
+    up_train_site_ready = 355
+    up_tribute_to_player = 356
+    up_ungarrison = 357
+    up_unit_type_in_town = 358
+    up_update_targets = 359
+    up_villager_type_in_town = 360
+    victory_condition = 361
+    wall_completed_percentage = 362
+    wall_invisible_percentage = 363
+    warboat_count = 364
+    wood_amount = 365
+    xs_script_call = 366
+
+class AOE2OBJ(Enum):
+    Point = 0
+    State = 0

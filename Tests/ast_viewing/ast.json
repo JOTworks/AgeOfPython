@@ -1,0 +1,363 @@
+{
+  "_type": "Module",
+  "body": [
+    {
+      "_type": "Assign",
+      "targets": [
+        {
+          "_type": "Name",
+          "id": "x",
+          "ctx": {
+            "_type": "Store"
+          }
+        }
+      ],
+      "value": {
+        "_type": "Constant",
+        "value": 12,
+        "kind": null
+      },
+      "type_comment": null
+    },
+    {
+      "_type": "Assign",
+      "targets": [
+        {
+          "_type": "Name",
+          "id": "x",
+          "ctx": {
+            "_type": "Store"
+          }
+        }
+      ],
+      "value": {
+        "_type": "Constant",
+        "value": 11,
+        "kind": null
+      },
+      "type_comment": null
+    },
+    {
+      "_type": "Assign",
+      "targets": [
+        {
+          "_type": "Name",
+          "id": "x",
+          "ctx": {
+            "_type": "Store"
+          }
+        }
+      ],
+      "value": {
+        "_type": "BinOp",
+        "left": {
+          "_type": "Constant",
+          "value": 15,
+          "kind": null
+        },
+        "op": {
+          "_type": "Add"
+        },
+        "right": {
+          "_type": "Name",
+          "id": "x",
+          "ctx": {
+            "_type": "Load"
+          }
+        }
+      },
+      "type_comment": null
+    },
+    {
+      "_type": "If",
+      "test": {
+        "_type": "Constant",
+        "value": true,
+        "kind": null
+      },
+      "body": [
+        {
+          "_type": "Expr",
+          "value": {
+            "_type": "Call",
+            "func": {
+              "_type": "Name",
+              "id": "delete_unit",
+              "ctx": {
+                "_type": "Load"
+              }
+            },
+            "args": [
+              {
+                "_type": "Attribute",
+                "value": {
+                  "_type": "Name",
+                  "id": "UnitId",
+                  "ctx": {
+                    "_type": "Load"
+                  }
+                },
+                "attr": "archer",
+                "ctx": {
+                  "_type": "Load"
+                }
+              }
+            ],
+            "keywords": []
+          }
+        }
+      ],
+      "orelse": []
+    },
+    {
+      "_type": "Assign",
+      "targets": [
+        {
+          "_type": "Name",
+          "id": "x",
+          "ctx": {
+            "_type": "Store"
+          }
+        }
+      ],
+      "value": {
+        "_type": "Call",
+        "func": {
+          "_type": "Name",
+          "id": "Point",
+          "ctx": {
+            "_type": "Load"
+          }
+        },
+        "args": [
+          {
+            "_type": "Constant",
+            "value": 14,
+            "kind": null
+          }
+        ],
+        "keywords": []
+      },
+      "type_comment": null
+    },
+    {
+      "_type": "If",
+      "test": {
+        "_type": "BoolOp",
+        "op": {
+          "_type": "And"
+        },
+        "values": [
+          {
+            "_type": "Call",
+            "func": {
+              "_type": "Name",
+              "id": "can_research",
+              "ctx": {
+                "_type": "Load"
+              }
+            },
+            "args": [
+              {
+                "_type": "Attribute",
+                "value": {
+                  "_type": "Name",
+                  "id": "TechId",
+                  "ctx": {
+                    "_type": "Load"
+                  }
+                },
+                "attr": "ri_loom",
+                "ctx": {
+                  "_type": "Load"
+                }
+              }
+            ],
+            "keywords": []
+          },
+          {
+            "_type": "Call",
+            "func": {
+              "_type": "Name",
+              "id": "building_type_count_total",
+              "ctx": {
+                "_type": "Load"
+              }
+            },
+            "args": [
+              {
+                "_type": "Attribute",
+                "value": {
+                  "_type": "Name",
+                  "id": "BuildingId",
+                  "ctx": {
+                    "_type": "Load"
+                  }
+                },
+                "attr": "house",
+                "ctx": {
+                  "_type": "Load"
+                }
+              },
+              {
+                "_type": "Constant",
+                "value": ">",
+                "kind": null
+              },
+              {
+                "_type": "Constant",
+                "value": 1,
+                "kind": null
+              }
+            ],
+            "keywords": []
+          },
+          {
+            "_type": "BoolOp",
+            "op": {
+              "_type": "Or"
+            },
+            "values": [
+              {
+                "_type": "Call",
+                "func": {
+                  "_type": "Name",
+                  "id": "food_amount",
+                  "ctx": {
+                    "_type": "Load"
+                  }
+                },
+                "args": [
+                  {
+                    "_type": "Constant",
+                    "value": "<",
+                    "kind": null
+                  },
+                  {
+                    "_type": "Constant",
+                    "value": 50,
+                    "kind": null
+                  }
+                ],
+                "keywords": []
+              },
+              {
+                "_type": "BoolOp",
+                "op": {
+                  "_type": "And"
+                },
+                "values": [
+                  {
+                    "_type": "Call",
+                    "func": {
+                      "_type": "Name",
+                      "id": "housing_headroom",
+                      "ctx": {
+                        "_type": "Load"
+                      }
+                    },
+                    "args": [
+                      {
+                        "_type": "Constant",
+                        "value": "<",
+                        "kind": null
+                      },
+                      {
+                        "_type": "Constant",
+                        "value": 1,
+                        "kind": null
+                      }
+                    ],
+                    "keywords": []
+                  },
+                  {
+                    "_type": "UnaryOp",
+                    "op": {
+                      "_type": "Not"
+                    },
+                    "operand": {
+                      "_type": "Call",
+                      "func": {
+                        "_type": "Name",
+                        "id": "can_build",
+                        "ctx": {
+                          "_type": "Load"
+                        }
+                      },
+                      "args": [
+                        {
+                          "_type": "Attribute",
+                          "value": {
+                            "_type": "Name",
+                            "id": "BuildingId",
+                            "ctx": {
+                              "_type": "Load"
+                            }
+                          },
+                          "attr": "house",
+                          "ctx": {
+                            "_type": "Load"
+                          }
+                        }
+                      ],
+                      "keywords": []
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "body": [
+        {
+          "_type": "Expr",
+          "value": {
+            "_type": "Call",
+            "func": {
+              "_type": "Name",
+              "id": "research",
+              "ctx": {
+                "_type": "Load"
+              }
+            },
+            "args": [
+              {
+                "_type": "Attribute",
+                "value": {
+                  "_type": "Name",
+                  "id": "TechId",
+                  "ctx": {
+                    "_type": "Load"
+                  }
+                },
+                "attr": "ri_loom",
+                "ctx": {
+                  "_type": "Load"
+                }
+              }
+            ],
+            "keywords": []
+          }
+        },
+        {
+          "_type": "Expr",
+          "value": {
+            "_type": "Call",
+            "func": {
+              "_type": "Name",
+              "id": "disable_self",
+              "ctx": {
+                "_type": "Load"
+              }
+            },
+            "args": [],
+            "keywords": []
+          }
+        }
+      ],
+      "orelse": []
+    }
+  ],
+  "type_ignores": []
+}

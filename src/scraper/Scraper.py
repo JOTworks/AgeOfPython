@@ -9,6 +9,7 @@ import os
 from pprint import pprint
 from typing import Dict
 from itertools import chain
+import inspect
 
 class ObjectStorage:
     def __init__(self, id, name, ai_name, line, obj_class, cmd_id, category, age, dead_id):
@@ -317,7 +318,7 @@ def make_parameter_class_lines(parameter_name,parameter_storage: ParameterStorag
 
     if isinstance(parameter_options_dict, str): #TODO: this is janky but wnated to show what needs to be in or goal id instead of enum  
         return [f"class {parameter_name}:",'    pass #'+parameter_options_dict]
-    lines.append(f"class {parameter_name}(enum):")
+    lines.append(f"class {parameter_name}(Enum):")
     
     if not parameter_options_dict:
         lines.append('    pass #empty options_dict')
@@ -325,10 +326,14 @@ def make_parameter_class_lines(parameter_name,parameter_storage: ParameterStorag
     for option, id in parameter_options_dict.items():
         option = option.replace('-','_')
         option = option.replace(' ','_')
+        option = option.replace(',','_')
+        option = option.replace('__','_')
         if parameter_name in ['ObjectData','ClassId']:
             option = option.replace('*','')
         if parameter_name in ['AttrId']:
             option = option.replace('.','')
+        if not option:
+            option = parameter_storage.name
         lines.append(f"    {option} = {id}")
     return lines
 
@@ -370,15 +375,6 @@ def make_function_def_lines(command_name,command_storage: CommandStorage, p_dict
     lines += help_text
     lines.append('    pass')
     return lines
-
-def make_import_lines():
-    return [
-        '# --- Removed parameters --- #',
-        '# all of the parameter types from the website with their IDs.',
-        '# mathops and comparison ops are handdled by the intepreter.',
-        '#',
-        "import enum",
-    ]
 
 # Generate files ----------------------------------------
 class UniqueParamGenerator:
@@ -497,7 +493,7 @@ class UniqueParamGenerator:
     def get_typeOp(self):
         return {}
     def get_ObjectId(self):
-        return dict([(object_storage.ai_name, object_storage.id) for object_storage in self.object_dict.values()])
+        return dict([(object_storage.ai_name, object_storage.id) if object_storage.ai_name else (object_storage.name.replace(' ','_'), object_storage.id) for object_storage in self.object_dict.values()])
     def get_TypeId(self):
         return self.get_ObjectId()
     def get_ItemId(self):
@@ -547,14 +543,29 @@ class UniqueParamGenerator:
 
 def generate_aoe2scriptEnums():
     p_dict = open_file('parameter_dict.pkl')
-    lines = []
-    lines += make_import_lines()
+    lines = [
+        '# --- Removed parameters --- #',
+        '# all of the parameter types from the website with their IDs.',
+        '# mathops and comparison ops are handdled by the intepreter.',
+        '#',
+        "from enum import Enum",
+    ]
     unique_param_generator = UniqueParamGenerator()
     for parameter_name, parameter_storage in p_dict.items():
         assert isinstance(parameter_storage,ParameterStorage)
         if parameter_name in unique_param_generator.names:
             parameter_storage.options = unique_param_generator.create_options_dict(parameter_name)
         lines += make_parameter_class_lines(parameter_name, parameter_storage)
+    
+    #add command enums
+    import aoe2scriptFunctions
+    command_names = [name for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isfunction)]
+    options = dict(zip(command_names, [i for i in range(len(command_names))]))
+    lines += make_parameter_class_lines("AOE2FUNC", ParameterStorage(options,'',''))
+
+    class_names = [name for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isclass)]
+    options = dict(zip(class_names, [i for i in range(len(class_names))]))
+    lines += make_parameter_class_lines("AOE2OBJ", ParameterStorage(options,'',''))
     
     output_path = os.path.join(os.path.dirname(__file__), 'aoe2scriptEnums.py')
     with open(output_path, 'w') as file:
@@ -570,9 +581,6 @@ def generate_aoe2scriptFunctions():
     output_path = os.path.join(os.path.dirname(__file__), 'aoe2scriptFunctions.py')
     with open(output_path, 'w') as file:
         file.write('\n'.join(lines))
-
-def generate_aoe2scriptStrategicNumbers():
-    pass
 
 #save_object_codes()
 #save_tech_codes()
