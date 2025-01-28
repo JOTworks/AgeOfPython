@@ -138,7 +138,7 @@ class CompileTransformer(ast.NodeTransformer):
         node.body = (
                 [DefRule(Command(AOE2FUNC.true,[],None),[last_rule_in_node], node_copy_with_short_offset(node,2))] +
             node.body +
-            [DefRule(self.visit_test(node.test),[test_jump_to_beginning], node.test)]
+            [DefRule(self.visit_test(node.test),[test_jump_to_beginning], None)]
         )
         return node
     

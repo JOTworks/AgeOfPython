@@ -9,7 +9,6 @@ class DefRuleVisitor(ast.NodeVisitor):
         super().__init__()
         self.finalString = finalString
 
-    #! something is printing out the jump commands twice inside of defrule body
     def visit_DefRule(self, node): # adds (defrule _______  => ______)
         self.finalString += green("(defrule") + comment(node) + "\n"
         if isinstance(node.test, Command):
@@ -20,7 +19,7 @@ class DefRuleVisitor(ast.NodeVisitor):
         for body_node in node.body:
             if isinstance(body_node, Command):
                 self.visit_Command(body_node)
-            if isinstance(body_node, ast.expr):
+            elif isinstance(body_node, ast.expr):
                 self.visit_Expr(body_node)
         self.finalString += green(")\n")
 
