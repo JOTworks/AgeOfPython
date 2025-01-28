@@ -63,26 +63,17 @@ def main(argv):
     myPrinter.print_all(test = True) #currently test dosn't do anything
   else:
     myPrinter.print_all()
-    file_name = file_name.split(".")
-    f = open(str(ai_folder)+'\\'+file_name[0]+".per","w")
-    open(str(ai_folder)+'\\'+file_name[0]+".ai","w") #adds the ai file if it doesnt exist already
-    print("FILE: "+str(file_name[0])+".per")
-    f.write(myPrinter.finalString)
+    file_name = file_name.split(".")[0]
+    per_file_path = str(ai_folder) + '/' + file_name + ".per"
+    ai_file_path = str(ai_folder) + '/' + file_name + ".ai"
+
+    with open(per_file_path, "w") as f:
+      f.write(myPrinter.no_color_final_string)
+    open(ai_file_path, "w").close()
 
   if "r" in arguments or "v" in arguments:
-    print_bordered("Printer Result")
-    pattern = r'(\;.*)'
-    replacement = Fore.GREEN+Style.DIM+r'\1'+Fore.WHITE+Style.NORMAL
-    regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
-    print(regexed_finalString)
+    print(myPrinter.final_string)
 
-  pattern = r'(\ *;.*)'
-  replacement = '' 
-  regexed_finalString = re.sub(pattern, replacement, myPrinter.finalString)
-
-  if "t" in arguments:
-   print(regexed_finalString)
-   return regexed_finalString
 
 def setup_args(argv):
   arguments = []

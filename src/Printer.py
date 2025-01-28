@@ -3,34 +3,34 @@ from Compiler import Command, DefRule, JumpType
 from scraper import *
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
-
+import re
 class DefRuleVisitor(ast.NodeVisitor):
-    def __init__(self, finalString):
+    def __init__(self, final_string):
         super().__init__()
-        self.finalString = finalString
+        self.final_string = final_string
 
     def visit_DefRule(self, node): # adds (defrule _______  => ______)
-        self.finalString += green("(defrule") + comment(node) + "\n"
+        self.final_string += green("(defrule") + comment(node) + "\n"
         if isinstance(node.test, Command):
             self.visit_Command(node.test)
         elif isinstance(node.test, ast.expr):
             self.visit_expr(node.test)
-        self.finalString += green("=>\n")
+        self.final_string += green("=>\n")
         for body_node in node.body:
             if isinstance(body_node, Command):
                 self.visit_Command(body_node)
             elif isinstance(body_node, ast.expr):
                 self.visit_Expr(body_node)
-        self.finalString += green(")\n")
+        self.final_string += green(")\n")
 
     def visit_Command(self, node): # adds (command arg1 arg2)
-        self.finalString += blue("  (") + blue(node.func.id.name)
+        self.final_string += blue("  (") + blue(node.func.id.name)
         for expr in node.args:
             if isinstance(expr, JumpType):
                 expr = str(expr)
                 print(f"WARNING! JumpType in final print")
-            self.finalString += " " + blue(expr)
-        self.finalString += blue(")") + comment(node) + "\n"
+            self.final_string += " " + blue(expr)
+        self.final_string += blue(")") + comment(node) + "\n"
         self.generic_visit(node)
         
     def visit_Expr(self, node): # adds (op  )
@@ -38,28 +38,36 @@ class DefRuleVisitor(ast.NodeVisitor):
             self.visit_Command(node)
 
         elif isinstance(node, ast.BinOp) or isinstance(node, ast.unaryop):
-            self.finalString += red("(")
+            self.final_string += red("(")
             self.generic_visit(node)
-            self.finalString += red(")")
+            self.final_string += red(")")
         else:
             print(f"WARNING! {node.__class__}:{node} not accounted in visit_Expr")
             self.generic_visit(node)
-        
 
 class Printer:
     def __init__(self, trees):
         self.main = trees.main_tree
         self.funcList = trees.func_tree
         self.constList = trees.const_tree
-        self.finalString = ""   
+        self.final_string = ""   
         print(self.main)
-
+    
+    @property
+    def no_color_final_string(self):
+        # Define a regex pattern to match ANSI escape sequences
+        ansi_escape = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
+        return ansi_escape.sub('', self.final_string)
+    @no_color_final_string.setter
+    def no_color_final_string(self, value):
+        raise AttributeError("no_color_final_string is read-only")
+    
     def print_all(self, test = False):
-        visitor = DefRuleVisitor(self.finalString)
+        visitor = DefRuleVisitor(self.final_string)
         visitor.visit(self.main)
         visitor.visit(self.funcList)
-        self.finalString = visitor.finalString
-        return visitor.finalString
+        self.final_string = visitor.final_string
+        return visitor.final_string
 
 def comment(node):
     if hasattr(node, "file_path"):
@@ -68,11 +76,12 @@ def comment(node):
         file_path = str(node.file_path).split('/')[-1]
     else:
         source_segment=lineno=file_path= ""
-    return (Fore.GREEN+Style.DIM+" ; "
+    return (Fore.GREEN+Style.DIM+" ;"
             +source_segment.replace("\n","/n")
-            +" "+lineno
+            +Style.NORMAL+" "+lineno+Style.DIM
             +"-"+file_path
             +Fore.WHITE+Style.NORMAL)
+
 def green(string):
     return Fore.GREEN+string+Fore.WHITE
 def red(string):
