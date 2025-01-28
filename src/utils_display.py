@@ -69,3 +69,8 @@ def print_column(rows, num_columns):
   widths = [max(map(len, col)) for col in zip(*columned_rows)]
   for row in columned_rows:
     print("  ".join((val.ljust(width) for val, width in zip(row, widths))))
+
+def read_file_as_string(file_path):
+    with open(file_path, 'r') as file:
+        file_contents = file.read()
+    return file_contents

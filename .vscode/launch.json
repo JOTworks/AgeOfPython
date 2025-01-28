@@ -9,7 +9,7 @@
       "console": "integratedTerminal",
 
       "args": [
-        "test_block.aop", "-v",
+        "block_code.py${cwd}", "-v",
       ]
     }
   ]

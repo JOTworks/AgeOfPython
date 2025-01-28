@@ -4,6 +4,7 @@ from enum import Enum
 from scraper import *
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from collections import defaultdict
+import copy
 
 def check_terminal_nodes(tree, node_type):
     for node in ast.walk(tree):
@@ -39,9 +40,15 @@ class Constructor(ast.Call):
         self.args = args
 
 class Command(ast.Call):
-    def __init__(self, name: AOE2FUNC, args: list = [], lineno = '.'):
+    def __init__(self, name: AOE2FUNC, args: list, node):
         super().__init__()
-        self.lineno = lineno
+        if node:
+            self.lineno = node.lineno
+            self.end_lineno = node.end_lineno
+            self.col_offset = node.col_offset
+            self.end_col_offset = node.end_col_offset
+            self.file_path = node.file_path
+
         #TODO: this is where i can do hard type checking for command params
         if not isinstance(name, AOE2FUNC):
             raise TypeError(f'needs to be a AOE2FUNC, got {type(name)}')
@@ -60,10 +67,16 @@ class Command(ast.Call):
 
 #defrules are just test and body. basicly if statements. so i just need to make everything into if statements
 class DefRule(ast.If):
-    def __init__(self, test: list, body: list, lineno = '.'):
+    def __init__(self, test: list, body: list, node):
         super().__init__()
         check_terminal_nodes(test, Command)
-        self.lineno = lineno
+        if node:
+            self.lineno = node.lineno
+            self.end_lineno = node.end_lineno
+            self.col_offset = node.col_offset
+            self.end_col_offset = node.end_col_offset
+            self.file_path = node.file_path
+
         self.test = test
         for cmd in body:
             pass #TODO: check if all of the tree end objects are commands
@@ -83,7 +96,7 @@ class CallToCommandAndConstructorTransformer(ast.NodeTransformer):
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id in self.command_names:
-            return Command(AOE2FUNC[node.func.id], [ast.unparse(arg) for arg in node.args], node.lineno)
+            return Command(AOE2FUNC[node.func.id], [ast.unparse(arg) for arg in node.args], node)
         
         if isinstance(node.func, ast.Name) and node.func.id in self.object_names:
             return Constructor(AOE2OBJ[node.func.id], [ast.unparse(arg) for arg in node.args])
@@ -103,7 +116,7 @@ class GarenteeAllCommandsInDefRule(ast.NodeTransformer):
 
     def visit_Command(self, node):
         if self.defrule_stack:
-            return DefRule(Command(AOE2FUNC.true), [node], node.lineno)
+            return DefRule(Command(AOE2FUNC.true), [node], node)
         self.generic_visit(node)
         return node
         
@@ -120,19 +133,19 @@ class CompileTransformer(ast.NodeTransformer):
         jump to end automaticaly, then jump to beggining if conditions are true
         """
         self.generic_visit(node)
-        last_rule_in_node = Command(AOE2FUNC.up_jump_direct, [JumpType.last_rule_in_node], node.lineno)
-        test_jump_to_beginning = Command(AOE2FUNC.up_jump_direct, [JumpType.test_jump_to_beginning], node.lineno)
+        last_rule_in_node = Command(AOE2FUNC.up_jump_direct, [JumpType.last_rule_in_node], None)
+        test_jump_to_beginning = Command(AOE2FUNC.up_jump_direct, [JumpType.test_jump_to_beginning], None)
         node.body = (
-                [DefRule(Command(AOE2FUNC.true),[last_rule_in_node], node.lineno)] +
+                [DefRule(Command(AOE2FUNC.true,[],None),[last_rule_in_node], node_copy_with_short_offset(node,2))] +
             node.body +
-            [DefRule(self.visit_test(node.test),[test_jump_to_beginning], node.lineno)]
+            [DefRule(self.visit_test(node.test),[test_jump_to_beginning], node.test)]
         )
         return node
     
     def visit_test(self, test):
         #returns a command or a tree of commands
         if isinstance(test, ast.Constant) and test.value == True:
-            return Command(AOE2FUNC.true, [], test.lineno)
+            return Command(AOE2FUNC.true, [], test)
         self.generic_visit(test)
         return test
     
@@ -172,3 +185,18 @@ class Compiler:
 
         trees.main_tree = transformed_tree
         return trees
+    
+def node_copy_with_short_offset(node, offset):
+    
+    node_copy = DummyNode(node)
+    node_copy.end_lineno = node.lineno
+    node_copy.end_col_offset = node.col_offset + offset
+    return node_copy
+
+class DummyNode:
+    def __init__(self, node):
+        self.lineno = node.lineno
+        self.end_lineno = node.end_lineno
+        self.col_offset = node.col_offset
+        self.end_col_offset = node.end_col_offset
+        self.file_path = node.file_path

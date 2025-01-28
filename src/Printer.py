@@ -1,12 +1,15 @@
 import ast
 from Compiler import Command, DefRule, JumpType
 from scraper import *
+from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
+
 class DefRuleVisitor(ast.NodeVisitor):
     def __init__(self, finalString):
         super().__init__()
         self.finalString = finalString
 
+    #! something is printing out the jump commands twice inside of defrule body
     def visit_DefRule(self, node): # adds (defrule _______  => ______)
         self.finalString += green("(defrule") + comment(node) + "\n"
         if isinstance(node.test, Command):
@@ -60,10 +63,21 @@ class Printer:
         return visitor.finalString
 
 def comment(node):
-    return Fore.GREEN+Style.DIM+" ; "+str(node.lineno)+Fore.WHITE+Style.NORMAL
+    if hasattr(node, "file_path"):
+        source_segment = ast.get_source_segment(read_file_as_string(node.file_path), node)
+        lineno = str(node.lineno)
+        file_path = str(node.file_path).split('/')[-1]
+    else:
+        source_segment=lineno=file_path= ""
+    return (Fore.GREEN+Style.DIM+" ; "
+            +source_segment.replace("\n","/n")
+            +" "+lineno
+            +"-"+file_path
+            +Fore.WHITE+Style.NORMAL)
 def green(string):
     return Fore.GREEN+string+Fore.WHITE
 def red(string):
     return Fore.RED+string+Fore.WHITE
 def blue(string):
     return Fore.BLUE+string+Fore.WHITE
+

@@ -69,6 +69,10 @@ class Parser:
 
             with open(file_path, "r") as f:
                 tree = ast.parse(f.read(), filename=file_path)
+                
+                for node in ast.walk(tree):#needed for printer to find sourcecode for comments
+                    node.file_path = file_path
+                    
                 module = ast.Module(body=[])
                 for node in tree.body:
                     if isinstance(node, ast.FunctionDef) and (node.name in alias_names  or import_all):
