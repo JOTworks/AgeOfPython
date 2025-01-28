@@ -1,6 +1,6 @@
 from AgeOfPython.src.scraper.aoe2scriptFunctions import *
 from AgeOfPython.src.scraper.aoe2scriptEnums import *
-from imported import *
+from tests.test_ai_files.imported_code import *
 #from test_strings import string_while_loop as swl, string_variable_asign as sva
 #import test_functioen as tf
 

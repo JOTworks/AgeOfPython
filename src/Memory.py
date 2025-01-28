@@ -1,5 +1,5 @@
 from pprint import pprint
-from enums import Structure
+
 from colorama import Fore, Back, Style
 class Memory: #TODO: openMemory away. we can just use used Memory for everything! None instead of ""
     def __init__(self):
