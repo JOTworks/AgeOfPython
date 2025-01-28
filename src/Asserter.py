@@ -1,7 +1,6 @@
 import ast
 import colorama
 from colorama import Fore, Style
-
 colorama.init(autoreset=True)
 
 class NodeCounter(ast.NodeVisitor):
@@ -41,7 +40,6 @@ class FunctionCallValidator(ast.NodeVisitor):
             self.errors.append(f"line: {node.lineno}, Function '{self.get_func_name(node)}' called with incorrect number of arguments")   
 
 class Asserter:
-    
     def is_valid_python(self, code):
         try:
             myMod = compile(code, '', 'exec')

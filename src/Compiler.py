@@ -31,15 +31,17 @@ class JumpType(Enum):
     test_jump_to_beginning = 1
 
 class Constructor(ast.Call):
-    def __init__(self, object_name: str, args: list = []):
+    def __init__(self, object_name: str, args: list = [], lineno = '.'):
         super().__init__()
+        self.lineno = lineno
         self.func = ast.Name(id=object_name, ctx=ast.Store()) #TODO: make sure store was the right call here
         
         self.args = args
 
 class Command(ast.Call):
-    def __init__(self, name: AOE2FUNC, args: list = []):
+    def __init__(self, name: AOE2FUNC, args: list = [], lineno = '.'):
         super().__init__()
+        self.lineno = lineno
         #TODO: this is where i can do hard type checking for command params
         if not isinstance(name, AOE2FUNC):
             raise TypeError(f'needs to be a AOE2FUNC, got {type(name)}')
@@ -55,12 +57,13 @@ class Command(ast.Call):
     def __repr__(self):
         args_str = ', '.join(map(str, self.args))
         return f'{self.func.id}({args_str})'
-    
+
 #defrules are just test and body. basicly if statements. so i just need to make everything into if statements
 class DefRule(ast.If):
-    def __init__(self, test: list, body: list):
+    def __init__(self, test: list, body: list, lineno = '.'):
         super().__init__()
         check_terminal_nodes(test, Command)
+        self.lineno = lineno
         self.test = test
         for cmd in body:
             pass #TODO: check if all of the tree end objects are commands
@@ -80,7 +83,7 @@ class CallToCommandAndConstructorTransformer(ast.NodeTransformer):
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id in self.command_names:
-            return Command(AOE2FUNC[node.func.id], [ast.unparse(arg) for arg in node.args])
+            return Command(AOE2FUNC[node.func.id], [ast.unparse(arg) for arg in node.args], node.lineno)
         
         if isinstance(node.func, ast.Name) and node.func.id in self.object_names:
             return Constructor(AOE2OBJ[node.func.id], [ast.unparse(arg) for arg in node.args])
@@ -100,7 +103,7 @@ class GarenteeAllCommandsInDefRule(ast.NodeTransformer):
 
     def visit_Command(self, node):
         if self.defrule_stack:
-            return DefRule(Command(AOE2FUNC.true), [node])
+            return DefRule(Command(AOE2FUNC.true), [node], node.lineno)
         self.generic_visit(node)
         return node
         
@@ -117,19 +120,19 @@ class CompileTransformer(ast.NodeTransformer):
         jump to end automaticaly, then jump to beggining if conditions are true
         """
         self.generic_visit(node)
-        last_rule_in_node = Command(AOE2FUNC.up_jump_direct, [JumpType.last_rule_in_node])
-        test_jump_to_beginning = Command(AOE2FUNC.up_jump_direct, [JumpType.test_jump_to_beginning])
+        last_rule_in_node = Command(AOE2FUNC.up_jump_direct, [JumpType.last_rule_in_node], node.lineno)
+        test_jump_to_beginning = Command(AOE2FUNC.up_jump_direct, [JumpType.test_jump_to_beginning], node.lineno)
         node.body = (
-                [DefRule(Command(AOE2FUNC.true),[last_rule_in_node])] +
+                [DefRule(Command(AOE2FUNC.true),[last_rule_in_node], node.lineno)] +
             node.body +
-            [DefRule(self.visit_test(node.test),[test_jump_to_beginning])]
+            [DefRule(self.visit_test(node.test),[test_jump_to_beginning], node.lineno)]
         )
         return node
     
     def visit_test(self, test):
         #returns a command or a tree of commands
         if isinstance(test, ast.Constant) and test.value == True:
-            return Command(AOE2FUNC.true)
+            return Command(AOE2FUNC.true, [], test.lineno)
         self.generic_visit(test)
         return test
     
@@ -145,9 +148,9 @@ class Compiler:
         self.object_names = [name for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isclass)]
         return
 
-    def compile(self, tree):
+    def compile(self, trees):
         
-        transformed_tree = CallToCommandAndConstructorTransformer(command_names=self.command_names, object_names=self.object_names).visit(tree)
+        transformed_tree = CallToCommandAndConstructorTransformer(command_names=self.command_names, object_names=self.object_names).visit(trees.main_tree)
         
         #optimize concepts like deleting things that do nothing
         
@@ -167,4 +170,5 @@ class Compiler:
         if extra_nodes:
             print(f'Extra nodes found: {extra_nodes}')
 
-        return transformed_tree
+        trees.main_tree = transformed_tree
+        return trees

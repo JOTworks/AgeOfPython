@@ -9,7 +9,7 @@
       "console": "integratedTerminal",
 
       "args": [
-        "test_block.aop", "-vt",
+        "test_block.aop", "-v",
       ]
     }
   ]

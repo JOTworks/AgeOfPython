@@ -1,57 +1,69 @@
 import ast
-from Compiler import Command, DefRule
+from Compiler import Command, DefRule, JumpType
 from scraper import *
+from colorama import Fore, Back, Style
 class DefRuleVisitor(ast.NodeVisitor):
-    def __init__(self):
-        self.finalString = ""
+    def __init__(self, finalString):
+        super().__init__()
+        self.finalString = finalString
 
     def visit_DefRule(self, node): # adds (defrule _______  => ______)
-        self.finalString += "(defrule"
-        print(f"type: {type(node.test)}")
-        cmd = Command(AOE2FUNC.unit_count, [])
-        print(f"type: {type(cmd)}")
+        self.finalString += green("(defrule") + comment(node) + "\n"
         if isinstance(node.test, Command):
-            print("in Command")
-            self.visit_command(node.test)
+            self.visit_Command(node.test)
         elif isinstance(node.test, ast.expr):
-            print("in Expr")
             self.visit_expr(node.test)
-        self.finalString += "=>"
+        self.finalString += green("=>\n")
         for body_node in node.body:
             if isinstance(body_node, Command):
-                print("in body Command")
-                self.visit_command(body_node)
+                self.visit_Command(body_node)
             if isinstance(body_node, ast.expr):
-                print("in body Expr")
-                self.visit_expr(body_node)
+                self.visit_Expr(body_node)
+        self.finalString += green(")\n")
 
-        self.finalString += ")"
-        return node
-
-    def visit_command(self, node): # adds (command arg1 arg2)
-        self.finalString += "(" + node.value.func.id
+    def visit_Command(self, node): # adds (command arg1 arg2)
+        self.finalString += blue("  (") + blue(node.func.id.name)
         for expr in node.args:
-            self.finalString += " " + expr
-        self.finalString += ")"
-        return node
-        
-    def visit_expr(self, node): # adds (op  )
-        if isinstance(node, ast.BinOp) or isinstance(node, ast.unaryop):
-            self.finalString += "(" + str(node.op)
-        else:
-            raise Exception("printing "+str(node.__class__)+" is not yet Iplamented!"+str(node))
+            if isinstance(expr, JumpType):
+                expr = str(expr)
+                print(f"WARNING! JumpType in final print")
+            self.finalString += " " + blue(expr)
+        self.finalString += blue(")") + comment(node) + "\n"
         self.generic_visit(node)
-        self.finalString += ")"
+        
+    def visit_Expr(self, node): # adds (op  )
+        if isinstance(node, Command):
+            self.visit_Command(node)
+
+        elif isinstance(node, ast.BinOp) or isinstance(node, ast.unaryop):
+            self.finalString += red("(")
+            self.generic_visit(node)
+            self.finalString += red(")")
+        else:
+            print(f"WARNING! {node.__class__}:{node} not accounted in visit_Expr")
+            self.generic_visit(node)
+        
 
 class Printer:
-    def __init__(self, main, funcList, constList):
-        self.main = main
-        self.funcList = funcList
-        self.constList = constList
+    def __init__(self, trees):
+        self.main = trees.main_tree
+        self.funcList = trees.func_tree
+        self.constList = trees.const_tree
         self.finalString = ""   
+        print(self.main)
 
     def print_all(self, test = False):
-        visitor = DefRuleVisitor()
+        visitor = DefRuleVisitor(self.finalString)
         visitor.visit(self.main)
+        visitor.visit(self.funcList)
         self.finalString = visitor.finalString
         return visitor.finalString
+
+def comment(node):
+    return Fore.GREEN+Style.DIM+" ; "+str(node.lineno)+Fore.WHITE+Style.NORMAL
+def green(string):
+    return Fore.GREEN+string+Fore.WHITE
+def red(string):
+    return Fore.RED+string+Fore.WHITE
+def blue(string):
+    return Fore.BLUE+string+Fore.WHITE
