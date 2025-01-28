@@ -1,7 +1,0 @@
-first_point = Point()
-second_point = Point()
-first_point.x = 8
-first_point.y = 9
-integer = 5
-second_point = integer
-integer = second_point
