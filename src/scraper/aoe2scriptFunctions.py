@@ -10,7 +10,7 @@ class Const():
     def __init__(self, num):
         pass
 
-class_constructers = ['Point','State','Const']
+class_constructers = {Point:2, State:4, int:1, Const:0}
 
 def acknowledge_event(EventType: EventType,EventId: int,):
     """
