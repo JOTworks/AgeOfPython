@@ -115,11 +115,10 @@ class GarenteeAllCommandsInDefRule(ast.NodeTransformer):
         return node
 
     def visit_Command(self, node):
-        if self.defrule_stack:
-            return DefRule(Command(AOE2FUNC.true), [node], node)
+        if not self.defrule_stack:
+            return DefRule(Command(AOE2FUNC.true,[],None), [node], None)
         self.generic_visit(node)
         return node
-        
     
 class CompileTransformer(ast.NodeTransformer):
     def __init__(self, command_names):
@@ -167,13 +166,13 @@ class Compiler:
         
         #optimize concepts like deleting things that do nothing
         
-        transformed_tree  = CompileTransformer(command_names=self.command_names).visit(transformed_tree)
+        transformed_tree = CompileTransformer(command_names=self.command_names).visit(transformed_tree)
 
         #optimize commands together
 
         #alocate Memory
         
-        #transformed_tree  = GarenteeAllCommandsInDefRule().visit(transformed_tree)
+        transformed_tree = GarenteeAllCommandsInDefRule().visit(transformed_tree)
 
         #replace all the jumps
 

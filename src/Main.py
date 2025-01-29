@@ -15,7 +15,6 @@ from utils_display import print_bright, print_bordered
 
 
 
-
 def main(argv):
   file_name, arguments = setup_args(argv) 
   ai_folder = get_ai_folder()
@@ -73,6 +72,7 @@ def main(argv):
 
   if "r" in arguments or "v" in arguments:
     print(myPrinter.final_string)
+    print(myPrinter.non_readable_final_string)
 
 
 def setup_args(argv):

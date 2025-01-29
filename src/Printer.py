@@ -4,6 +4,8 @@ from scraper import *
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re
+from MyLogging import logger 
+
 class DefRuleVisitor(ast.NodeVisitor):
     def __init__(self, final_string):
         super().__init__()
@@ -28,7 +30,7 @@ class DefRuleVisitor(ast.NodeVisitor):
         for expr in node.args:
             if isinstance(expr, JumpType):
                 expr = str(expr)
-                print(f"WARNING! JumpType in final print")
+                logger.warning(f"JumpType in final print")
             self.final_string += " " + blue(expr)
         self.final_string += blue(")") + comment(node) + "\n"
         self.generic_visit(node)
@@ -42,7 +44,7 @@ class DefRuleVisitor(ast.NodeVisitor):
             self.generic_visit(node)
             self.final_string += red(")")
         else:
-            print(f"WARNING! {node.__class__}:{node} not accounted in visit_Expr")
+            logger.warning(f"{node.__class__}:{node} not accounted in visit_Expr")
             self.generic_visit(node)
 
 class Printer:
@@ -58,10 +60,18 @@ class Printer:
         # Define a regex pattern to match ANSI escape sequences
         ansi_escape = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
         return ansi_escape.sub('', self.final_string)
-    @no_color_final_string.setter
-    def no_color_final_string(self, value):
-        raise AttributeError("no_color_final_string is read-only")
+
     
+    @property
+    def non_readable_final_string(self):
+        no_color = self.no_color_final_string
+        no_comments = re.sub(r';.*\n', '', no_color)
+        no_whitespace = no_comments.replace('\n', '')
+        no_whitespace = re.sub(r' +', ' ', no_whitespace)
+        no_whitespace = re.sub(r' *=> *', '=>', no_whitespace)
+        no_whitespace = re.sub(r'\) +\)', '))', no_whitespace)
+        print(no_whitespace)
+
     def print_all(self, test = False):
         visitor = DefRuleVisitor(self.final_string)
         visitor.visit(self.main)
