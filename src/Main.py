@@ -14,90 +14,94 @@ from scraper import *
 from utils_display import print_bright, print_bordered
 
 
-
 def main(argv):
-  file_name, arguments = setup_args(argv) 
-  ai_folder = get_ai_folder()
-    
-  if "h" in arguments or "?" in arguments:
-    print_bright("\n===HELP===")
-    print("-s Scanner\n"+
-          "-p Parcer\n"+
-          "-i Interpreter\n"+
-          "-f Function List\n"+
-          "-m Memory\n"+
-          "-r Printer\n"+
-          "-v everything\n"+
-          "-t test\n"       
-          )
-  
-  #*----PARSING----*# 
-  myParser = Parser(file_name, ai_folder)
-  trees = myParser.parse()
-  if "p" in arguments or "v" in arguments:
-    print_bordered("Parsed tree")
-    print(ast.dump(trees.main_tree, indent=4))
-    print("_________")
+    file_name, arguments = setup_args(argv)
+    ai_folder = get_ai_folder()
 
-  #TODO: add ast tree viewer back in
-  #ast_json = parse_and_convert_to_json(trees['main_tree']) 
-  #with open('ast.json', 'w') as f:
-  #    f.write(ast_json)
+    if "h" in arguments or "?" in arguments:
+        print_bright("\n===HELP===")
+        print(
+            "-s Scanner\n"
+            + "-p Parcer\n"
+            + "-i Interpreter\n"
+            + "-f Function List\n"
+            + "-m Memory\n"
+            + "-r Printer\n"
+            + "-v everything\n"
+            + "-t test\n"
+        )
 
-  #*----ASSERTING----*# 
-  #myAsserter = Asserter()
-  #myAsserter.check(trees)
-  
-  #*----COMPILING----*# 
-  compiler = Compiler()
-  trees = compiler.compile(trees)
+    # *----PARSING----*#
+    myParser = Parser(file_name, ai_folder)
+    trees = myParser.parse()
+    if "p" in arguments or "v" in arguments:
+        print_bordered("Parsed tree")
+        print(ast.dump(trees.main_tree, indent=4))
+        print("_________")
 
-  if "p" in arguments or "v" in arguments:
-    print_bordered('Compiled tree')
-    print(ast.dump((trees.main_tree), indent=4))
+    # TODO: add ast tree viewer back in
+    # ast_json = parse_and_convert_to_json(trees['main_tree'])
+    # with open('ast.json', 'w') as f:
+    #    f.write(ast_json)
 
-  #*----PRINTING----*# 
-  myPrinter = Printer(trees)
-  if "t" in arguments:
-    myPrinter.print_all(test = True) #currently test dosn't do anything
-  else:
-    myPrinter.print_all()
-    file_name = file_name.split(".")[0]
-    per_file_path = str(ai_folder) + '/' + file_name + ".per"
-    ai_file_path = str(ai_folder) + '/' + file_name + ".ai"
+    # *----ASSERTING----*#
+    # myAsserter = Asserter()
+    # myAsserter.check(trees)
 
-    with open(per_file_path, "w") as f:
-      f.write(myPrinter.no_color_final_string)
-    open(ai_file_path, "w").close()
+    # *----COMPILING----*#
+    compiler = Compiler()
+    trees = compiler.compile(trees)
 
-  if "r" in arguments or "v" in arguments:
-    print(myPrinter.final_string)
-    print(myPrinter.non_readable_final_string)
+    if "p" in arguments or "v" in arguments:
+        print_bordered("Compiled tree")
+        print(ast.dump((trees.main_tree), indent=4))
+
+    # *----PRINTING----*#
+    myPrinter = Printer(trees)
+    if "t" in arguments:
+        myPrinter.print_all(test=True)  # currently test dosn't do anything
+    else:
+        myPrinter.print_all()
+        file_name = file_name.split(".")[0]
+        per_file_path = str(ai_folder) + "/" + file_name + ".per"
+        ai_file_path = str(ai_folder) + "/" + file_name + ".ai"
+
+        with open(per_file_path, "w") as f:
+            f.write(myPrinter.no_color_final_string)
+        open(ai_file_path, "w").close()
+
+    if "r" in arguments or "v" in arguments:
+        print(myPrinter.final_string)
+        print(myPrinter.non_readable_final_string)
 
 
 def setup_args(argv):
-  arguments = []
-  if len(argv) < 2:
-    raise Exception("needs argument of ai file name")
-  file_name = argv[1].split('.')[0]
-  for arg in argv[2:]:
-    if arg[0] == '-':
-      for letter in arg[1:]:
-        arguments.append(letter)
-    else:
-      raise Exception("Invalid argument, needs to start with -: "+arg)
-    print(arguments)
-  return file_name, arguments
+    arguments = []
+    if len(argv) < 2:
+        raise Exception("needs argument of ai file name")
+    file_name = argv[1].split(".")[0]
+    for arg in argv[2:]:
+        if arg[0] == "-":
+            for letter in arg[1:]:
+                arguments.append(letter)
+        else:
+            raise Exception("Invalid argument, needs to start with -: " + arg)
+        print(arguments)
+    return file_name, arguments
+
 
 def get_ai_folder():
-  ai_folder = Path(__file__).parent.resolve()
-  limit = 0
-  while (ai_folder.name != "ai"):
-    ai_folder = ai_folder.parent
-    limit += 1
-    if limit > 100:
-      raise Exception("AgeOfPython needs to be in the ai folder AoE2DE/reasources/_common/ai/")
-  return ai_folder
+    ai_folder = Path(__file__).parent.resolve()
+    limit = 0
+    while ai_folder.name != "ai":
+        ai_folder = ai_folder.parent
+        limit += 1
+        if limit > 100:
+            raise Exception(
+                "AgeOfPython needs to be in the ai folder AoE2DE/reasources/_common/ai/"
+            )
+    return ai_folder
 
-if __name__ == '__main__':
-  main(sys.argv)
+
+if __name__ == "__main__":
+    main(sys.argv)

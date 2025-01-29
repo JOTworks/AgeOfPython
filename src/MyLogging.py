@@ -1,5 +1,6 @@
 import logging
 
+
 class ColorFormatter(logging.Formatter):
     grey = "\x1b[38;21m"
     yellow = "\x1b[33;21m"
@@ -12,13 +13,16 @@ class ColorFormatter(logging.Formatter):
         logging.INFO: grey + "%(levelname)s - %(message)s" + reset,
         logging.WARNING: yellow + "%(levelname)s - %(message)s" + reset,
         logging.ERROR: red + "%(levelname)s - %(message)s" + reset,
-        logging.CRITICAL: bold_red + "%(asctime)s - %(name)s - %(levelname)s - %(message)s" + reset
+        logging.CRITICAL: bold_red
+        + "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        + reset,
     }
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
+
 
 # Create a logger and set its level
 logger = logging.getLogger(__name__)

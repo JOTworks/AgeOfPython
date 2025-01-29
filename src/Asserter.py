@@ -1,7 +1,9 @@
 import ast
 import colorama
 from colorama import Fore, Style
+
 colorama.init(autoreset=True)
+
 
 class NodeCounter(ast.NodeVisitor):
     def __init__(self):
@@ -11,6 +13,7 @@ class NodeCounter(ast.NodeVisitor):
         node_type = type(node)
         self.counts[node_type] = self.counts.get(node_type, 0) + 1
         self.generic_visit(node)
+
 
 class FunctionCallValidator(ast.NodeVisitor):
     def __init__(self, defined_functions):
@@ -37,12 +40,15 @@ class FunctionCallValidator(ast.NodeVisitor):
         expected_args = func_def.args.args
         if len(node.args) != len(expected_args):
             print(vars(node))
-            self.errors.append(f"line: {node.lineno}, Function '{self.get_func_name(node)}' called with incorrect number of arguments")   
+            self.errors.append(
+                f"line: {node.lineno}, Function '{self.get_func_name(node)}' called with incorrect number of arguments"
+            )
+
 
 class Asserter:
     def is_valid_python(self, code):
         try:
-            myMod = compile(code, '', 'exec')
+            myMod = compile(code, "", "exec")
             return True
         except SyntaxError as e:
             print(f"SyntaxError: {e}")
@@ -52,7 +58,7 @@ class Asserter:
         counter = NodeCounter()
         counter.visit(tree)
         return counter.counts
-    
+
     def check_unsuported(self, node_counts):
         supported_nodes = [
             ast.If,
@@ -78,7 +84,6 @@ class Asserter:
             ast.Import: "Use from ... import ... instead. keeps all imports non contextual.",
         }
 
-
         implemented_nodes = [
             ast.If,
             ast.Module,
@@ -93,15 +98,17 @@ class Asserter:
         for node in node_counts:
             if node not in supported_nodes:
                 if node in not_supported_nodes.keys():
-                    errors.append(f'Not supported: {node.__name__} - {not_supported_nodes[node]}')
+                    errors.append(
+                        f"Not supported: {node.__name__} - {not_supported_nodes[node]}"
+                    )
                 else:
-                    errors.append(f'Not supported: {node.__name__}')
+                    errors.append(f"Not supported: {node.__name__}")
             elif node not in implemented_nodes:
-                errors.append(f'Not implemented: {node.__name__}')
+                errors.append(f"Not implemented: {node.__name__}")
         if errors:
-            #raise Exception('\n'+'\n'.join(sorted(errors)))
-            print(Fore.RED +'\n'+'\n'.join(sorted(errors)))
-    
+            # raise Exception('\n'+'\n'.join(sorted(errors)))
+            print(Fore.RED + "\n" + "\n".join(sorted(errors)))
+
     def get_defined_functions(self, tree):
         defined_functions = {}
         for node in ast.walk(tree):
@@ -114,13 +121,14 @@ class Asserter:
         validator = FunctionCallValidator(defined_functions)
         validator.visit(tree)
         if validator.errors:
-            raise Exception('\n'+'\n'.join(validator.errors))
+            raise Exception("\n" + "\n".join(validator.errors))
 
     def check_function_calls(self, tree):
         pass
+
     def check(self, trees):
         for tree in trees:
-            node_counts = self.get_node_counts(trees[tree]) 
+            node_counts = self.get_node_counts(trees[tree])
             self.check_unsuported(node_counts)
-        self.check_function_calls(trees['main_tree'])
-        self.check_function_calls(trees['function_tree'])
+        self.check_function_calls(trees["main_tree"])
+        self.check_function_calls(trees["function_tree"])
