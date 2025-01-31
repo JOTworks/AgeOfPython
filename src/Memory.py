@@ -1,41 +1,48 @@
 from scraper import class_constructers
 from sortedcontainers import SortedDict
 
+
 class StoredMemory:
     def __init__(self, name, var_type, length, start):
         self.name = name
         self.var_type = var_type
-        self.length = length
-        self.start = start
+        self.length = int(length)
+        self.start = int(start)
+
 
 class Memory:
     def __init__(self):
         self._FIRST_REGISTER = 41
         self._LAST_REGISTER = 15999
         # self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
-        self._used_memory = SortedDict({}) # {start: StoreddMemory}
-        self._open_memory = SortedDict({41:15999}) # {start: end}
-    
+        self._used_memory = SortedDict({})  # {start: StoreddMemory}
+        self._open_memory = SortedDict({41: 15999})  # {start: end}
+
     @property
     def free_memory_count(self):
-        return sum([end - start for start, end in self._open_memory.items()])   
-    
+        return sum([end + 1 - start for start, end in self._open_memory.items()])
+
     @property
     def used_memory_count(self):
         return sum([var.length for var in self._used_memory.values()])
 
-    def malloc(self, var_name, var_type, front=True):
-        length = class_constructers[var_type]
+    def malloc(self, var_name, var_type, length=None, front=True):
+        if length and not isinstance(var_type, list):
+            raise Exception("Length can only be specified for list types")
+        if not length:
+            length = class_constructers[var_type]
         free_space_start = self.find_open_space(length, front)
-        
+
         free_space_end = self._open_memory.pop(free_space_start)
         self._open_memory[free_space_start + length] = free_space_end
 
-        self._used_memory[var_name] = StoredMemory(var_name, var_type, length, free_space_start)
+        self._used_memory[var_name] = StoredMemory(
+            var_name, var_type, length, free_space_start
+        )
 
     def free(self, var_name, front=True):
         var = self._used_memory.pop(var_name)
-        
+
         # create free space
         self._open_memory[var.start] = var.start + var.length - 1
 
@@ -49,8 +56,25 @@ class Memory:
             for start, end in self._open_memory.items():
                 if end == var.start - 1:
                     var_memory_end = self._open_memory.pop(var.start)
-                    self._open_memory[start] = var_memory_end        
+                    self._open_memory[start] = var_memory_end
 
+    def get(self, var_name, abstracted_offset):
+        stored_memory = self._used_memory[var_name]
+        if abstracted_offset.isdigit():
+            offset = int(abstracted_offset)
+        elif abstracted_offset in ["x", "LocalIndex"]:
+            offset = 0
+        elif abstracted_offset in ["y", "LocalList"]:
+            offset = 1
+        elif abstracted_offset in ["z", "RemoteIndex"]:
+            offset = 2
+        elif abstracted_offset in ["t", "RemoteList"]:
+            offset = 3
+        else:
+            raise Exception(f"Invalid offset {abstracted_offset}")
+        if offset >= stored_memory.length:
+            raise Exception(f"Out of index error {offset}>{var_name} len")
+        return stored_memory.start + offset
 
     def find_open_space(self, length, front=True):
         if front:

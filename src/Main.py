@@ -73,6 +73,8 @@ def main(argv):
     if "r" in arguments or "v" in arguments:
         print(myPrinter.final_string)
         print(myPrinter.non_readable_final_string)
+    
+    return(myPrinter.non_readable_final_string)
 
 
 def setup_args(argv):

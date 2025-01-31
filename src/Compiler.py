@@ -4,8 +4,6 @@ from enum import Enum
 from scraper import *
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from collections import defaultdict
-import copy
-
 
 def check_terminal_nodes(tree, node_type):
     for node in ast.walk(tree):
