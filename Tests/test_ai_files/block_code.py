@@ -1,10 +1,27 @@
 from scraper import *
 from if_code import *
 
-if True:
-    up_attacker_class(compareOp.equal, ClassId.archery_class)
+x = 4+2/1
+y = x/2+1
+"""
 
-up_set_event(12, 10)
+INPUT
+y = 12 + 2 / 3 - 40
 
-def foo():
-    pass
+ASSEMBLY
+t1 = 2 / 3
+t2 = 12 + t1
+y = t2 - 40
+
+AOE2SCRIPT
+y = 12
+ti = 2
+ti /= 3
+y += t1
+y -= 40
+
+temp_id and 
+
+
+
+"""

@@ -7,17 +7,26 @@ import re
 from MyLogging import logger
 
 
-class DefRuleVisitor(ast.NodeVisitor):
+class DefRulePrintVisitor(ast.NodeVisitor):
     def __init__(self, final_string):
         super().__init__()
         self.final_string = final_string
+
+    def visit_if(self, node):
+        """
+        so we dont print the test and other metadata in visit
+        """
+        for item in node.body:
+            self.visit(item)
 
     def visit_DefRule(self, node):  # adds (defrule _______  => ______)
         self.final_string += green("(defrule") + comment(node) + "\n"
         if isinstance(node.test, Command):
             self.visit_Command(node.test)
-        elif isinstance(node.test, ast.expr):
-            self.visit_expr(node.test)
+        elif isinstance(node.test, ast.BoolOp):
+            self.visit_BoolOp(node.test)
+        else:
+            raise Exception(f"{type(node.test)} not implemented in defRulePrintVisiter")
         self.final_string += green("=>\n")
         for body_node in node.body:
             if isinstance(body_node, Command):
@@ -25,6 +34,12 @@ class DefRuleVisitor(ast.NodeVisitor):
             elif isinstance(body_node, ast.expr):
                 self.visit_Expr(body_node)
         self.final_string += green(")\n")
+
+    def visit_BoolOp(self, node):
+        #ADD (op THEN commands THEN )
+        self.final_string += red("(") + red(node.op.__doc__) + red("\n") #todo: check if __doc__ can cause errors.
+        self.generic_visit(node)
+        self.final_string += red(")")
 
     def visit_Command(self, node):  # adds (command arg1 arg2)
         self.final_string += blue("  (") + blue(node.func.id.name)
@@ -74,7 +89,7 @@ class Printer:
         print(no_whitespace)
 
     def print_all(self, test=False):
-        visitor = DefRuleVisitor(self.final_string)
+        visitor = DefRulePrintVisitor(self.final_string)
         visitor.visit(self.main)
         visitor.visit(self.funcList)
         self.final_string = visitor.final_string
@@ -105,14 +120,18 @@ def comment(node):
         + Style.NORMAL
     )
 
+def check_str(string):
+    if type(string) is not str:
+        logger.warning(f"{string} is not a string in Printer")
+    return str(string)
 
 def green(string):
-    return Fore.GREEN + string + Fore.WHITE
+    return Fore.GREEN + check_str(string) + Fore.WHITE
 
 
 def red(string):
-    return Fore.RED + string + Fore.WHITE
+    return Fore.RED + check_str(string) + Fore.WHITE
 
 
 def blue(string):
-    return Fore.BLUE + string + Fore.WHITE
+    return Fore.BLUE + check_str(string) + Fore.WHITE

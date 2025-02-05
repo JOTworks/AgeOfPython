@@ -5,6 +5,7 @@
 from enum import Enum
 class compareOp(Enum):
     not_equal = 23
+    less_than = 18
     less_or_equal = 19
     greater_than = 20
     greater_or_equal = 21
