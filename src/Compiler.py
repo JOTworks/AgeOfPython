@@ -377,6 +377,41 @@ class CompileTransformer(ast.NodeTransformer):
         self.generic_visit(node)
         return node
 
+class NumberDefrulesTransformer(ast.NodeTransformer):
+    def __init__(self):
+        super().__init__()
+        self.defrule_counter = 0
+
+    def visit_If(self, node):
+        node.first_defrule = self.defrule_counter
+        self.generic_visit(node)
+        node.last_defrule = self.defrule_counter - 1
+        #raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
+        return node
+
+    def visit_DefRule(self, node):
+        self.generic_visit(node)
+        node.defrule_num = self.defrule_counter
+        self.defrule_counter += 1
+        return node
+    
+class ReplaceAllJumpStatementsTransformer(ast.NodeTransformer):
+    def visit_If(self, node):
+        for subnode in ast.walk(node):
+            if isinstance(subnode, Command):
+                for i, arg in enumerate(subnode.args):
+                    if arg is JumpType.last_rule_in_node:
+                        subnode.args[i] = str(node.last_defrule)
+                    elif arg is JumpType.test_jump_to_beginning:
+                        subnode.args[i] = str(node.first_defrule + 1)
+        self.generic_visit(node)
+        return node
+
+    def visit_Name(self, node):
+        if type(node.id) is JumpType:
+            raise Exception(f"{type(node.id)} JumpType not implemented yet")
+        self.generic_visit(node)
+        return node
 
 class ScopeAllVariables(ast.NodeTransformer):
     def __init__(self):
@@ -428,24 +463,18 @@ class Compiler:
 
         # optimize commands together
 
-        # alocate Memory
-
-        # scope all veriables
-            #any input replaced
-            #levels are determined by function you are in. i guess thats it.
-            #things are allocacted whether or not the will be executed. assume everything is executed.
-
-
         transformed_tree = ScopeAllVariables().visit(transformed_tree)
+        #todo: optimization for later
         # append last place used
         #transformed_tree = GetVeriableLastUseNodes().visit(transformed_tree)
             #walk through and keep a list of node and variable pairing, then add tag
         memory = Memory()
-        # replace scope with memory locations #actualy calling malloc
+        #transformed_tree = AlocateAllMemory().visit(transformed_tree)
 
         transformed_tree = GarenteeAllCommandsInDefRule().visit(transformed_tree)
-
-        # replace all the jumps
+        transformed_tree = NumberDefrulesTransformer().visit(transformed_tree)
+        transformed_tree = ReplaceAllJumpStatementsTransformer().visit(transformed_tree)
+        
 
         extra_nodes = find_extra_node_types(transformed_tree, (ast.If, Command))
         if extra_nodes:

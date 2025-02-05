@@ -1,5 +1,5 @@
 from scraper import *
-from if_code import *
+from tests.test_ai_files.code_snipits_test import *
 
 x = 4+2/1
 y = x/2+1

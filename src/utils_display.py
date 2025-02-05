@@ -76,6 +76,8 @@ def print_column(rows, num_columns):
 
 
 def read_file_as_string(file_path):
+    if file_path == 'TEST':
+        return None
     with open(file_path, "r") as file:
         file_contents = file.read()
     return file_contents

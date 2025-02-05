@@ -8,9 +8,10 @@ from MyLogging import logger
 
 
 class DefRulePrintVisitor(ast.NodeVisitor):
-    def __init__(self, final_string):
+    def __init__(self, final_string, NO_FILE = False):
         super().__init__()
         self.final_string = final_string
+        self.NO_FILE = NO_FILE
 
     def visit_if(self, node):
         """
@@ -20,7 +21,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             self.visit(item)
 
     def visit_DefRule(self, node):  # adds (defrule _______  => ______)
-        self.final_string += green("(defrule") + comment(node) + "\n"
+        self.final_string += green("(defrule") + comment(node, self.NO_FILE) + yellow(str(node.defrule_num)) + "\n"
         if isinstance(node.test, Command):
             self.visit_Command(node.test)
         elif isinstance(node.test, ast.BoolOp):
@@ -48,7 +49,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 expr = str(expr)
                 logger.warning(f"JumpType in final print")
             self.final_string += " " + blue(expr)
-        self.final_string += blue(")") + comment(node) + "\n"
+        self.final_string += blue(")") + comment(node, self.NO_FILE) + "\n"
         self.generic_visit(node)
 
     def visit_Expr(self, node):  # adds (op  )
@@ -88,6 +89,10 @@ class Printer:
         no_whitespace = re.sub(r"\) +\)", "))", no_whitespace)
         print(no_whitespace)
 
+    def print_for_string_testing(self):
+        visitor = DefRulePrintVisitor(self.final_string, NO_FILE=True)
+        visitor.visit(self.main)
+
     def print_all(self, test=False):
         visitor = DefRulePrintVisitor(self.final_string)
         visitor.visit(self.main)
@@ -96,7 +101,9 @@ class Printer:
         return visitor.final_string
 
 
-def comment(node):
+def comment(node, NO_FILE):
+    if NO_FILE:
+        return ''
     if hasattr(node, "file_path"):
         source_segment = ast.get_source_segment(
             read_file_as_string(node.file_path), node
@@ -135,3 +142,6 @@ def red(string):
 
 def blue(string):
     return Fore.BLUE + check_str(string) + Fore.WHITE
+
+def yellow(string):
+    return Fore.YELLOW + check_str(string) + Fore.WHITE

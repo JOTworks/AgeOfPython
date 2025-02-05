@@ -20,7 +20,10 @@ result:
 
 """
 
-if can_build(BuildingId.archery_range) and can_afford_building(BuildingId.castle):
+if (can_build(BuildingId.archery_range) 
+    and can_afford_building(BuildingId.castle) 
+    and villager_count < 12
+    ):
     disable_self()
 """
 Same as if (x<y) and (y<z) and (z<(True and True))
