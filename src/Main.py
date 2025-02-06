@@ -59,9 +59,9 @@ def main(argv):
     # *----PRINTING----*#
     myPrinter = Printer(trees)
     if "t" in arguments:
-        myPrinter.print_all(test=True)  # currently test dosn't do anything
+        myPrinter.print_all(TEST=True)  # currently makes it not go to numbers
     else:
-        myPrinter.print_all()
+        myPrinter.print_all(TEST=False)
         file_name = file_name.split(".")[0]
         per_file_path = str(ai_folder) + "/" + file_name + ".per"
         ai_file_path = str(ai_folder) + "/" + file_name + ".ai"
@@ -72,7 +72,9 @@ def main(argv):
 
     if "r" in arguments or "v" in arguments:
         print(myPrinter.final_string)
-        print(myPrinter.non_readable_final_string)
+        nonTestPrinter = Printer(trees)
+        nonTestPrinter.print_all(TEST=False)
+        print(nonTestPrinter.non_readable_final_string)
     
     return(myPrinter.non_readable_final_string)
 

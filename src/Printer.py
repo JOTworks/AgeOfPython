@@ -5,13 +5,16 @@ from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re
 from MyLogging import logger
-
+from enum import Enum
+from utils import get_enum_classes
 
 class DefRulePrintVisitor(ast.NodeVisitor):
-    def __init__(self, final_string, NO_FILE = False):
+    def __init__(self, final_string, NO_FILE = False, TEST = False):
         super().__init__()
         self.final_string = final_string
         self.NO_FILE = NO_FILE
+        self.enum_classes = get_enum_classes()
+        self.TEST = TEST
 
     def visit_if(self, node):
         """
@@ -43,26 +46,19 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.final_string += red(")")
 
     def visit_Command(self, node):  # adds (command arg1 arg2)
-        self.final_string += blue("  (") + blue(node.func.id.name)
+        self.final_string += blue("  (") + blue(node.func.id.name.replace('_','-'))
         for expr in node.args:
             if isinstance(expr, JumpType):
                 expr = str(expr)
                 logger.warning(f"JumpType in final print")
+            if type(expr) in list(self.enum_classes.values()):
+                if not self.TEST:
+                    expr = str(expr.value)
+                else:
+                    expr = str(expr)
             self.final_string += " " + blue(expr)
         self.final_string += blue(")") + comment(node, self.NO_FILE) + "\n"
         self.generic_visit(node)
-
-    def visit_Expr(self, node):  # adds (op  )
-        if isinstance(node, Command):
-            self.visit_Command(node)
-
-        elif isinstance(node, ast.BinOp) or isinstance(node, ast.unaryop):
-            self.final_string += red("(")
-            self.generic_visit(node)
-            self.final_string += red(")")
-        else:
-            logger.warning(f"{node.__class__}:{node} not accounted in visit_Expr")
-            self.generic_visit(node)
 
 
 class Printer:
@@ -71,7 +67,6 @@ class Printer:
         self.funcList = trees.func_tree
         self.constList = trees.const_tree
         self.final_string = ""
-        print(self.main)
 
     @property
     def no_color_final_string(self):
@@ -87,14 +82,14 @@ class Printer:
         no_whitespace = re.sub(r" +", " ", no_whitespace)
         no_whitespace = re.sub(r" *=> *", "=>", no_whitespace)
         no_whitespace = re.sub(r"\) +\)", "))", no_whitespace)
-        print(no_whitespace)
+        return(no_whitespace)
 
     def print_for_string_testing(self):
         visitor = DefRulePrintVisitor(self.final_string, NO_FILE=True)
         visitor.visit(self.main)
 
-    def print_all(self, test=False):
-        visitor = DefRulePrintVisitor(self.final_string)
+    def print_all(self, TEST=False):
+        visitor = DefRulePrintVisitor(self.final_string, TEST=TEST)
         visitor.visit(self.main)
         visitor.visit(self.funcList)
         self.final_string = visitor.final_string

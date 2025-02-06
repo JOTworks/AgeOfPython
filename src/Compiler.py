@@ -5,8 +5,8 @@ from scraper import *
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from collections import defaultdict
 from Memory import Memory
-from copy import copy, deepcopy
-from utils import ast_to_aoe, evaluate_expression
+from copy import copy
+from utils import ast_to_aoe, evaluate_expression, get_enum_classes
 
 
 def check_terminal_nodes(tree, node_type):
@@ -63,15 +63,19 @@ class Command(ast.Call):
             self.col_offset = node.col_offset
             self.end_col_offset = node.end_col_offset
             self.file_path = node.file_path
-
+        aoe2_enums = get_enum_classes()
         # TODO: this is where i can do hard type checking for command params
         if not isinstance(name, AOE2FUNC):
             raise TypeError(f"needs to be a AOE2FUNC, got {type(name)}")
         self.func = ast.Name(id=name, ctx=ast.Load())
         if not isinstance(args, list):
             raise TypeError("args must be a list")
-        for arg in args:
-            if type(arg) not in [JumpType, compareOp, str]:
+        for itr, arg in enumerate(args):
+            if type(arg) is ast.Attribute and arg.value.id in aoe2_enums.keys():
+                arg_enum = aoe2_enums[arg.value.id]
+                arg = arg_enum[arg.attr]
+                args[itr] = arg
+            if type(arg) not in [JumpType, str] + list(aoe2_enums.values()):
                 raise TypeError(f"arg {arg} is {type(arg)}")
         self.args = args
 
@@ -112,13 +116,14 @@ class CallToCommandAndConstructorTransformer(ast.NodeTransformer):
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id in self.command_names:
+
             return Command(
-                AOE2FUNC[node.func.id], [ast.unparse(arg) for arg in node.args], node
+                AOE2FUNC[node.func.id], node.args, node
             )
 
         if isinstance(node.func, ast.Name) and node.func.id in self.object_names:
             return Constructor(
-                AOE2OBJ[node.func.id], [ast.unparse(arg) for arg in node.args]
+                AOE2OBJ[node.func.id], node.args, args
             )
         return node
 
@@ -250,6 +255,8 @@ class CompileTransformer(ast.NodeTransformer):
 
         return visitor(node, **args)
     
+    def visit_Attribute(self, node):
+        self.generic_visit(node)
 
     def visit_Call(self, node, parent, in_field, in_node):
         self.generic_visit(node)
@@ -279,7 +286,7 @@ class CompileTransformer(ast.NodeTransformer):
         )
         node.test = None #keeps the printer from printing twice. may need to reinstate later?
         return node
-
+    
     #goal(GoalId, int) #returns true or false if the goal is something
     #set_goal(GoalId, int) #sets the goal to a value 
     #up_compare_goal(GoalId, compareOp, int) #compares goal to value ##can compare goals if you use the right compare operator

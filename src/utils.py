@@ -1,6 +1,9 @@
 from scraper import *
 import ast
 import operator
+import inspect
+import enum
+import scraper.aoe2scriptEnums
 
 def ast_to_aoe(item):
     ast_to_aoe_dict = {
@@ -69,3 +72,10 @@ def evaluate_expression(constant1, operator_str, constant2):
             raise ValueError(f"Unsupported operator: {operator_str}")
 
         return int(op_func(constant1, constant2))
+
+def get_enum_classes():
+    enum_classes = {}
+    for name, obj in inspect.getmembers(aoe2scriptEnums):
+        if inspect.isclass(obj) and issubclass(obj, enum.Enum):
+            enum_classes[name] = obj
+    return enum_classes
