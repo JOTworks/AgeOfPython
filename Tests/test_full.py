@@ -4,7 +4,7 @@ sys.path.append('../src')
 sys.path.append('./Tests/test_ai_files')
 import pytest
 import ast
-from test_ai_files.code_snipits_test import conditionals_success, conditionals_fail
+from test_ai_files.code_snipits_test import conditionals_success, conditionals_fail, random_code_that_should_still_work
 from Parser import Aoe2Tree
 from Compiler import Compiler
 from Printer import Printer
@@ -39,5 +39,10 @@ def test_snipits_conditionals_fail(test_input):
         assert False
     except:
         assert True
+
+@pytest.mark.parametrize("test_input", random_code_that_should_still_work)
+def test_snipits_random_code(test_input):
+    run_string_through_aop(test_input)
+
 
 

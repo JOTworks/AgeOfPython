@@ -75,8 +75,8 @@ def main(argv):
         nonTestPrinter = Printer(trees)
         nonTestPrinter.print_all(TEST=False)
         print(nonTestPrinter.non_readable_final_string)
-    
-    return(myPrinter.non_readable_final_string)
+
+    return myPrinter.non_readable_final_string
 
 
 def setup_args(argv):

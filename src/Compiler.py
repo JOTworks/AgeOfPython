@@ -7,6 +7,7 @@ from collections import defaultdict
 from Memory import Memory
 from copy import copy
 from utils import ast_to_aoe, evaluate_expression, get_enum_classes
+from utils_display import print_bordered
 
 
 def check_terminal_nodes(tree, node_type):
@@ -19,7 +20,18 @@ def check_terminal_nodes(tree, node_type):
                 if not (
                     isinstance(node, node_type)
                     or isinstance(
-                        node, (ast.BoolOp, ast.And, ast.Or, ast.Not, ast.Load, ast.Eq, ast.Gt, ast.Constant, ast.Add)
+                        node,
+                        (
+                            ast.BoolOp,
+                            ast.And,
+                            ast.Or,
+                            ast.Not,
+                            ast.Load,
+                            ast.Eq,
+                            ast.Gt,
+                            ast.Constant,
+                            ast.Add,
+                        ),
                     )
                 ):
                     raise TypeError(
@@ -54,6 +66,15 @@ class Constructor(ast.Call):
         self.args = args
 
 
+class Variable(ast.Name):
+    """
+    something I can replace ast.Name objects with when I konw it will
+    need memory alocation so Memory has an esier time finding them in the walk.
+    """
+
+    pass
+
+
 class Command(ast.Call):
     def __init__(self, name: AOE2FUNC, args: list, node):
         super().__init__()
@@ -67,7 +88,7 @@ class Command(ast.Call):
         # TODO: this is where i can do hard type checking for command params
         if not isinstance(name, AOE2FUNC):
             raise TypeError(f"needs to be a AOE2FUNC, got {type(name)}")
-        self.func = ast.Name(id=name, ctx=ast.Load())
+        self.func = ast.Name(id=name, ctx=ast.Load())  # todo: check if this is
         if not isinstance(args, list):
             raise TypeError("args must be a list")
         for itr, arg in enumerate(args):
@@ -75,7 +96,17 @@ class Command(ast.Call):
                 arg_enum = aoe2_enums[arg.value.id]
                 arg = arg_enum[arg.attr]
                 args[itr] = arg
-            if type(arg) not in [JumpType, str] + list(aoe2_enums.values()):
+            if type(arg) is ast.Name:
+                arg = Variable(
+                    arg.id,
+                    arg.ctx,
+                    lineno=arg.lineno,
+                    end_lineno=arg.end_lineno,
+                    col_offset=arg.col_offset,
+                    end_col_offset=arg.end_col_offset,
+                )
+                args[itr] = arg
+            if type(arg) not in [JumpType, Variable, str] + list(aoe2_enums.values()):
                 raise TypeError(f"arg {arg} is {type(arg)}")
         self.args = args
 
@@ -116,16 +147,12 @@ class CallToCommandAndConstructorTransformer(ast.NodeTransformer):
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id in self.command_names:
-
-            return Command(
-                AOE2FUNC[node.func.id], node.args, node
-            )
+            return Command(AOE2FUNC[node.func.id], node.args, node)
 
         if isinstance(node.func, ast.Name) and node.func.id in self.object_names:
-            return Constructor(
-                AOE2OBJ[node.func.id], node.args, args
-            )
+            return Constructor(AOE2OBJ[node.func.id], node.args, args)
         return node
+
 
 class ReduceCompareAndBoolOpTransformer(ast.NodeTransformer):
     """
@@ -136,65 +163,63 @@ class ReduceCompareAndBoolOpTransformer(ast.NodeTransformer):
     #todo: put back in BoolOp And Lists if they are alone in a conditional, so the user can decide when to short-curcit
     https://discord.com/channels/485565215161843714/485566694912163861/1306940924944715817
     """
+
     def __init__(self):
         super().__init__()
+
     # x < y < z -> x<y and y<z
     def visit_Compare(self, node):
         self.generic_visit(node)
         if len(node.comparators) > 1:
-
-            #create a list of compare nodes
+            # create a list of compare nodes
             compare_node_list = []
             compare_node_one = copy(node)
             compare_node_one.ops = [compare_node_one.ops[0]]
             compare_node_one.comparators = [compare_node_one.comparators[0]]
             compare_node_list.append(compare_node_one)
-            for itr, comparator in enumerate([node.left]+node.comparators):
+            for itr, comparator in enumerate([node.left] + node.comparators):
                 if itr == 0:
                     continue
                 compare_node_next = copy(compare_node_one)
                 compare_node_next.left = compare_node_next.comparators[0]
-                compare_node_next.ops = [node.ops[itr-1]]
+                compare_node_next.ops = [node.ops[itr - 1]]
                 compare_node_next.comparators = [comparator]
                 compare_node_list.append(compare_node_next)
 
-            #nest the list of compares into boolOps
+            # nest the list of compares into boolOps
             final_node = None
             for compare_node in compare_node_list:
                 if final_node is None:
                     final_node = compare_node
                 else:
                     final_node = ast.BoolOp(
-                        op=ast.And(), 
-                        values=[
-                            compare_node, 
-                            final_node
-                        ], 
-                        lineno=compare_node.lineno, 
-                        col_offset=compare_node.col_offset, 
-                        end_lineno=compare_node.end_lineno, 
-                        end_col_offset=compare_node.end_col_offset
+                        op=ast.And(),
+                        values=[compare_node, final_node],
+                        lineno=compare_node.lineno,
+                        col_offset=compare_node.col_offset,
+                        end_lineno=compare_node.end_lineno,
+                        end_col_offset=compare_node.end_col_offset,
                     )
             return final_node
         return node
-    
+
     def visit_BoolOp(self, node):
-        
         self.generic_visit(node)
-        if len(node.values) > 2: #todo: fix the lineno and col_offset for created boolOps
-            #nest boolOps
+        if (
+            len(node.values) > 2
+        ):  # todo: fix the lineno and col_offset for created boolOps
+            # nest boolOps
             final_node = node.values[0]
             for itr, value in enumerate(node.values):
                 if itr == 0:
                     continue
                 boolop_node_next = copy(node)
-                boolop_node_next.values = [
-                    value,
-                    final_node
-                ]
-                final_node = boolop_node_next   
+                boolop_node_next.values = [value, final_node]
+                final_node = boolop_node_next
             return final_node
         return node
+
+
 class GarenteeAllCommandsInDefRule(ast.NodeTransformer):
     def __init__(self):
         super().__init__()
@@ -219,15 +244,15 @@ class CompileTransformer(ast.NodeTransformer):
         self.command_names = command_names
         self.parent_map = {}
         self.temp_var_counter = 0
-    
+
     def get_next_temp_var(self):
         self.temp_var_counter += 1
         return f"0t{self.temp_var_counter}"
-    
-    #todo: make this visit follow the one actual NodeTransformer one, and not the visitor one. if i want in_field and in_node to work
-    #def generic_visit(self, node, parent=None, in_field=[], in_node=[]): #check this is fine or not? AI GEN
+
+    # todo: make this visit follow the one actual NodeTransformer one, and not the visitor one. if i want in_field and in_node to work
+    # def generic_visit(self, node, parent=None, in_field=[], in_node=[]): #check this is fine or not? AI GEN
     #    if parent:
-    #        self.parent_map[node] = parent    
+    #        self.parent_map[node] = parent
     #    for field, value in ast.iter_fields(node):
     #        if isinstance(value, list):
     #            for item in value:
@@ -236,25 +261,25 @@ class CompileTransformer(ast.NodeTransformer):
     #        elif isinstance(value, ast.AST):
     #            self.visit(value, node, in_field + [field], in_node + [type(node)])
     #    return node
-    
+
     def visit(self, node, parent=None, in_field=[], in_node=[]):
         parent = self.parent_map.get(node)
-        method = 'visit_' + node.__class__.__name__
+        method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
         temp_counter = 1
         # Call the visitor method with appropriate arguments
         sig = inspect.signature(visitor)
         params = sig.parameters
         args = {}
-        if 'parent' in params:
-            args['parent'] = parent
-        if 'in_field' in params:
-            args['in_field'] = in_field
-        if 'in_node' in params:
-            args['in_node'] = in_node
+        if "parent" in params:
+            args["parent"] = parent
+        if "in_field" in params:
+            args["in_field"] = in_field
+        if "in_node" in params:
+            args["in_node"] = in_node
 
         return visitor(node, **args)
-    
+
     def visit_Attribute(self, node):
         self.generic_visit(node)
 
@@ -272,7 +297,7 @@ class CompileTransformer(ast.NodeTransformer):
         test_jump_to_beginning = Command(
             AOE2FUNC.up_jump_direct, [JumpType.test_jump_to_beginning], None
         )
-        
+
         node.body = (
             [
                 DefRule(
@@ -281,92 +306,103 @@ class CompileTransformer(ast.NodeTransformer):
                     node_copy_with_short_offset(node, 2),
                 )
             ]
-            + node.body 
+            + node.body
             + [DefRule(self.visit_test(node.test), [test_jump_to_beginning], None)]
         )
-        node.test = None #keeps the printer from printing twice. may need to reinstate later?
+        node.test = (
+            None  # keeps the printer from printing twice. may need to reinstate later?
+        )
         return node
-    
-    #goal(GoalId, int) #returns true or false if the goal is something
-    #set_goal(GoalId, int) #sets the goal to a value 
-    #up_compare_goal(GoalId, compareOp, int) #compares goal to value ##can compare goals if you use the right compare operator
-    #up_modify_goal(GoalId, mathOp, int) #math and right operator will make the later value a goal or command
-    #up_get_indirect_goal(GoalId, OutputGoalId) #gets value of the goal of the value stored at GoalID and stores that value in OutputGoalId
-    #up_set_indirect_goal(GoalId, GoalId) #sets indirect goal from another (goal, const, SN)
 
-    def in_node(self, node, ast_type): #returns true if node has a parent (recersivly) of type ast.AST
+    def in_node(
+        self, node, ast_type
+    ):  # returns true if node has a parent (recersivly) of type ast.AST
         looking_node = node
         while self.parent_map.get(looking_node, None):
             if isinstance(looking_node, ast_type):
                 return True
             looking_node = self.parent_map[looking_node]
 
-    def get_command_list_and_temp_var(self, node, parent, in_field, in_node):
-        if type(node) in [ast.Constant]:
-            return [], node.value.value
-        if type(node) in [ast.Name]:
-            return [], node.id
-        if type(node) in [ast.BoolOp]:
-            return self.visit(node, parent, in_field, in_node)
-        if type(node) in [ast.Compare, ast.BinOp]:
-            return self.visit(node, parent, in_field, in_node)
-        else:
-            raise Exception(f"{type(node)} not a valid node inside a compare")
-
     def visit_Compare(self, node, parent, in_field, in_node):
         # x>12==y<12 turns into x>12 AND 12==y AND y<12
         print("in visit_compare")
         self.generic_visit(node)
-        #if 'test' not in in_field: raise Exception("compare outside of conditional") #TODO: Make part of asserter, or implement for Asignments
+        # if 'test' not in in_field: raise Exception("compare outside of conditional") #TODO: Make part of asserter, or implement for Asignments
         if type(node.left) not in [ast.Constant, ast.Name]:
-            raise Exception(f"{node.left} type of {type(node.left)} is not suported in compare")
+            raise Exception(
+                f"{node.left} type of {type(node.left)} is not suported in compare"
+            )
         elif type(node.comparators[0]) not in [ast.Constant, ast.Name]:
-            raise Exception(f"{node.left} type of {type(node.left)} is not suported in compare")
-        elif type(node.left) is ast.Constant and type(node.comparators[0]) is ast.Constant:
-            raise Exception(f"dont compare 2 constants {node.left.value} and {node.comparators[0].value}. just reduce")
+            raise Exception(
+                f"{node.left} type of {type(node.left)} is not suported in compare"
+            )
+        elif (
+            type(node.left) is ast.Constant
+            and type(node.comparators[0]) is ast.Constant
+        ):
+            raise Exception(
+                f"dont compare 2 constants {node.left.value} and {node.comparators[0].value}. just reduce"
+            )
         elif type(node.left) is ast.Constant:
-            raise Exception(f"dont compare with constant {node.left.value} on left side, invert operator and put constant on left") #todo: invert operator myself
+            raise Exception(
+                f"dont compare with constant {node.left.value} on left side, invert operator and put constant on left"
+            )  # todo: invert operator myself
         elif type(node.left) is ast.Name:
             if type(node.comparators[0]) is ast.Constant:
                 right_arg = str(node.comparators[0].value)
             elif type(node.comparators[0]) is ast.Name:
                 right_arg = node.comparators[0].id
-            compare_comand = Command(AOE2FUNC.up_compare_goal, [node.left.id, ast_to_aoe(type(node.ops[0])), right_arg], node)
+            compare_comand = Command(
+                AOE2FUNC.up_compare_goal,
+                [node.left.id, ast_to_aoe(type(node.ops[0])), right_arg],
+                node,
+            )
             return compare_comand
 
         else:
-            raise Exception(f"SHOULD NOT GET HERE for {type(node.left)=} and {type(node.comparators[0])=}")
-    
+            raise Exception(
+                f"SHOULD NOT GET HERE for {type(node.left)=} and {type(node.comparators[0])=}"
+            )
+
     def visit_BinOp(self, node, parent, in_field, in_node):
         # will be 2CT and needs to be up-goal-modify # ALWAYS use temperary vars for this
         self.generic_visit(node)
         if type(node.left) is ast.Constant and type(node.right) is ast.Constant:
             new_constant = copy(node.left)
-            new_constant.end_lineno, new_constant.end_col_offset = node.right.end_lineno, node.right.end_col_offset
-            new_constant.value = evaluate_expression(node.left.value, node.op, node.right.value)
+            new_constant.end_lineno, new_constant.end_col_offset = (
+                node.right.end_lineno,
+                node.right.end_col_offset,
+            )
+            new_constant.value = evaluate_expression(
+                node.left.value, node.op, node.right.value
+            )
             node = new_constant
         return node
 
-    def visit_BoolOp(self, node, parent, in_field, in_node): # and, or
+    def visit_BoolOp(self, node, parent, in_field, in_node):  # and, or
         # will end up being the nonesense delt with in printer
         self.generic_visit(node)
-        
-        #white listing what can exisit in boolOp
+
+        # white listing what can exisit in boolOp
         if len(node.values) != 2:
             raise Exception("BoolOp must have 2 values")
         for itr, value in enumerate(node.values):
             if type(value) is ast.Constant:
-                if value.value is True: 
+                if value.value is True:
                     node.values[itr] = value = Command(AOE2FUNC.true, [], value)
-                elif value.value is False: 
+                elif value.value is False:
                     node.values[itr] = value = Command(AOE2FUNC.false, [], value)
             if type(value) is ast.Name:
-                raise Exception(f"{type(value)} not a valid node inside a BoolOp, use [x != 0] instead of [x]")
+                raise Exception(
+                    f"{type(value)} not a valid node inside a BoolOp, use [x != 0] instead of [x]"
+                )
             if type(value) not in (ast.BoolOp, Command):
-                raise Exception(f"{type(value)}:{value.value} not a valid node inside a BoolOp after compile")
+                raise Exception(
+                    f"{type(value)}:{value.value} not a valid node inside a BoolOp after compile"
+                )
         return node
-    
-    def visit_UnaryOp(self, node, parent, in_field, in_node): # not
+
+    def visit_UnaryOp(self, node, parent, in_field, in_node):  # not
         # will end up being the nonesense delt with in printer
         self.generic_visit(node)
         return node
@@ -384,6 +420,7 @@ class CompileTransformer(ast.NodeTransformer):
         self.generic_visit(node)
         return node
 
+
 class NumberDefrulesTransformer(ast.NodeTransformer):
     def __init__(self):
         super().__init__()
@@ -393,7 +430,7 @@ class NumberDefrulesTransformer(ast.NodeTransformer):
         node.first_defrule = self.defrule_counter
         self.generic_visit(node)
         node.last_defrule = self.defrule_counter - 1
-        #raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
+        # raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
         return node
 
     def visit_DefRule(self, node):
@@ -401,7 +438,8 @@ class NumberDefrulesTransformer(ast.NodeTransformer):
         node.defrule_num = self.defrule_counter
         self.defrule_counter += 1
         return node
-    
+
+
 class ReplaceAllJumpStatementsTransformer(ast.NodeTransformer):
     def visit_If(self, node):
         for subnode in ast.walk(node):
@@ -420,10 +458,27 @@ class ReplaceAllJumpStatementsTransformer(ast.NodeTransformer):
         self.generic_visit(node)
         return node
 
+
+class AlocateAllMemory(ast.NodeTransformer):
+    def __init__(self, memory):
+        super().__init__()
+        self.memory = memory
+
+    def visit_Variable(self, node):
+        assert isinstance(self.memory, Memory)
+        if location := self.memory.get(node.id):
+            print(f"{location=}")
+        else:
+            self.memory.malloc(node.id, int)
+
+
 class ScopeAllVariables(ast.NodeTransformer):
     def __init__(self):
+        super().__init__()
         self.scope_level = 0
         self.scoped_variables = {}
+
+    # todo: make a visit_Variable function.
 
     def visit_FunctionDef(self, node):
         self.scope_level += 1
@@ -444,7 +499,8 @@ class ScopeAllVariables(ast.NodeTransformer):
         if isinstance(node.ctx, ast.Load) and node.id in self.scoped_variables:
             node.id = self.scoped_variables[node.id]
         return node
-    
+
+
 class Compiler:
     def __init__(self):
         self.command_names = [
@@ -467,21 +523,22 @@ class Compiler:
         transformed_tree = CompileTransformer(command_names=self.command_names).visit(
             transformed_tree
         )
-
         # optimize commands together
 
         transformed_tree = ScopeAllVariables().visit(transformed_tree)
-        #todo: optimization for later
+        # todo: optimization for later
         # append last place used
-        #transformed_tree = GetVeriableLastUseNodes().visit(transformed_tree)
-            #walk through and keep a list of node and variable pairing, then add tag
+        # transformed_tree = GetVeriableLastUseNodes().visit(transformed_tree)
+        # walk through and keep a list of node and variable pairing, then add tag
         memory = Memory()
-        #transformed_tree = AlocateAllMemory().visit(transformed_tree)
+        transformed_tree = AlocateAllMemory(memory).visit(transformed_tree)
 
         transformed_tree = GarenteeAllCommandsInDefRule().visit(transformed_tree)
         transformed_tree = NumberDefrulesTransformer().visit(transformed_tree)
         transformed_tree = ReplaceAllJumpStatementsTransformer().visit(transformed_tree)
-        
+
+        print_bordered("Memory")
+        memory.print_memory()
 
         extra_nodes = find_extra_node_types(transformed_tree, (ast.If, Command))
         if extra_nodes:

@@ -9,6 +9,14 @@ class StoredMemory:
         self.length = int(length)
         self.start = int(start)
 
+    def __repr__(self):
+        reg_str = str(self.start)
+        if self.length > 1:
+            reg_str += f"-{self.start + self.length - 1}"
+        out_string = f"{self.var_type.__name__} " + reg_str
+
+        return out_string
+
 
 class Memory:
     def __init__(self):
@@ -17,6 +25,12 @@ class Memory:
         # self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
         self._used_memory = SortedDict({})  # {start: StoreddMemory}
         self._open_memory = SortedDict({41: 15999})  # {start: end}
+
+    def print_memory(self):
+        print(f"{self.free_memory_count=}")
+        print(self._open_memory)
+        print(f"{self.used_memory_count=}")
+        print(self._used_memory)
 
     @property
     def free_memory_count(self):
@@ -58,8 +72,11 @@ class Memory:
                     var_memory_end = self._open_memory.pop(var.start)
                     self._open_memory[start] = var_memory_end
 
-    def get(self, var_name, abstracted_offset):
-        stored_memory = self._used_memory[var_name]
+    def get(self, var_name, abstracted_offset="0"):
+        try:
+            stored_memory = self._used_memory[var_name]
+        except KeyError:
+            return None
         if abstracted_offset.isdigit():
             offset = int(abstracted_offset)
         elif abstracted_offset in ["x", "LocalIndex"]:

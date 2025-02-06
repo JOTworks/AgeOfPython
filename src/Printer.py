@@ -8,8 +8,9 @@ from MyLogging import logger
 from enum import Enum
 from utils import get_enum_classes
 
+
 class DefRulePrintVisitor(ast.NodeVisitor):
-    def __init__(self, final_string, NO_FILE = False, TEST = False):
+    def __init__(self, final_string, NO_FILE=False, TEST=False):
         super().__init__()
         self.final_string = final_string
         self.NO_FILE = NO_FILE
@@ -24,7 +25,12 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             self.visit(item)
 
     def visit_DefRule(self, node):  # adds (defrule _______  => ______)
-        self.final_string += green("(defrule") + comment(node, self.NO_FILE) + yellow(str(node.defrule_num)) + "\n"
+        self.final_string += (
+            green("(defrule")
+            + comment(node, self.NO_FILE)
+            + yellow(str(node.defrule_num))
+            + "\n"
+        )
         if isinstance(node.test, Command):
             self.visit_Command(node.test)
         elif isinstance(node.test, ast.BoolOp):
@@ -40,13 +46,15 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.final_string += green(")\n")
 
     def visit_BoolOp(self, node):
-        #ADD (op THEN commands THEN )
-        self.final_string += red("(") + red(node.op.__doc__) + red("\n") #todo: check if __doc__ can cause errors.
+        # ADD (op THEN commands THEN )
+        self.final_string += (
+            red("(") + red(node.op.__doc__) + red("\n")
+        )  # todo: check if __doc__ can cause errors.
         self.generic_visit(node)
         self.final_string += red(")")
 
     def visit_Command(self, node):  # adds (command arg1 arg2)
-        self.final_string += blue("  (") + blue(node.func.id.name.replace('_','-'))
+        self.final_string += blue("  (") + blue(node.func.id.name.replace("_", "-"))
         for expr in node.args:
             if isinstance(expr, JumpType):
                 expr = str(expr)
@@ -82,7 +90,7 @@ class Printer:
         no_whitespace = re.sub(r" +", " ", no_whitespace)
         no_whitespace = re.sub(r" *=> *", "=>", no_whitespace)
         no_whitespace = re.sub(r"\) +\)", "))", no_whitespace)
-        return(no_whitespace)
+        return no_whitespace
 
     def print_for_string_testing(self):
         visitor = DefRulePrintVisitor(self.final_string, NO_FILE=True)
@@ -98,7 +106,7 @@ class Printer:
 
 def comment(node, NO_FILE):
     if NO_FILE:
-        return ''
+        return ""
     if hasattr(node, "file_path"):
         source_segment = ast.get_source_segment(
             read_file_as_string(node.file_path), node
@@ -122,10 +130,12 @@ def comment(node, NO_FILE):
         + Style.NORMAL
     )
 
+
 def check_str(string):
     if type(string) is not str:
         logger.warning(f"{string} is not a string in Printer")
     return str(string)
+
 
 def green(string):
     return Fore.GREEN + check_str(string) + Fore.WHITE
@@ -137,6 +147,7 @@ def red(string):
 
 def blue(string):
     return Fore.BLUE + check_str(string) + Fore.WHITE
+
 
 def yellow(string):
     return Fore.YELLOW + check_str(string) + Fore.WHITE
