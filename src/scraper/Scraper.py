@@ -756,9 +756,13 @@ def generate_aoe2scriptEnums():
             )
         lines += make_parameter_class_lines(parameter_name, parameter_storage)
 
+    #add stategic numbers
+    sn_dict = open_file("strategic_number_dict.pkl")
+    options = dict(zip([sn[3:] if sn[:3] == "sn_" else sn for sn in sn_dict.keys()], [i for i in range(len(sn_dict.keys()))]))
+    lines += make_parameter_class_lines("SN", ParameterStorage(options, "", ""))
+
     # add command enums
     import aoe2scriptFunctions
-
     command_names = [
         name
         for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isfunction)
@@ -794,7 +798,7 @@ def generate_aoe2scriptFunctions():
 # save_strategic_number_names()
 # save_strategic_number_info()
 # save_command_names()
-# save_parameter_names()
+# save_parameter_names() 
 # save_command_parameters()
 # save_parameter_options()
 generate_aoe2scriptEnums()
