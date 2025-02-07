@@ -11,7 +11,7 @@ class Const():
         pass
 
 #todo: find out what uses this in the end and if we can move it there
-class_constructers = {Point:2, State:4, int:1, list:8, Const:None}
+class_constructers = {Point:2, State:4, int:1, list:8}
 
 def acknowledge_event(EventType: EventType,EventId: int,):
     """

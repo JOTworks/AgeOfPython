@@ -1,5 +1,5 @@
 import ast
-from Compiler import Command, DefRule, JumpType
+from Compiler import Command, DefRule, JumpType, Variable
 from scraper import *
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
@@ -56,15 +56,22 @@ class DefRulePrintVisitor(ast.NodeVisitor):
     def visit_Command(self, node):  # adds (command arg1 arg2)
         self.final_string += blue("  (") + blue(node.func.id.name.replace("_", "-"))
         for expr in node.args:
-            if isinstance(expr, JumpType):
-                expr = str(expr)
-                logger.warning(f"JumpType in final print")
             if type(expr) in list(self.enum_classes.values()):
                 if not self.TEST:
-                    expr = str(expr.value)
+                    expr_str = str(expr.value)
                 else:
-                    expr = str(expr)
-            self.final_string += " " + blue(expr)
+                    expr_str = str(expr)
+            elif isinstance(expr, Variable):
+                expr_str = str(expr.memory_location)
+            elif isinstance(expr, ast.Constant):
+                expr_str = str(expr.value)
+            elif isinstance(expr, str):
+                expr_str = expr
+            else:
+                raise Exception(f"visit_command has not implemeted {type(expr)}")
+            
+            
+            self.final_string += " " + blue(expr_str)
         self.final_string += blue(")") + comment(node, self.NO_FILE) + "\n"
         self.generic_visit(node)
 

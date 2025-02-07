@@ -6,7 +6,7 @@ from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from collections import defaultdict
 from Memory import Memory
 from copy import copy
-from utils import ast_to_aoe, evaluate_expression, get_enum_classes
+from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op
 from utils_display import print_bordered
 
 
@@ -71,10 +71,13 @@ class Variable(ast.Name):
     something I can replace ast.Name objects with when I konw it will
     need memory alocation so Memory has an esier time finding them in the walk.
     """
+    def __init__(self, args):
+        self.offset_index = args.pop('offset_index')
+        super().__init__(**args)
 
     pass
 
-
+#! make the commands take Variable Object instead of strings! then pass it to printer to print number
 class Command(ast.Call):
     def __init__(self, name: AOE2FUNC, args: list, node):
         super().__init__()
@@ -88,25 +91,21 @@ class Command(ast.Call):
         # TODO: this is where i can do hard type checking for command params
         if not isinstance(name, AOE2FUNC):
             raise TypeError(f"needs to be a AOE2FUNC, got {type(name)}")
-        self.func = ast.Name(id=name, ctx=ast.Load())  # todo: check if this is
+        self.func = ast.Name(id=name, ctx=ast.Load())  # todo: check if this is redundant
         if not isinstance(args, list):
             raise TypeError("args must be a list")
         for itr, arg in enumerate(args):
             if type(arg) is ast.Attribute and arg.value.id in aoe2_enums.keys():
                 arg_enum = aoe2_enums[arg.value.id]
                 arg = arg_enum[arg.attr]
+                assert arg is not str
                 args[itr] = arg
-            if type(arg) is ast.Name:
-                arg = Variable(
-                    arg.id,
-                    arg.ctx,
-                    lineno=arg.lineno,
-                    end_lineno=arg.end_lineno,
-                    col_offset=arg.col_offset,
-                    end_col_offset=arg.end_col_offset,
-                )
-                args[itr] = arg
-            if type(arg) not in [JumpType, Variable, str] + list(aoe2_enums.values()):
+            
+            if type(arg) is ast.Constant:
+                pass
+            if type(arg) is Variable:
+                pass
+            if type(arg) not in [JumpType, Variable, ast.Constant] + list(aoe2_enums.values()):
                 raise TypeError(f"arg {arg} is {type(arg)}")
         self.args = args
 
@@ -138,11 +137,49 @@ class DefRule(ast.If):
         self.body = body
 
 
-class CallToCommandAndConstructorTransformer(ast.NodeTransformer):
+class AstToCustomNodeTransformer(ast.NodeTransformer):
     def __init__(self, command_names, object_names):
         super().__init__()
         self.command_names = command_names
         self.object_names = object_names
+
+    def make_variable(self, node):
+        if type(node) is ast.Name:
+            offset_index = 0
+            id_n = node.id
+        elif type(node) is ast.Attribute:
+            offset_index = node.attr
+            id_n = node.value.id
+        else:
+            raise Exception(f"{type(node)=} not Name or Attribute")
+
+        is_variable = False
+        if (id_n not in get_enum_classes()
+        and id_n not in self.object_names
+        and id_n not in self.command_names
+            ):
+            is_variable = True
+        if is_variable:
+            args = {
+                'id':id_n,
+                'ctx':node.ctx,
+                'offset_index':offset_index,
+                'lineno':node.lineno,
+                'end_lineno':node.end_lineno,
+                'col_offset':node.col_offset,
+                'end_col_offset':node.end_col_offset,
+            }
+            node = Variable(args)
+        return node
+    
+    def visit_Attribute(self, node):
+        self.generic_visit(node)
+        return self.make_variable(node)
+    
+    def visit_Name(self, node):
+        self.generic_visit(node)
+        return self.make_variable(node)
+        
 
     def visit_Call(self, node):
         self.generic_visit(node)
@@ -150,7 +187,7 @@ class CallToCommandAndConstructorTransformer(ast.NodeTransformer):
             return Command(AOE2FUNC[node.func.id], node.args, node)
 
         if isinstance(node.func, ast.Name) and node.func.id in self.object_names:
-            return Constructor(AOE2OBJ[node.func.id], node.args, args)
+            return Constructor(getattr(AOE2OBJ, node.func.id), node.args, node)
         return node
 
 
@@ -237,6 +274,49 @@ class GarenteeAllCommandsInDefRule(ast.NodeTransformer):
         self.generic_visit(node)
         return node
 
+class AlocateAllMemory(ast.NodeTransformer): 
+    #! WIP 
+    #! need to sort out asignments and mem alocation and Constructions. 
+    #! referencing before asignment should be ok, becuase its a loop for the most part.
+    #! get functions working STAT
+    """
+    if there is an asignment then I know what type it is.
+    - either asign to constructor
+    - asign to another object that has a type
+    - in a for loop
+
+    allow for DEL later
+    DEL things that are out of scope (only functions)
+    everything is pass by reference
+    no globals!
+    """
+    def __init__(self, memory):
+        super().__init__()
+        self.memory = memory
+
+    def visit_Assign(self, node):
+        assert isinstance(self.memory, Memory)
+
+        print('_____ASSIGN______')
+        print(ast.dump(node, indent=4))
+        if type(node.value) is Constructor:
+            if len(node.targets) != 1:
+                raise Exception(f"multiple targets is not suported on line {node.lineno}")
+            if location := self.memory.get(node.targets[0].id):
+                    raise Exception (f"{node.targets[0].id} is already in memory! dont try to re Construct it")
+            else:
+                var_type = node.value.func.id
+                self.memory.malloc(node.targets[0].id,var_type)
+
+    def visit_Variable(self, node):
+        if location := self.memory.get(node.id):
+            node.memory_location = location
+            print(f"{location=}")
+        else:
+            self.memory.malloc(node.id, int)
+            location = self.memory.get(node.id)
+            node.memory_location = location
+        return node
 
 class CompileTransformer(ast.NodeTransformer):
     def __init__(self, command_names):
@@ -282,9 +362,11 @@ class CompileTransformer(ast.NodeTransformer):
 
     def visit_Attribute(self, node):
         self.generic_visit(node)
-
+        return node
+    
     def visit_Call(self, node, parent, in_field, in_node):
         self.generic_visit(node)
+        return node
 
     def visit_If(self, node, parent, in_field, in_node):
         """
@@ -327,43 +409,33 @@ class CompileTransformer(ast.NodeTransformer):
         # x>12==y<12 turns into x>12 AND 12==y AND y<12
         print("in visit_compare")
         self.generic_visit(node)
-        # if 'test' not in in_field: raise Exception("compare outside of conditional") #TODO: Make part of asserter, or implement for Asignments
-        if type(node.left) not in [ast.Constant, ast.Name]:
-            raise Exception(
-                f"{node.left} type of {type(node.left)} is not suported in compare"
-            )
-        elif type(node.comparators[0]) not in [ast.Constant, ast.Name]:
-            raise Exception(
-                f"{node.left} type of {type(node.left)} is not suported in compare"
-            )
-        elif (
-            type(node.left) is ast.Constant
-            and type(node.comparators[0]) is ast.Constant
-        ):
+
+        #if type(node.comparators[0]) not in [ast.Constant, ast.Name]:
+        #    raise Exception(
+        #        f"{node.left} type of {type(node.left)} is not suported in compare"
+        #    )
+        left_type = type(node.left)
+        right_type = type(node.comparators[0])
+        if (left_type is ast.Constant and right_type is ast.Constant):
             raise Exception(
                 f"dont compare 2 constants {node.left.value} and {node.comparators[0].value}. just reduce"
             )
-        elif type(node.left) is ast.Constant:
-            raise Exception(
-                f"dont compare with constant {node.left.value} on left side, invert operator and put constant on left"
-            )  # todo: invert operator myself
-        elif type(node.left) is ast.Name:
-            if type(node.comparators[0]) is ast.Constant:
-                right_arg = str(node.comparators[0].value)
-            elif type(node.comparators[0]) is ast.Name:
-                right_arg = node.comparators[0].id
+        elif left_type is Variable and right_type in (ast.Constant, Variable):
             compare_comand = Command(
                 AOE2FUNC.up_compare_goal,
-                [node.left.id, ast_to_aoe(type(node.ops[0])), right_arg],
+                [node.left, ast_to_aoe(type(node.ops[0])), node.comparators[0]],
                 node,
             )
-            return compare_comand
-
-        else:
-            raise Exception(
-                f"SHOULD NOT GET HERE for {type(node.left)=} and {type(node.comparators[0])=}"
+        elif left_type is ast.Constant and right_type is Variable:
+            compare_comand = Command(
+                AOE2FUNC.up_compare_goal,
+                [node.comparators[0], reverse_compare_op(ast_to_aoe(type(node.ops[0]))), node.left],
+                node,
             )
-
+        else:
+            raise Exception(f"visit_compare Error! {type(node.left)=} and {type(node.comparators[0])=}")
+        return compare_comand
+    
     def visit_BinOp(self, node, parent, in_field, in_node):
         # will be 2CT and needs to be up-goal-modify # ALWAYS use temperary vars for this
         self.generic_visit(node)
@@ -459,19 +531,6 @@ class ReplaceAllJumpStatementsTransformer(ast.NodeTransformer):
         return node
 
 
-class AlocateAllMemory(ast.NodeTransformer):
-    def __init__(self, memory):
-        super().__init__()
-        self.memory = memory
-
-    def visit_Variable(self, node):
-        assert isinstance(self.memory, Memory)
-        if location := self.memory.get(node.id):
-            print(f"{location=}")
-        else:
-            self.memory.malloc(node.id, int)
-
-
 class ScopeAllVariables(ast.NodeTransformer):
     def __init__(self):
         super().__init__()
@@ -514,7 +573,7 @@ class Compiler:
         return
 
     def compile(self, trees):
-        transformed_tree = CallToCommandAndConstructorTransformer(
+        transformed_tree = AstToCustomNodeTransformer(
             command_names=self.command_names, object_names=self.object_names
         ).visit(trees.main_tree)
         transformed_tree = ReduceCompareAndBoolOpTransformer().visit(trees.main_tree)

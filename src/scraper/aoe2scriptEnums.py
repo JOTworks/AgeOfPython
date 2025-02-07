@@ -3339,5 +3339,5 @@ class AOE2FUNC(Enum):
     xs_script_call = 366
 
 class AOE2OBJ(Enum):
-    Point = 0
-    State = 0
+    Point = 2
+    State = 4

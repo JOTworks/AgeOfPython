@@ -8,7 +8,6 @@ import pytest
 from scraper import Const
 from sortedcontainers import SortedDict
 
-class_constructers.pop(Const)
 types_len_dict = class_constructers
 STARTING_OPEN_MEMORY = 15959
 

@@ -5,6 +5,15 @@ import inspect
 import enum
 import scraper.aoe2scriptEnums
 
+def reverse_compare_op(compare_op):
+    reverse_dict = {
+        compareOp.greater_than: compareOp.less_or_equal,
+        compareOp.less_than: compareOp.greater_or_equal,
+        compareOp.equal: compareOp.equal,
+        compareOp.not_equal: compareOp.not_equal
+    }
+    combined_dict = {**reverse_dict, **{v: k for k, v in reverse_dict.items()}}
+    return combined_dict[compare_op]
 
 def ast_to_aoe(item):
     ast_to_aoe_dict = {

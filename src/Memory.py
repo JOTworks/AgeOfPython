@@ -1,6 +1,6 @@
-from scraper import class_constructers
+from scraper import class_constructers, AOE2OBJ, Point, State
 from sortedcontainers import SortedDict
-
+import ast
 
 class StoredMemory:
     def __init__(self, name, var_type, length, start):
@@ -41,6 +41,10 @@ class Memory:
         return sum([var.length for var in self._used_memory.values()])
 
     def malloc(self, var_name, var_type, length=None, front=True):
+        if var_type is AOE2OBJ.Point:
+            var_type = Point
+        if var_type is AOE2OBJ.State:
+            var_type = State
         if length and not isinstance(var_type, list):
             raise Exception("Length can only be specified for list types")
         if not length:

@@ -36,9 +36,16 @@ class Parser:
             elif isinstance(node, ast.ImportFrom):
                 self.trees.main_tree.body.remove(node)
             elif isinstance(node, ast.Assign):
-                if isinstance(node.value, ast.Call) and node.value.func.id == "Const":
-                    self.trees.const_tree.body.append(node)
-                    self.trees.main_tree.body.remove(node)
+                if isinstance(node.value, ast.Call): 
+                    if isinstance(node.value.func, ast.Attribute):
+                        try:
+                            code = f"{node.value.func.value.id}.{node.value.func.attr}"
+                        except AttributeError:
+                            code = f"{node.lineno=}"
+                        raise Exception(f"{code} may be using a module and that is not suported")
+                    if node.value.func.id == "Const":
+                        self.trees.const_tree.body.append(node)
+                        self.trees.main_tree.body.remove(node)
 
         # add functions and constants from imports to their respective trees
         for tree_filename, tree in asts.items():
