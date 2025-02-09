@@ -1,5 +1,5 @@
 import ast
-from Compiler import Command, DefRule, JumpType, Variable
+from Compiler import Command, DefRule, JumpType, Variable, aoeOp
 from scraper import *
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
@@ -33,11 +33,10 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         )
         if isinstance(node.test, Command):
             self.visit_Command(node.test)
-        elif isinstance(node.test, ast.BoolOp):
-            self.visit_BoolOp(node.test)
+        elif isinstance(node.test, aoeOp):
+            self.visit_aoeOp(node.test)
         else:
             if type(node.test) is ast.Name and node.test.id == "true":
-                #TODO: should i remove true() as an aoe funtion? and only allow the pythonic True?
                 raise Exception(f"on line {node.test.lineno}, you need to use True or true() not true")
             raise Exception(f"{type(node.test)} not implemented in defRulePrintVisiter")
         self.final_string += green("=>\n")
@@ -48,11 +47,12 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 self.visit_Expr(body_node)
         self.final_string += green(")\n")
 
-    def visit_BoolOp(self, node):
+    def visit_aoeOp(self, node):
         # ADD (op THEN commands THEN )
         self.final_string += (
             red("(") + red(node.op.__doc__) + red("\n")
         )  # todo: check if __doc__ can cause errors.
+        print(red(node.op.__doc__))
         self.generic_visit(node)
         self.final_string += red(")")
 

@@ -7,7 +7,6 @@ TESTING
 
 figure out how to do all the pythonic stuff from https://www.youtube.com/watch?v=PwGKhvqJCQM
 IMPORT PROBLEMS!!!
-use Ruff formater.
 pydantic.
 
 

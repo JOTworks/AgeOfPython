@@ -480,8 +480,10 @@ class CompileTransformer(ast.NodeTransformer):
     
     def visit_aoeOp(self, node):
         # white listing what can exisit in boolOp
-        if len(node.values) != 2:
+
+        if not (len(node.values) == 2 or (len(node.values) == 1 and node.op.__doc__ == "Not")):
             raise Exception(f"BoolOp must have 2 values nof {len(node.values)}")
+        
         for itr, value in enumerate(node.values):
             if type(value) is ast.Constant:
                 if value.value is True:
