@@ -318,9 +318,6 @@ class AlocateAllMemory(ast.NodeTransformer):
 
     def visit_Assign(self, node):
         assert isinstance(self.memory, Memory)
-
-        print('_____ASSIGN______')
-        print(ast.dump(node, indent=4))
         if type(node.value) is Constructor:
             if len(node.targets) != 1:
                 raise Exception(f"multiple targets is not suported on line {node.lineno}")
@@ -333,7 +330,6 @@ class AlocateAllMemory(ast.NodeTransformer):
     def visit_Variable(self, node):
         if location := self.memory.get(node.id):
             node.memory_location = location
-            print(f"{location=}")
         else:
             self.memory.malloc(node.id, int)
             location = self.memory.get(node.id)
@@ -429,7 +425,6 @@ class CompileTransformer(ast.NodeTransformer):
 
     def visit_Compare(self, node, parent, in_field, in_node):
         # x>12==y<12 turns into x>12 AND 12==y AND y<12
-        print("in visit_compare")
         self.generic_visit(node)
 
         #if type(node.comparators[0]) not in [ast.Constant, ast.Name]:

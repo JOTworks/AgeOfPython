@@ -52,7 +52,6 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.final_string += (
             red("(") + red(node.op.__doc__) + red("\n")
         )  # todo: check if __doc__ can cause errors.
-        print(red(node.op.__doc__))
         self.generic_visit(node)
         self.final_string += red(")")
 
