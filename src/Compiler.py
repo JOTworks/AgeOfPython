@@ -54,7 +54,6 @@ class JumpType(Enum):
     last_rule_in_node = 0
     test_jump_to_beginning = 1
 
-
 class Constructor(ast.Call):
     def __init__(self, object_name: str, args: list = [], lineno="."):
         super().__init__()
@@ -64,7 +63,6 @@ class Constructor(ast.Call):
         )  # TODO: make sure store was the right call here
 
         self.args = args
-
 
 class Variable(ast.Name):
     """
@@ -76,6 +74,18 @@ class Variable(ast.Name):
         super().__init__(**args)
 
     pass
+
+class aoeOp(ast.BoolOp):
+    """
+    this is a wrapper for a BoolOp BUT ALSO includes the UniOp Not()
+    """
+    def __init__(self, in_op):
+        for attr in self._attributes:
+            self.__setattr__(attr,in_op.__getattribute__(attr))
+        self.values = in_op.values
+        self.op = in_op.op
+        if not self.__getattribute__("values"):
+            raise Exception("BoolOp Created without a Values attribute")
 
 #! make the commands take Variable Object instead of strings! then pass it to printer to print number
 class Command(ast.Call):
@@ -191,7 +201,7 @@ class AstToCustomNodeTransformer(ast.NodeTransformer):
         return node
 
 
-class ReduceCompareAndBoolOpTransformer(ast.NodeTransformer):
+class ReduceCompareBoolUnaryTransformer(ast.NodeTransformer):
     """
     Becasue Compare and BoolOp both short circit in python, they are build as lists (left and [right_list]) instead of recurcive (lef and right) like binOps.
     Because aoe2script only short circits on implied and, and not on any defined BoolOps, we are removing all lists in favor of recursion to simplify the compiler.
@@ -250,12 +260,24 @@ class ReduceCompareAndBoolOpTransformer(ast.NodeTransformer):
             for itr, value in enumerate(node.values):
                 if itr == 0:
                     continue
-                boolop_node_next = copy(node)
+                boolop_node_next = aoeOp(copy(node))
                 boolop_node_next.values = [value, final_node]
                 final_node = boolop_node_next
             return final_node
-        return node
-
+        return aoeOp(node)
+    
+    def visit_UnaryOp(self, node):
+        self.generic_visit(node)
+        in_op = ast.BoolOp(
+            op = node.op, 
+            values = [node.operand], 
+            lineno=node.lineno,
+            col_offset=node.col_offset,
+            end_lineno=node.end_lineno,
+            end_col_offset=node.end_col_offset
+        )
+        final_node = aoeOp(in_op)
+        return final_node
 
 class GarenteeAllCommandsInDefRule(ast.NodeTransformer):
     def __init__(self):
@@ -452,12 +474,14 @@ class CompileTransformer(ast.NodeTransformer):
         return node
 
     def visit_BoolOp(self, node, parent, in_field, in_node):  # and, or
-        # will end up being the nonesense delt with in printer
-        self.generic_visit(node)
-
+        raise Exception("all boolOp should be aoeOp")
+    def visit_UnaryOp(self, node):
+        raise Exception("all unaryOp should be aoeOp")
+    
+    def visit_aoeOp(self, node):
         # white listing what can exisit in boolOp
         if len(node.values) != 2:
-            raise Exception("BoolOp must have 2 values")
+            raise Exception(f"BoolOp must have 2 values nof {len(node.values)}")
         for itr, value in enumerate(node.values):
             if type(value) is ast.Constant:
                 if value.value is True:
@@ -468,15 +492,10 @@ class CompileTransformer(ast.NodeTransformer):
                 raise Exception(
                     f"{type(value)} not a valid node inside a BoolOp, use [x != 0] instead of [x]"
                 )
-            if type(value) not in (ast.BoolOp, Command):
+            if type(value) not in (aoeOp, ast.Compare, Command):
                 raise Exception(
                     f"{type(value)}:{value.value} not a valid node inside a BoolOp after compile"
                 )
-        return node
-
-    def visit_UnaryOp(self, node, parent, in_field, in_node):  # not
-        # will end up being the nonesense delt with in printer
-        self.generic_visit(node)
         return node
 
     def visit_test(self, test):
@@ -576,7 +595,7 @@ class Compiler:
         transformed_tree = AstToCustomNodeTransformer(
             command_names=self.command_names, object_names=self.object_names
         ).visit(trees.main_tree)
-        transformed_tree = ReduceCompareAndBoolOpTransformer().visit(trees.main_tree)
+        transformed_tree = ReduceCompareBoolUnaryTransformer().visit(trees.main_tree)
         # optimize concepts like deleting things that do nothing
 
         transformed_tree = CompileTransformer(command_names=self.command_names).visit(

@@ -477,7 +477,7 @@ def make_parameter_class_lines(parameter_name, parameter_storage: ParameterStora
         option = option.replace(",", "_")
         option = option.replace("__", "_")
         if parameter_name in ["ObjectData", "ClassId"]:
-            option = option.replace("*", "")
+            option = option.replace("*", "") #todo: ClassID is missing the ones with *, figure out why
         if parameter_name in ["AttrId"]:
             option = option.replace(".", "")
         if not option:
@@ -737,8 +737,10 @@ class UniqueParamGenerator:
 
         raise Exception(f"Name {name} not found in UniqueParamGenerator")
 
-
 def generate_aoe2scriptEnums():
+    #todo: add all the PlayerNumber Options from the description
+    #todo: sort out snId and SN enums
+    #todo: forage_
     p_dict = open_file("parameter_dict.pkl")
     lines = [
         "# --- Removed parameters --- #",

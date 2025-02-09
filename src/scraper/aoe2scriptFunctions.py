@@ -1,4 +1,4 @@
-from aoe2scriptEnums import *
+from .aoe2scriptEnums import *
 
 class Point():
     def __init__(self, x, y):

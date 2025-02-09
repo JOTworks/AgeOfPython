@@ -36,6 +36,9 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         elif isinstance(node.test, ast.BoolOp):
             self.visit_BoolOp(node.test)
         else:
+            if type(node.test) is ast.Name and node.test.id == "true":
+                #TODO: should i remove true() as an aoe funtion? and only allow the pythonic True?
+                raise Exception(f"on line {node.test.lineno}, you need to use True or true() not true")
             raise Exception(f"{type(node.test)} not implemented in defRulePrintVisiter")
         self.final_string += green("=>\n")
         for body_node in node.body:
@@ -64,7 +67,12 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             elif isinstance(expr, Variable):
                 expr_str = str(expr.memory_location)
             elif isinstance(expr, ast.Constant):
-                expr_str = str(expr.value)
+                if type(expr.value) is int:
+                    expr_str = str(expr.value)
+                elif type(expr.value) is str:
+                    expr_str = "'"+expr.value+"'"
+                else: 
+                    raise Exception("Constatns need to be an int or str")
             elif isinstance(expr, str):
                 expr_str = expr
             else:

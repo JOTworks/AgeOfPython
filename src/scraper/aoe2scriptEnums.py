@@ -5,6 +5,7 @@
 from enum import Enum
 class compareOp(Enum):
     not_equal = 23
+    less_than = 18
     less_or_equal = 19
     greater_than = 20
     greater_or_equal = 21
@@ -1513,6 +1514,7 @@ class PlacementType(Enum):
     place_control = 2
     place_point = 3
 class PlayerNumber(Enum):
+    my_player_number = 0 #! todo: this is not the right code number for this
     this_any_ally = 101
     this_any_computer = 102
     this_any_computer_ally = 103

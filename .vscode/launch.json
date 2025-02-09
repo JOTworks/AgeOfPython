@@ -2,6 +2,9 @@
   "version": "0.2.0",
   "configurations": [
 
+
+
+
   
     {
       "name": "Python: main",
@@ -12,7 +15,8 @@
 
       "args": [
         //"block_code.py${cwd}", "-v",
-        "compare_boolOp_binOp.py${cwd}", "-vt",
+        //"compare_boolOp_binOp.py${cwd}", "-vt",
+        "TuskenRail.py${cwd}", "-vt",
       ]
     }
   ]
