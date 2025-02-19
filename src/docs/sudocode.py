@@ -1,3 +1,26 @@
+#IF
+1: if test -> jump 3
+2: jump 5
+3: random
+4: random
+
+#While Loop
+1: jump 3
+2: do_body
+3: if test -> jump 2
+
+#for Loop
+1: i = 0
+2: jump 5
+3: do_body
+4: i += 1
+5: if test -> jump 3
+
+#break
+jump to 1 after the loop
+
+#continue
+jump to the last one (aka the conditional)
 
 # return positon reg 
 # return value reg

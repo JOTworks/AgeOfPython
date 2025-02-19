@@ -169,8 +169,8 @@ set_gather_percent(fuedal_food_percent, fuedal_wood_percent, 0, 0)
 - [ ] add loops:
     - [ ] while loop
     - [ ] for loop
+- [ ] add functions
 - [ ] Add simplified conditional expressions
-- [ ] Add asserter to tell user if syntax is not supported
 - [ ] Add better errors and comments to track user bugs
 - [ ] Add test casses:
     - [ ] parser

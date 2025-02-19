@@ -1,6 +1,16 @@
 from scraper.aoe2scriptFunctions import *
 from scraper.aoe2scriptEnums import *
-x = 10
-if 12 > x: do_nothing()
-if x == x: do_nothing()
-if x == 10: do_nothing()
+from scraper.aoe2scriptFunctions import do_nothing
+
+j = 1
+j -= j
+j -= 1
+
+
+#learn how break and continue keywords work
+#ADD LATER
+#for i in myArray:
+#    do_nothing()
+#
+#len()
+#type()

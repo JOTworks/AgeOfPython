@@ -1,6 +1,7 @@
 import ast
 from Compiler import Command, DefRule, JumpType, Variable, aoeOp
 from scraper import *
+from scraper import mathOp
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re
@@ -27,8 +28,11 @@ class DefRulePrintVisitor(ast.NodeVisitor):
     def visit_DefRule(self, node):  # adds (defrule _______  => ______)
         self.final_string += (
             green("(defrule")
+            + green(";")
+            + green(str(node.defrule_num))
+            + " "
+            + yellow(node.comment)
             + comment(node, self.NO_FILE)
-            + yellow(str(node.defrule_num))
             + "\n"
         )
         if isinstance(node.test, Command):
@@ -57,12 +61,21 @@ class DefRulePrintVisitor(ast.NodeVisitor):
 
     def visit_Command(self, node):  # adds (command arg1 arg2)
         self.final_string += blue("  (") + blue(node.func.id.name.replace("_", "-"))
-        for expr in node.args:
+        for itr, expr in enumerate(node.args):
             if type(expr) in list(self.enum_classes.values()):
                 if not self.TEST:
-                    expr_str = str(expr.value)
+                    if type(expr) is mathOp:
+                        if type(node.args[itr+1]) is Variable:
+                            expr_str = str(int(expr.value) + 12) # goal math are all 12 over constant math
+                            #todo: fix this to work with SN, needs to be able to tell if it SN then ad 24 instead of 12
+                        else:
+                            expr_str = str(expr.value)
+                    else:
+                        expr_str = str(expr.value)
+
                 else:
                     expr_str = str(expr)
+
             elif isinstance(expr, Variable):
                 expr_str = str(expr.memory_location)
             elif isinstance(expr, ast.Constant):
@@ -119,8 +132,8 @@ class Printer:
 
 
 def comment(node, NO_FILE):
-    if NO_FILE:
-        return ""
+    #if NO_FILE:
+    #    return ""
     if hasattr(node, "file_path"):
         source_segment = ast.get_source_segment(
             read_file_as_string(node.file_path), node

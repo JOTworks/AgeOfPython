@@ -23,6 +23,12 @@ def ast_to_aoe(item):
         ast.LtE: compareOp.less_or_equal,
         ast.Eq: compareOp.equal,
         ast.NotEq: compareOp.not_equal,
+        ast.Add: mathOp.add,
+        ast.Sub: mathOp.sub,
+        ast.Mult: mathOp.mul,
+        ast.Div: mathOp.div_rd,
+        ast.FloorDiv: mathOp.div_fl,
+        ast.Mod: mathOp.mod,
     }
     out_item = ast_to_aoe_dict.get(item, None)
     if out_item is None:
