@@ -2,9 +2,7 @@ from scraper.aoe2scriptFunctions import *
 from scraper.aoe2scriptEnums import *
 from scraper.aoe2scriptFunctions import do_nothing
 
-j = 1
-j -= j
-j -= 1
+Age.castle_age
 
 
 #learn how break and continue keywords work

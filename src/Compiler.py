@@ -10,7 +10,7 @@ from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_com
 from utils_display import print_bordered
 from MyLogging import logger
 
-
+1#! the attr is not being changed Age.DarkAge to the correct number
 def check_terminal_nodes(tree, node_type):
     for node in ast.walk(tree):
         if isinstance(node, ast.AST):
@@ -70,6 +70,17 @@ class Constructor(ast.Call):
 
         self.args = args
 
+class EnumNode(ast.Attribute):
+    def __init__(self, attr):
+        self.attr = attr.attr
+        self.value = attr.value
+        aoe2_enums = get_enum_classes()
+        arg_enum = aoe2_enums[attr.value.id]
+        arg = arg_enum[attr.attr]
+        assert arg is not str
+        self.enum = arg
+        
+
 class Variable(ast.Name):
     """
     something I can replace ast.Name objects with when I konw it will
@@ -110,10 +121,8 @@ class Command(ast.Call):
         if not isinstance(args, list):
             raise TypeError("args must be a list")
         for itr, arg in enumerate(args):
-            if type(arg) is ast.Attribute and arg.value.id in aoe2_enums.keys():
-                arg_enum = aoe2_enums[arg.value.id]
-                arg = arg_enum[arg.attr]
-                assert arg is not str
+            if type(arg) is EnumNode:
+                arg = arg.enum
                 args[itr] = arg
             
             if type(arg) is ast.Constant:
@@ -158,17 +167,9 @@ class AstToCustomNodeTransformer(ast.NodeTransformer):
         super().__init__()
         self.command_names = command_names
         self.object_names = object_names
+        self.aoe2_enums = get_enum_classes()
 
-    def make_variable(self, node):
-        if type(node) is ast.Name:
-            offset_index = 0
-            id_n = node.id
-        elif type(node) is ast.Attribute:
-            offset_index = node.attr
-            id_n = node.value.id
-        else:
-            raise Exception(f"{type(node)=} not Name or Attribute")
-
+    def make_variable(self, node, offset_index, id_n):
         is_variable = False
         if (id_n not in get_enum_classes()
         and id_n not in self.object_names
@@ -188,14 +189,18 @@ class AstToCustomNodeTransformer(ast.NodeTransformer):
             node = Variable(args)
         return node
     
+    def visit_Subscript(self, node):
+        return self.make_variable(node, node.slice.value, node.value.id)
+
     def visit_Attribute(self, node):
         self.generic_visit(node)
-        return self.make_variable(node)
+        if node.value.id in self.aoe2_enums:
+            return EnumNode(node)
+        return self.make_variable(node, node.attr, node.value.id)
     
     def visit_Name(self, node):
         self.generic_visit(node)
-        return self.make_variable(node)
-        
+        return self.make_variable(node, 0, node.id)
 
     def visit_Call(self, node):
         self.generic_visit(node)
@@ -283,7 +288,6 @@ class ReduceTransformer(ast.NodeTransformer):
         return final_node
 
     def visit_AugAssign(self, node):
-        print("AUGASSIGN")
         self.generic_visit(node)
         in_op = ast.Assign(
             targets = [node.target],
@@ -642,13 +646,31 @@ class CompileTransformer(ast.NodeTransformer):
                 )
             else:
                 raise Exception(f"only simple BinOp asignments are suported {ast.dump(node.value)}")
+        
+        elif type(node.value) is Variable:
+            #todo: this will only work on ints, needs to be delt with in Memory management to exstend this command to each index of the variable
+            assign_command = Command(
+                AOE2FUNC.up_modify_goal,
+                [node.targets[0], mathOp.eql, node.value],
+                node,
+            )
+
         elif type(node.value) is ast.Constant:
             assign_command = Command(
                 AOE2FUNC.up_modify_goal,
                 [node.targets[0], mathOp.eql, node.value],
                 node,
             )
+        elif type(node.value) is EnumNode:
+            assign_command = Command(
+                AOE2FUNC.up_modify_goal,
+                [node.targets[0], mathOp.eql, node.value.enum],
+                node,
+            )
+        elif type(node.value) is Constructor:
+            return node
         else:
+            #todo: allow var[0] instead of just var.x (uses ast.Subscript)
             raise Exception(f"{type(node.value)} not suported in asignments")
         return assign_command
 
