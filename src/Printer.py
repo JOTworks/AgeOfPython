@@ -64,10 +64,10 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         for itr, expr in enumerate(node.args):
             if type(expr) in list(self.enum_classes.values()):
                 if not self.TEST:
-                    if type(expr) is mathOp: #todo:figure out if this should even be in Printer as it is doing logic, not just printing
+                    if type(expr) is mathOp: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
                         if type(node.args[itr+1]) is Variable:
-                            expr_str = str(int(expr.value) + 12) # goal math are all 12 over constant math
-                            #todo: fix this to work with SN, needs to be able to tell if it SN then ad 24 instead of 12
+                            expr_str = str(int(expr.value) + 12) # goal mathOp are all 12 over constant mathOp                        elif type(node.args[itr+1]) is SN:
+                            expr_str = str(int(expr.value) + 24) # sn mathOp are all 24 over constant math
                         else:
                             expr_str = str(expr.value)
                     else:

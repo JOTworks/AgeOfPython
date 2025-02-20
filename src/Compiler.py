@@ -609,13 +609,14 @@ class CompileTransformer(ast.NodeTransformer):
     def visit_Assign(self, node, parent, in_field, in_node):
         #! todo: Make nested asignments work with binOp ect
         self.generic_visit(node)
+        target = node.targets[0]
         if type(node.value) is ast.BinOp:
             if type(node.value.left) is Variable and type(node.value.right) in [ast.Constant, Variable]:
-                if node.value.left != node.targets[0]:
+                if node.value.left != target:
                     raise Exception(f"we only have 2c not 3c {ast.dump(node.value)}")
                 assign_command = Command(
                     AOE2FUNC.up_modify_goal,
-                    [node.targets[0], ast_to_aoe(type(node.value.op)), node.value.right],
+                    [target, ast_to_aoe(type(node.value.op)), node.value.right],
                     node,
                 )
             else:
@@ -625,20 +626,20 @@ class CompileTransformer(ast.NodeTransformer):
             #todo: this will only work on ints, needs to be delt with in Memory management to exstend this command to each index of the variable
             assign_command = Command(
                 AOE2FUNC.up_modify_goal,
-                [node.targets[0], mathOp.eql, node.value],
+                [target, mathOp.eql, node.value],
                 node,
             )
 
         elif type(node.value) is ast.Constant:
             assign_command = Command(
                 AOE2FUNC.up_modify_goal,
-                [node.targets[0], mathOp.eql, node.value],
+                [target, mathOp.eql, node.value],
                 node,
             )
         elif type(node.value) is EnumNode:
             assign_command = Command(
                 AOE2FUNC.up_modify_goal,
-                [node.targets[0], mathOp.eql, node.value.enum],
+                [target, mathOp.eql, node.value.enum],
                 node,
             )
         elif type(node.value) is Constructor:
@@ -646,6 +647,9 @@ class CompileTransformer(ast.NodeTransformer):
         else:
             #todo: allow var[0] instead of just var.x (uses ast.Subscript)
             raise Exception(f"{type(node.value)} not suported in asignments")
+        if hasattr(target,'enum'):
+            if type(target.enum) is SN:
+                assign_command.func.id = AOE2FUNC.up_modify_sn
         return assign_command
 
 

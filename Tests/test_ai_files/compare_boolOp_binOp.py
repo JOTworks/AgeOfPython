@@ -6,6 +6,8 @@ from scraper.aoe2scriptFunctions import do_nothing
 myvariable = Age.castle_age
 
 SN.cap_civilian_explorers = 0
+SN.cap_civilian_explorers = myvariable
+myvariable = SN.maximum_wood
 
 #learn how break and continue keywords work
 #ADD LATER
