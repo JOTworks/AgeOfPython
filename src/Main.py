@@ -12,10 +12,10 @@ import ast
 from collections import namedtuple
 from scraper import *
 from utils_display import print_bright, print_bordered
+import argparse
 
 
-def main(argv):
-    file_name, arguments = setup_args(argv)
+def main(file_name, arguments):
     ai_folder = get_ai_folder()
 
     if "h" in arguments or "?" in arguments:
@@ -78,22 +78,6 @@ def main(argv):
 
     return myPrinter.non_readable_final_string
 
-
-def setup_args(argv):
-    arguments = []
-    if len(argv) < 2:
-        raise Exception("needs argument of ai file name")
-    file_name = argv[1].split(".")[0]
-    for arg in argv[2:]:
-        if arg[0] == "-":
-            for letter in arg[1:]:
-                arguments.append(letter)
-        else:
-            raise Exception("Invalid argument, needs to start with -: " + arg)
-        print(arguments)
-    return file_name, arguments
-
-
 def get_ai_folder():
     ai_folder = Path(__file__).parent.resolve()
     limit = 0
@@ -108,4 +92,29 @@ def get_ai_folder():
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    parser = argparse.ArgumentParser(description="compile python to aoe2script")
+    parser.add_argument("-f", "--filename", help="input filename")
+    parser.add_argument("-p", "--parcer", help="output parcer abstract syntax tree", action="store_true")
+    parser.add_argument("-m", "--memory", help="output memory locations", action="store_true") #todo: make a history of memory locations for better printing
+    parser.add_argument("-c", "--compile", help="output compiled abstract syntax tree", action="store_true")
+    parser.add_argument("-cv", "--compile_verbose", help="output ASTs for each step of compiling", action="store_true")
+    parser.add_argument("-r", "--printer", help="output final .per results", action="store_true")
+    parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
+    parser.add_argument("-vv", "--everything_verbose", help="increase output verbosity", action="store_true")
+    
+    parser.add_argument("-t", "--test", help="test that makes things not actauly save", action="store_true")
+    parser.add_argument("-o", "--obfuscate", help="safe .per file in non human readable way", action="store_true")
+    
+    args = parser.parse_args()
+    
+    if hasattr(args,"everything_verbose") and args.everything_verbose:
+        args.v = True
+        args.cv = True
+    
+    if hasattr(args,"verbose") and args.verbose:
+        args.p = True
+        args.m = True
+        args.c = True
+        args.r = True
+
+    main(args.filename, args)

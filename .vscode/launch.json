@@ -13,9 +13,9 @@
       "console": "integratedTerminal",
 
       "args": [
-        //"block_code.py${cwd}", "-v",
-        //"compare_boolOp_binOp.py${cwd}", "-vt",
-        "TuskenRail.py${cwd}", "-vt",
+        //"block_code", "-v",
+        "-f","compare_boolOp_binOp", "-v", //"compare_boolOp_binOp.py${cwd}"
+        //"TuskenRail", "-m -t",
       ]
     }
   ]

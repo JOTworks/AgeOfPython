@@ -10,7 +10,6 @@ from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_com
 from utils_display import print_bordered
 from MyLogging import logger
 
-1#! the attr is not being changed Age.DarkAge to the correct number
 def check_terminal_nodes(tree, node_type):
     for node in ast.walk(tree):
         if isinstance(node, ast.AST):
@@ -39,18 +38,6 @@ def check_terminal_nodes(tree, node_type):
                     raise TypeError(
                         f"Terminal node {ast.dump(node)} is not {node_type}"
                     )
-
-
-def find_extra_node_types(tree, allowed_types):
-    allowed_types = [t for t in allowed_types]
-    allowed_types += (ast.Module, ast.Load, ast.Name, ast.Store)
-    allowed_types = tuple(allowed_types)
-    extra_node_counts = defaultdict(int)
-    for node in ast.walk(tree):
-        if not isinstance(node, allowed_types):
-            extra_node_counts[type(node).__name__] += 1
-    return dict(extra_node_counts)
-
 
 class JumpType(Enum):
     last_rule_in_node = 0
@@ -379,19 +366,6 @@ class CompileTransformer(ast.NodeTransformer):
     def get_next_temp_var(self):
         self.temp_var_counter += 1
         return f"0t{self.temp_var_counter}"
-
-    # todo: make this visit follow the one actual NodeTransformer one, and not the visitor one. if i want in_field and in_node to work
-    # def generic_visit(self, node, parent=None, in_field=[], in_node=[]): #check this is fine or not? AI GEN
-    #    if parent:
-    #        self.parent_map[node] = parent
-    #    for field, value in ast.iter_fields(node):
-    #        if isinstance(value, list):
-    #            for item in value:
-    #                if isinstance(item, ast.AST):
-    #                    self.visit(item, node, in_field + [field], in_node + [type(node)])
-    #        elif isinstance(value, ast.AST):
-    #            self.visit(value, node, in_field + [field], in_node + [type(node)])
-    #    return node
 
     def visit(self, node, parent=None, in_field=[], in_node=[]):
         parent = self.parent_map.get(node)
@@ -747,8 +721,6 @@ class ScopeAllVariables(ast.NodeTransformer):
         self.scope_level = 0
         self.scoped_variables = {}
 
-    # todo: make a visit_Variable function.
-
     def visit_FunctionDef(self, node):
         self.scope_level += 1
         self.generic_visit(node)
@@ -783,36 +755,20 @@ class Compiler:
         return
 
     def compile(self, trees):
-        transformed_tree = AstToCustomNodeTransformer(
-            command_names=self.command_names, object_names=self.object_names
-        ).visit(trees.main_tree)
+        transformed_tree = AstToCustomNodeTransformer(self.command_names, self.object_names).visit(trees.main_tree)
         transformed_tree = ReduceTransformer().visit(trees.main_tree)
-        # optimize concepts like deleting things that do nothing
-        
-        transformed_tree = CompileTransformer(command_names=self.command_names).visit(
-            transformed_tree
-        )
-        # optimize commands together
-
+        transformed_tree = CompileTransformer(self.command_names).visit(transformed_tree)
         transformed_tree = ScopeAllVariables().visit(transformed_tree)
-        # todo: optimization for later
-        # append last place used
-        # transformed_tree = GetVeriableLastUseNodes().visit(transformed_tree)
-        # walk through and keep a list of node and variable pairing, then add tag
+
         memory = Memory()
         
-        transformed_tree = AlocateAllMemory(memory).visit(transformed_tree)
-        transformed_tree = GarenteeAllCommandsInDefRule().visit(transformed_tree)
+        transformed_tree = AlocateAllMemory(memory).visit(transformed_tree) #find out last place vars are used, and automaticaly call free on them; walk through and keep a list of node and variable pairing, then add tag
+        transformed_tree = GarenteeAllCommandsInDefRule().visit(transformed_tree) # optimize commands together into defrules
         transformed_tree = NumberDefrulesTransformer().visit(transformed_tree)
         transformed_tree = ReplaceAllJumpStatementsTransformer().visit(transformed_tree)
 
-        
         print_bordered("Memory")
         memory.print_memory()
-
-        extra_nodes = find_extra_node_types(transformed_tree, (ast.If, Command))
-        if extra_nodes:
-            print(f"Extra nodes found: {extra_nodes}")
 
         trees.main_tree = transformed_tree
         return trees

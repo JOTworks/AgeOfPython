@@ -1,5 +1,6 @@
 from scraper import AOE2OBJ, Point, State
 from sortedcontainers import SortedDict
+from pprint import pprint
 import ast
 
 class StoredMemory:
@@ -28,9 +29,9 @@ class Memory:
 
     def print_memory(self):
         print(f"{self.free_memory_count=}")
-        print(self._open_memory)
+        pprint(self._open_memory)
         print(f"{self.used_memory_count=}")
-        print(self._used_memory)
+        pprint(self._used_memory)
 
     @property
     def free_memory_count(self):
