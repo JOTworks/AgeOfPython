@@ -3752,3 +3752,4 @@ class AOE2OBJ(Enum):
     compareOp = 102
     mathOp = 103
     typeOp = 104
+    FuncCall = 105

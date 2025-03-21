@@ -5,6 +5,9 @@
 
 
 
+
+
+
     {
       "name": "Python: main",
       "type": "debugpy",
@@ -14,8 +17,9 @@
 
       "args": [
         //"block_code", "-v",
-        "-f","compare_boolOp_binOp", "-v", //"compare_boolOp_binOp.py${cwd}"
-        //"TuskenRail", "-m -t",
+       //"-f","compare_boolOp_binOp", "-v", //"compare_boolOp_binOp.py${cwd}"
+        "-f","all_code", "-v",
+        //"-f","TuskenRail", "-v", "-t",
       ]
     }
   ]

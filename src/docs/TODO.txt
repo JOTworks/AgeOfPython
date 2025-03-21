@@ -1,3 +1,11 @@
+
+#should be building_type_count(BuildingId.monastery) < 1 not building_type_count(BuildingId.monastery, compareOp.less_than, 1)
+
+Make these less arcane  
+  up_set_target_object(SearchSource.search_remote, 0)
+  up_target_objects(0,DUCAction.action_default, -1, -1)
+
+
 TESTING
 - for each compile function, create a input code, and save the output code as a test. then i can see if it ever changes
 - memory needs unit test, and needs to be done for minimum viable product.

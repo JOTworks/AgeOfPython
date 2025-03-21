@@ -25,6 +25,12 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         for item in node.body:
             self.visit(item)
 
+    def visit_FunctionDef(self, node):
+        print("FunctionDef")
+        self.final_string += yellow(f";--- DEF {node.name} ---;\n")
+        self.generic_visit(node)
+        self.final_string += yellow(f";--- END {node.name} ---;\n")
+
     def visit_DefRule(self, node):  # adds (defrule _______  => ______)
         self.final_string += (
             green("(defrule")
@@ -84,7 +90,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 elif type(expr.value) is str:
                     expr_str = "'"+expr.value+"'"
                 else: 
-                    raise Exception("Constatns need to be an int or str")
+                    raise Exception(f"Constants need to be an int or str, not {type(expr.value)}")
             elif isinstance(expr, str):
                 expr_str = expr
             else:
@@ -97,10 +103,8 @@ class DefRulePrintVisitor(ast.NodeVisitor):
 
 
 class Printer:
-    def __init__(self, trees):
-        self.main = trees.main_tree
-        self.funcList = trees.func_tree
-        self.constList = trees.const_tree
+    def __init__(self, tree):
+        self.tree = tree
         self.final_string = ""
 
     @property
@@ -121,12 +125,11 @@ class Printer:
 
     def print_for_string_testing(self):
         visitor = DefRulePrintVisitor(self.final_string, NO_FILE=True)
-        visitor.visit(self.main)
+        visitor.visit(self.tree)
 
     def print_all(self, TEST=False):
         visitor = DefRulePrintVisitor(self.final_string, TEST=TEST)
-        visitor.visit(self.main)
-        visitor.visit(self.funcList)
+        visitor.visit(self.tree)
         self.final_string = visitor.final_string
         return visitor.final_string
 

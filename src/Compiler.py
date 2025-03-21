@@ -10,6 +10,7 @@ from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_com
 from utils_display import print_bordered
 from MyLogging import logger
 
+
 def check_terminal_nodes(tree, node_type):
     for node in ast.walk(tree):
         if isinstance(node, ast.AST):
@@ -39,6 +40,7 @@ def check_terminal_nodes(tree, node_type):
                         f"Terminal node {ast.dump(node)} is not {node_type}"
                     )
 
+
 class JumpType(Enum):
     last_rule_in_node = 0
     test_jump_to_beginning = 1
@@ -46,6 +48,7 @@ class JumpType(Enum):
     test_jump_to_beginning_after_init = 3
     jump_over_skip = 4
     last_rule_after_node = 5
+
 
 class Constructor(ast.Call):
     def __init__(self, object_name: str, args: list = [], lineno="."):
@@ -57,6 +60,7 @@ class Constructor(ast.Call):
 
         self.args = args
 
+
 class EnumNode(ast.Attribute):
     def __init__(self, attr):
         self.attr = attr.attr
@@ -66,30 +70,34 @@ class EnumNode(ast.Attribute):
         arg = arg_enum[attr.attr]
         assert arg is not str
         self.enum = arg
-        
+
 
 class Variable(ast.Name):
     """
     something I can replace ast.Name objects with when I konw it will
     need memory alocation so Memory has an esier time finding them in the walk.
     """
+
     def __init__(self, args):
-        self.offset_index = args.pop('offset_index')
+        self.offset_index = args.pop("offset_index")
         super().__init__(**args)
 
     pass
+
 
 class aoeOp(ast.BoolOp):
     """
     this is a wrapper for a BoolOp BUT ALSO includes the UniOp Not()
     """
+
     def __init__(self, in_op):
         for attr in self._attributes:
-            self.__setattr__(attr,in_op.__getattribute__(attr))
+            self.__setattr__(attr, in_op.__getattribute__(attr))
         self.values = in_op.values
         self.op = in_op.op
         if not self.__getattribute__("values"):
             raise Exception("BoolOp Created without a Values attribute")
+
 
 class Command(ast.Call):
     def __init__(self, name: AOE2FUNC, args: list, node):
@@ -104,19 +112,23 @@ class Command(ast.Call):
         # TODO: this is where i can do hard type checking for command params
         if not isinstance(name, AOE2FUNC):
             raise TypeError(f"needs to be a AOE2FUNC, got {type(name)}")
-        self.func = ast.Name(id=name, ctx=ast.Load())  # todo: check if this is redundant
+        self.func = ast.Name(
+            id=name, ctx=ast.Load()
+        )  # todo: check if this is redundant
         if not isinstance(args, list):
             raise TypeError("args must be a list")
         for itr, arg in enumerate(args):
             if type(arg) is EnumNode:
                 arg = arg.enum
                 args[itr] = arg
-            
+
             if type(arg) is ast.Constant:
                 pass
             if type(arg) is Variable:
                 pass
-            if type(arg) not in [JumpType, Variable, ast.Constant] + list(aoe2_enums.values()):
+            if type(arg) not in [JumpType, Variable, ast.Constant] + list(
+                aoe2_enums.values()
+            ):
                 raise TypeError(f"arg {arg} is {type(arg)}")
         self.args = args
 
@@ -127,7 +139,7 @@ class Command(ast.Call):
 
 # defrules are just test and body. basicly if statements. so i just need to make everything into if statements
 class DefRule(ast.If):
-    def __init__(self, test: list, body: list, node, comment = ""):
+    def __init__(self, test: list, body: list, node, comment=""):
         super().__init__()
         check_terminal_nodes(test, Command)
         self.comment = comment
@@ -149,7 +161,17 @@ class DefRule(ast.If):
         self.body = body
 
 
-class AstToCustomNodeTransformer(ast.NodeTransformer):
+class compilerTransformer(ast.NodeTransformer):
+    def p_visit(self, node, tree_name="tree", vv=False):
+        if vv:
+            print_bordered(f"{tree_name} after {type(self)}")
+            print(ast.dump((node), indent=4))
+        method = "visit_" + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_visit)
+        return visitor(node)
+
+
+class AstToCustomNodeTransformer(compilerTransformer):
     def __init__(self, command_names, object_names):
         super().__init__()
         self.command_names = command_names
@@ -158,24 +180,25 @@ class AstToCustomNodeTransformer(ast.NodeTransformer):
 
     def make_variable(self, node, offset_index, id_n):
         is_variable = False
-        if (id_n not in get_enum_classes()
-        and id_n not in self.object_names
-        and id_n not in self.command_names
-            ):
+        if (
+            id_n not in get_enum_classes()
+            and id_n not in self.object_names
+            and id_n not in self.command_names
+        ):
             is_variable = True
         if is_variable:
             args = {
-                'id':id_n,
-                'ctx':node.ctx,
-                'offset_index':offset_index,
-                'lineno':node.lineno,
-                'end_lineno':node.end_lineno,
-                'col_offset':node.col_offset,
-                'end_col_offset':node.end_col_offset,
+                "id": id_n,
+                "ctx": node.ctx,
+                "offset_index": offset_index,
+                "lineno": node.lineno,
+                "end_lineno": node.end_lineno,
+                "col_offset": node.col_offset,
+                "end_col_offset": node.end_col_offset,
             }
             node = Variable(args)
         return node
-    
+
     def visit_Subscript(self, node):
         return self.make_variable(node, node.slice.value, node.value.id)
 
@@ -184,7 +207,7 @@ class AstToCustomNodeTransformer(ast.NodeTransformer):
         if node.value.id in self.aoe2_enums:
             return EnumNode(node)
         return self.make_variable(node, node.attr, node.value.id)
-    
+
     def visit_Name(self, node):
         self.generic_visit(node)
         return self.make_variable(node, 0, node.id)
@@ -199,7 +222,7 @@ class AstToCustomNodeTransformer(ast.NodeTransformer):
         return node
 
 
-class ReduceTransformer(ast.NodeTransformer):
+class ReduceTransformer(compilerTransformer):
     """
     Becasue Compare and BoolOp both short circit in python, they are build as lists (left and [right_list]) instead of recurcive (lef and right) like binOps.
     Because aoe2script only short circits on implied and, and not on any defined BoolOps, we are removing all lists in favor of recursion to simplify the compiler.
@@ -260,16 +283,16 @@ class ReduceTransformer(ast.NodeTransformer):
                 final_node = boolop_node_next
             return final_node
         return aoeOp(node)
-    
+
     def visit_UnaryOp(self, node):
         self.generic_visit(node)
         in_op = ast.BoolOp(
-            op = node.op, 
-            values = [node.operand], 
+            op=node.op,
+            values=[node.operand],
             lineno=node.lineno,
             col_offset=node.col_offset,
             end_lineno=node.end_lineno,
-            end_col_offset=node.end_col_offset
+            end_col_offset=node.end_col_offset,
         )
         final_node = aoeOp(in_op)
         return final_node
@@ -277,8 +300,8 @@ class ReduceTransformer(ast.NodeTransformer):
     def visit_AugAssign(self, node):
         self.generic_visit(node)
         in_op = ast.Assign(
-            targets = [node.target],
-            value = ast.BinOp(
+            targets=[node.target],
+            value=ast.BinOp(
                 left=node.target,
                 op=node.op,
                 right=node.value,
@@ -286,18 +309,18 @@ class ReduceTransformer(ast.NodeTransformer):
                 col_offset=node.col_offset,
                 end_lineno=node.end_lineno,
                 end_col_offset=node.end_col_offset,
-                file_path=node.file_path
+                file_path=node.file_path,
             ),
             lineno=node.lineno,
             col_offset=node.col_offset,
             end_lineno=node.end_lineno,
             end_col_offset=node.end_col_offset,
-            file_path=node.file_path
+            file_path=node.file_path,
         )
         return in_op
-        
 
-class GarenteeAllCommandsInDefRule(ast.NodeTransformer):
+
+class GarenteeAllCommandsInDefRule(compilerTransformer):
     def __init__(self):
         super().__init__()
         self.defrule_stack = []
@@ -314,9 +337,10 @@ class GarenteeAllCommandsInDefRule(ast.NodeTransformer):
         self.generic_visit(node)
         return node
 
-class AlocateAllMemory(ast.NodeTransformer): 
-    #! WIP 
-    #! need to sort out asignments and mem alocation and Constructions. 
+
+class AlocateAllMemory(compilerTransformer):
+    #! WIP
+    #! need to sort out asignments and mem alocation and Constructions.
     #! referencing before asignment should be ok, becuase its a loop for the most part.
     #! get functions working STAT
     """
@@ -330,20 +354,34 @@ class AlocateAllMemory(ast.NodeTransformer):
     everything is pass by reference
     no globals!
     """
+
     def __init__(self, memory):
         super().__init__()
         self.memory = memory
 
     def visit_Assign(self, node):
+        self.generic_visit(node)
         assert isinstance(self.memory, Memory)
         if type(node.value) is Constructor:
             if len(node.targets) != 1:
-                raise Exception(f"multiple targets is not suported on line {node.lineno}")
+                raise Exception(
+                    f"multiple targets is not suported on line {node.lineno}"
+                )
             if location := self.memory.get(node.targets[0].id):
-                    raise Exception (f"{node.targets[0].id} is already in memory! dont try to re Construct it")
+                raise Exception(
+                    f"{node.targets[0].id} is already in memory! dont try to re Construct it"
+                )
             else:
                 var_type = node.value.func.id
-                self.memory.malloc(node.targets[0].id,var_type)
+                self.memory.malloc(node.targets[0].id, var_type)
+        return node
+
+    def visit_FunctionDef(self, node):
+        self.generic_visit(node)
+        assert isinstance(self.memory, Memory)
+        self.memory.malloc_func_call(
+            node.name, node.args.args
+        )  # todo: i really dont like the args.args, figure out how that happend
         return node
 
     def visit_Variable(self, node):
@@ -355,8 +393,9 @@ class AlocateAllMemory(ast.NodeTransformer):
             node.memory_location = location
         return node
 
-class CompileTransformer(ast.NodeTransformer):
-    #todo: make it so set_strategic_number(SN.initial_exploration_required, 0) could be replace with SN.initial_exploration_required = 0, and could have any expr in the asignment
+
+class CompileTransformer(compilerTransformer):
+    # todo: make it so set_strategic_number(SN.initial_exploration_required, 0) could be replace with SN.initial_exploration_required = 0, and could have any expr in the asignment
     def __init__(self, command_names):
         super().__init__()
         self.command_names = command_names
@@ -388,7 +427,7 @@ class CompileTransformer(ast.NodeTransformer):
     def visit_Attribute(self, node):
         self.generic_visit(node)
         return node
-    
+
     def visit_Call(self, node, parent, in_field, in_node):
         self.generic_visit(node)
         return node
@@ -404,23 +443,21 @@ class CompileTransformer(ast.NodeTransformer):
             Command(AOE2FUNC.true, [], None),
             [self.jump_constructor(JumpType.last_rule_in_node)],
             node_copy_with_short_offset(node, 2),
-            comment = "WHILE to_test " + str(node.lineno)
+            comment="WHILE to_test " + str(node.lineno),
         )
 
         test = DefRule(
-            self.visit_test(node.test), 
+            self.visit_test(node.test),
             [self.jump_constructor(JumpType.test_jump_to_beginning)],
             None,
-            comment = "WHILE test " + str(node.lineno)
+            comment="WHILE test " + str(node.lineno),
         )
 
-        node.body = (
-            [to_test]
-            + node.body
-            + [test]
-        )
+        node.body = [to_test] + node.body + [test]
 
-        node.test = None #remove to keep printer from printing it from test and from the body
+        node.test = (
+            None  # remove to keep printer from printing it from test and from the body
+        )
         return node
 
     def visit_For(self, node, parent, in_field, in_node):
@@ -431,15 +468,23 @@ class CompileTransformer(ast.NodeTransformer):
         if type(node.iter) is not ast.Call or node.iter.func.id != "range":
             raise Exception(f"for loops only support range, not {node.iter}")
         self.generic_visit(node)
-        if len(node.iter.args) == 1:  
-            start, stop, step = self.const_constructor(0), node.iter.args[0], self.const_constructor(1)
+        if len(node.iter.args) == 1:
+            start, stop, step = (
+                self.const_constructor(0),
+                node.iter.args[0],
+                self.const_constructor(1),
+            )
         elif len(node.iter.args) == 2:
-            start, stop, step = node.iter.args[0], node.iter.args[1], self.const_constructor(1)
+            start, stop, step = (
+                node.iter.args[0],
+                node.iter.args[1],
+                self.const_constructor(1),
+            )
         elif len(node.iter.args) == 3:
             start, stop, step = node.iter.args[0], node.iter.args[1], node.iter.args[2]
-        else: 
+        else:
             raise Exception(f"for loop has {len(node.iter.args)} args, not 1, 2, or 3")
-        
+
         op = compareOp.less_than
         if step.value and step.value < 0:
             op = compareOp.greater_than
@@ -448,25 +493,25 @@ class CompileTransformer(ast.NodeTransformer):
             Command(AOE2FUNC.up_compare_goal, [node.target, op, stop], node),
             [self.jump_constructor(JumpType.test_jump_to_beginning_after_init)],
             None,
-            comment = "FOR test " + str(node.lineno)
+            comment="FOR test " + str(node.lineno),
         )
         init = DefRule(
             Command(AOE2FUNC.true, [], None),
             [Command(AOE2FUNC.set_goal, [node.target, start], node)],
             None,
-            comment = "FOR init " + str(node.lineno)
+            comment="FOR init " + str(node.lineno),
         )
         jump_to_test = DefRule(
             Command(AOE2FUNC.true, [], None),
             [self.jump_constructor(JumpType.last_rule_in_node)],
             node_copy_with_short_offset(node, 2),
-            comment = "FOR to_test " + str(node.lineno)
+            comment="FOR to_test " + str(node.lineno),
         )
         incrementer = DefRule(
             Command(AOE2FUNC.true, [], None),
             [Command(AOE2FUNC.up_modify_goal, [node.target, mathOp.add, step], node)],
             None,
-            comment = "FOR inc " + str(node.lineno)
+            comment="FOR inc " + str(node.lineno),
         )
 
         node.body = (
@@ -484,34 +529,37 @@ class CompileTransformer(ast.NodeTransformer):
 
     def const_constructor(self, value):
         return ast.Constant(value=0)
+
     def jump_constructor(self, jump_type):
         return Command(AOE2FUNC.up_jump_direct, [jump_type], None)
 
     def visit_If(self, node, parent, in_field, in_node):
         self.generic_visit(node)
 
+        test_commands = [self.jump_constructor(JumpType.jump_over_skip)]
+        if node.disable_self:
+            test_commands.append(Command(AOE2FUNC.disable_self, [], node))
         test = DefRule(
-            self.visit_test(node.test), 
-            [self.jump_constructor(JumpType.jump_over_skip)], 
+            self.visit_test(node.test),
+            test_commands,
             None,
-            comment="IF test " + str(node.lineno)
+            comment="IF test " + str(node.lineno),
         )
 
         skip = DefRule(
             Command(AOE2FUNC.true, [], None),
             [self.jump_constructor(JumpType.last_rule_after_node)],
             node_copy_with_short_offset(node, 2),
-            comment="IF skip " + str(node.lineno)
+            comment="IF skip " + str(node.lineno),
         )
 
-        node.body = (
-            [
-                test,
-                skip,
-            ]
-            + node.body
+        node.body = [
+            test,
+            skip,
+        ] + node.body
+        node.test = (
+            None  # remove to keep printer from printing it from test and from the body
         )
-        node.test = None #remove to keep printer from printing it from test and from the body
         return node
 
     def in_node(
@@ -527,13 +575,13 @@ class CompileTransformer(ast.NodeTransformer):
         # x>12==y<12 turns into x>12 AND 12==y AND y<12
         self.generic_visit(node)
 
-        #if type(node.comparators[0]) not in [ast.Constant, ast.Name]:
+        # if type(node.comparators[0]) not in [ast.Constant, ast.Name]:
         #    raise Exception(
         #        f"{node.left} type of {type(node.left)} is not suported in compare"
         #    )
         left_type = type(node.left)
         right_type = type(node.comparators[0])
-        if (left_type is ast.Constant and right_type is ast.Constant):
+        if left_type is ast.Constant and right_type is ast.Constant:
             raise Exception(
                 f"dont compare 2 constants {node.left.value} and {node.comparators[0].value}. just reduce"
             )
@@ -546,13 +594,19 @@ class CompileTransformer(ast.NodeTransformer):
         elif left_type is ast.Constant and right_type is Variable:
             compare_comand = Command(
                 AOE2FUNC.up_compare_goal,
-                [node.comparators[0], reverse_compare_op(ast_to_aoe(type(node.ops[0]))), node.left],
+                [
+                    node.comparators[0],
+                    reverse_compare_op(ast_to_aoe(type(node.ops[0]))),
+                    node.left,
+                ],
                 node,
             )
         else:
-            raise Exception(f"visit_compare Error! {type(node.left)=} and {type(node.comparators[0])=}")
+            raise Exception(
+                f"visit_compare Error! {type(node.left)=} and {type(node.comparators[0])=}"
+            )
         return compare_comand
-    
+
     def visit_BinOp(self, node, parent, in_field, in_node):
         # will be 2CT and needs to be up-goal-modify # ALWAYS use temperary vars for this
         self.generic_visit(node)
@@ -570,16 +624,19 @@ class CompileTransformer(ast.NodeTransformer):
 
     def visit_BoolOp(self, node, parent, in_field, in_node):  # and, or
         raise Exception("all boolOp should be aoeOp")
-    
+
     def visit_UnaryOp(self, node):
         raise Exception("all unaryOp should be aoeOp")
-    
+
     def visit_aoeOp(self, node):
         # white listing what can exisit in boolOp
 
-        if not (len(node.values) == 2 or (len(node.values) == 1 and node.op.__doc__ == "Not")):
+        if not (
+            len(node.values) == 2
+            or (len(node.values) == 1 and node.op.__doc__ == "Not")
+        ):
             raise Exception(f"BoolOp must have 2 values nof {len(node.values)}")
-        
+
         for itr, value in enumerate(node.values):
             if type(value) is ast.Constant:
                 if value.value is True:
@@ -610,20 +667,31 @@ class CompileTransformer(ast.NodeTransformer):
         #! todo: Make nested asignments work with binOp ect
         self.generic_visit(node)
         target = node.targets[0]
+        if type(target) is not Variable:
+            raise Exception(
+                f"target needs to be Variable not {target}"
+            )  # todo: add this to the asserter not the compiler
         if type(node.value) is ast.BinOp:
-            if type(node.value.left) is Variable and type(node.value.right) in [ast.Constant, Variable]:
-                if node.value.left != target:
-                    raise Exception(f"we only have 2c not 3c {ast.dump(node.value)}")
+            if type(node.value.left) is Variable and type(node.value.right) in [
+                ast.Constant,
+                Variable,
+            ]:
+                if node.value.left.id != target.id:
+                    raise Exception(
+                        f"we only have 2c not 3c {ast.dump(node.value)}, and {node.value.left}!={target}"
+                    )
                 assign_command = Command(
                     AOE2FUNC.up_modify_goal,
                     [target, ast_to_aoe(type(node.value.op)), node.value.right],
                     node,
                 )
             else:
-                raise Exception(f"only simple BinOp asignments are suported {ast.dump(node.value)}")
-        
+                raise Exception(
+                    f"only simple BinOp asignments are suported {ast.dump(node.value)}"
+                )
+
         elif type(node.value) is Variable:
-            #todo: this will only work on ints, needs to be delt with in Memory management to exstend this command to each index of the variable
+            # todo: this will only work on ints, needs to be delt with in Memory management to exstend this command to each index of the variable
             assign_command = Command(
                 AOE2FUNC.up_modify_goal,
                 [target, mathOp.eql, node.value],
@@ -645,15 +713,15 @@ class CompileTransformer(ast.NodeTransformer):
         elif type(node.value) is Constructor:
             return node
         else:
-            #todo: allow var[0] instead of just var.x (uses ast.Subscript)
+            # todo: allow var[0] instead of just var.x (uses ast.Subscript)
             raise Exception(f"{type(node.value)} not suported in asignments")
-        if hasattr(target,'enum'):
+        if hasattr(target, "enum"):
             if type(target.enum) is SN:
                 assign_command.func.id = AOE2FUNC.up_modify_sn
         return assign_command
 
 
-class NumberDefrulesTransformer(ast.NodeTransformer):
+class NumberDefrulesTransformer(compilerTransformer):
     def __init__(self):
         super().__init__()
         self.defrule_counter = 0
@@ -678,7 +746,7 @@ class NumberDefrulesTransformer(ast.NodeTransformer):
         node.last_defrule = self.defrule_counter - 1
         # raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
         return node
-    
+
     def visit_DefRule(self, node):
         self.generic_visit(node)
         node.defrule_num = self.defrule_counter
@@ -686,29 +754,41 @@ class NumberDefrulesTransformer(ast.NodeTransformer):
         return node
 
 
-class ReplaceAllJumpStatementsTransformer(ast.NodeTransformer):
+class ReplaceAllJumpStatementsTransformer(compilerTransformer):
     def replace_jump(self, node):
         for subnode in ast.walk(node):
             if isinstance(subnode, Command):
                 for i, arg in enumerate(subnode.args):
                     arg_type = type(arg)
-                    if arg_type == JumpType:    
-                        if arg is JumpType.last_rule_in_node:
+                    if arg_type == JumpType:
+                        if arg is JumpType.jump_over_skip:
+                            subnode.args[i] = str(node.first_defrule + 2)
+
+                        elif arg is JumpType.last_rule_after_node:
+                            subnode.args[i] = str(node.last_defrule + 1)
+
+                        elif arg is JumpType.last_rule_in_node:
                             subnode.args[i] = str(node.last_defrule)
-                        elif arg is JumpType.test_jump_to_beginning:
+
+                        # both are the same right now because normal test_jump_to_beginning has an empty first rule like that.
+                        elif (
+                            arg is JumpType.test_jump_to_beginning
+                            or arg is JumpType.test_jump_to_beginning_after_init
+                        ):
                             subnode.args[i] = str(node.first_defrule + 1)
+
                         else:
                             subnode.args[i] = str(-1)
                             logger.error(f"{arg} not implemented yet")
         self.generic_visit(node)
-        return node 
-    
+        return node
+
     def visit_For(self, node):
         return self.replace_jump(node)
-    
+
     def visit_While(self, node):
         return self.replace_jump(node)
-    
+
     def visit_If(self, node):
         return self.replace_jump(node)
 
@@ -719,30 +799,67 @@ class ReplaceAllJumpStatementsTransformer(ast.NodeTransformer):
         return node
 
 
-class ScopeAllVariables(ast.NodeTransformer):
+class ScopeAllVariables(compilerTransformer):
     def __init__(self):
         super().__init__()
         self.scope_level = 0
-        self.scoped_variables = {}
+        self.current_function = None
+
+    ast.FunctionDef
 
     def visit_FunctionDef(self, node):
-        self.scope_level += 1
+        if self.current_function is not None:
+            raise Exception(
+                f"current_function is {self.current_function}, you cannot define {node.name if node else 'a function'} in a function"
+            )
+        self.current_function = node.name
         self.generic_visit(node)
-        self.scope_level -= 1
+        self.current_function = None
         return node
 
-    def visit_Assign(self, node):
+    def visit_Variable(self, node):
         self.generic_visit(node)
-        for target in node.targets:
-            if isinstance(target, ast.Name):
-                scoped_name = f"{target.id}_scope{self.scope_level}"
-                self.scoped_variables[target.id] = scoped_name
-                target.id = scoped_name
+        node.id = self.current_function + "." + node.id
         return node
 
-    def visit_Name(self, node):
-        if isinstance(node.ctx, ast.Load) and node.id in self.scoped_variables:
-            node.id = self.scoped_variables[node.id]
+
+class DisableSelfChecker(compilerTransformer):
+    def __init__(self):
+        self.valid_disable_selfs = []
+
+    def unique_id(self, node):
+        return f"{node.lineno}:{node.col_offset}"
+
+    def visit_If(self, node):
+        # Check each statement in the body of the If node
+        new_body = []
+        node.disable_self = False
+        for stmt in node.body:
+            found = False
+            if isinstance(stmt, ast.Expr):  # Check if the statement is an Expr
+                if isinstance(
+                    stmt.value, ast.Call
+                ):  # Check if the Expr contains a Call
+                    func = stmt.value.func
+                    if isinstance(func, ast.Name) and func.id == AOE2FUNC.disable_self:
+                        found = True
+                        node.disable_self = True
+                        self.valid_disable_selfs.append(self.unique_id(stmt.value))
+                        # logger.debug(f"Found 'disable_self' in If body at line {stmt.lineno}")
+            if not found:
+                new_body.append(stmt)
+        node.body = new_body
+        self.generic_visit(node)
+        return node
+
+    def visit_Command(self, node):
+        # Check if the function being called is `disable_self`
+        if isinstance(node.func, ast.Name) and node.func.id == AOE2FUNC.disable_self:
+            if self.unique_id(node) not in self.valid_disable_selfs:
+                raise Exception(
+                    f"'disable_self' found outside of an If statement at line {node.lineno}"
+                )
+        self.generic_visit(node)
         return node
 
 
@@ -758,24 +875,56 @@ class Compiler:
         ]
         return
 
-    def compile(self, trees):
-        transformed_tree = AstToCustomNodeTransformer(self.command_names, self.object_names).visit(trees.main_tree)
-        transformed_tree = ReduceTransformer().visit(trees.main_tree)
-        transformed_tree = CompileTransformer(self.command_names).visit(transformed_tree)
-        transformed_tree = ScopeAllVariables().visit(transformed_tree)
+    def compile(self, trees, vv=False):
+        trees.main_tree = AstToCustomNodeTransformer(
+            self.command_names, self.object_names
+        ).p_visit(trees.main_tree, "main_tree", vv)
+        trees.func_tree = AstToCustomNodeTransformer(
+            self.command_names, self.object_names
+        ).p_visit(trees.func_tree, "func_tree", vv)
+        trees.main_tree = DisableSelfChecker().p_visit(trees.main_tree, "main_tree", vv)
+        trees.func_tree = DisableSelfChecker().p_visit(trees.func_tree, "func_tree", vv)
+        trees.main_tree = ReduceTransformer().p_visit(trees.main_tree, "main_tree", vv)
+        trees.func_tree = ReduceTransformer().p_visit(trees.func_tree, "func_tree", vv)
+        trees.func_tree = ScopeAllVariables().p_visit(trees.func_tree, "func_tree", vv)
+        trees.main_tree = CompileTransformer(self.command_names).p_visit(
+            trees.main_tree, "main_tree", vv
+        )
+        trees.func_tree = CompileTransformer(self.command_names).p_visit(
+            trees.func_tree, "func_tree", vv
+        )
 
         memory = Memory()
-        
-        transformed_tree = AlocateAllMemory(memory).visit(transformed_tree) #find out last place vars are used, and automaticaly call free on them; walk through and keep a list of node and variable pairing, then add tag
-        transformed_tree = GarenteeAllCommandsInDefRule().visit(transformed_tree) # optimize commands together into defrules
-        transformed_tree = NumberDefrulesTransformer().visit(transformed_tree)
-        transformed_tree = ReplaceAllJumpStatementsTransformer().visit(transformed_tree)
+
+        trees.main_tree = AlocateAllMemory(
+            memory
+        ).p_visit(
+            trees.main_tree, "main_tree", vv
+        )  # find out last place vars are used, and automaticaly call free on them; walk through and keep a list of node and variable pairing, then add tag
+        trees.func_tree = AlocateAllMemory(memory).p_visit(
+            trees.func_tree, "func_tree", vv
+        )
+        trees.main_tree = GarenteeAllCommandsInDefRule().p_visit(
+            trees.main_tree, "main_tree", vv
+        )  # optimize commands together into defrules
+        trees.func_tree = GarenteeAllCommandsInDefRule().p_visit(
+            trees.func_tree, "func_tree", vv
+        )
+
+        combined_tree = trees.main_tree
+        combined_tree.body = combined_tree.body + trees.func_tree.body
+
+        combined_tree = NumberDefrulesTransformer().p_visit(
+            combined_tree, "combined_tree", vv
+        )
+        combined_tree = ReplaceAllJumpStatementsTransformer().p_visit(
+            combined_tree, "combined_tree", vv
+        )
 
         print_bordered("Memory")
         memory.print_memory()
 
-        trees.main_tree = transformed_tree
-        return trees
+        return combined_tree
 
 
 def node_copy_with_short_offset(node, offset):

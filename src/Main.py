@@ -18,25 +18,16 @@ import argparse
 def main(file_name, arguments):
     ai_folder = get_ai_folder()
 
-    if "h" in arguments or "?" in arguments:
-        print_bright("\n===HELP===")
-        print(
-            "-s Scanner\n"
-            + "-p Parcer\n"
-            + "-i Interpreter\n"
-            + "-f Function List\n"
-            + "-m Memory\n"
-            + "-r Printer\n"
-            + "-v everything\n"
-            + "-t test\n"
-        )
-
     # *----PARSING----*#
     myParser = Parser(file_name, ai_folder)
     trees = myParser.parse()
     if "p" in arguments or "v" in arguments:
-        print_bordered("Parsed tree")
+        print_bordered("Parsed Main tree")
         print(ast.dump(trees.main_tree, indent=4))
+        print_bordered("Parsed Func tree")
+        print(ast.dump(trees.func_tree, indent=4))
+        print_bordered("Parsed Const tree")
+        print(ast.dump(trees.const_tree, indent=4))
         print("_________")
 
     # TODO: add ast tree viewer back in
@@ -50,14 +41,15 @@ def main(file_name, arguments):
 
     # *----COMPILING----*#
     compiler = Compiler()
-    trees = compiler.compile(trees)
+    verbose_compiler = True if "vv" in arguments or "cv" in arguments else False
+    combined_tree = compiler.compile(trees, verbose_compiler)
 
-    if "p" in arguments or "v" in arguments:
-        print_bordered("Compiled tree")
-        print(ast.dump((trees.main_tree), indent=4))
+    if "c" in arguments or "v" in arguments:
+        print_bordered("Combined Tree")
+        print(ast.dump((combined_tree), indent=4))
 
     # *----PRINTING----*#
-    myPrinter = Printer(trees)
+    myPrinter = Printer(combined_tree)
     if "t" in arguments:
         myPrinter.print_all(TEST=True)  # currently makes it not go to numbers
     else:
@@ -72,7 +64,7 @@ def main(file_name, arguments):
 
     if "r" in arguments or "v" in arguments:
         print(myPrinter.final_string)
-        nonTestPrinter = Printer(trees)
+        nonTestPrinter = Printer(combined_tree)
         nonTestPrinter.print_all(TEST=False)
         print(nonTestPrinter.non_readable_final_string)
 

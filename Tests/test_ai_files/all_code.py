@@ -1,21 +1,43 @@
-from AgeOfPython.src.scraper.aoe2scriptFunctions import *
-from AgeOfPython.src.scraper.aoe2scriptEnums import *
-from tests.test_ai_files.imported_code import *
-#from test_strings import string_while_loop as swl, string_variable_asign as sva
-#import test_functioen as tf
+from scraper.aoe2scriptFunctions import *
+from scraper.aoe2scriptEnums import *
+from scraper.aoe2scriptEnums import PlayerNumber
+from scraper.aoe2scriptFunctions import chat_to_all, up_chat_data_to_player, disable_self
 
-x = 12
-x = 11
-x = 15+x
+#asignment
+asi = 12
+asi = asi+18
+up_chat_data_to_player(PlayerNumber.my_player_number, "asi should be 30:%d", asi)
+
+#if
 if True:
-    delete_unit(UnitId.archer)
+    chat_to_all("in if")
+    disable_self()
 
-x = Const(14)
-x = Point(14)
+if True:
+    if True:
+        chat_to_all("in nested if")
+        disable_self()
 
-if (can_research(TechId.ri_loom) 
-    and building_type_count_total(BuildingId.house,'>',1) 
-    and (food_amount('<',50) or (housing_headroom('<',1) and not can_build(BuildingId.house)))
-   ):
-  research(TechId.ri_loom)
-  disable_self()
+#for
+if True:
+    for i in range(4):
+        chat_to_all("in for (4 times)")
+    disable_self()
+        
+#while
+#while_conditional = True #doesnt work because its a boolean currently
+while_conditional = 1
+if True:
+    #while while_conditional: #doest work becuase test canot be a variable
+    while while_conditional == 1:
+        chat_to_all("in while")
+        while_conditional = 0
+    disable_self()
+
+#function
+def foo():
+    chat_to_all("in function")
+
+if True:
+    foo()
+    disable_self()

@@ -1,3 +1,4 @@
+from scraper import *
 #IF
 1: if test -> jump 3
 2: jump 5
@@ -37,6 +38,34 @@ jump to the last one (aka the conditional)
 10 RET_VAL  = 8
 11 NEXT_RET = 4
 12 ..x      = 20
+
+FUNCTION_START_DEFRULE = 0
+return_line_ptr = 0
+
+return_line = 0
+last_return_line_ptr = 0
+return_value_ptr = 0
+variable_ptr
+
+[
+| return_value_ptr
+| return_line
+| last_return_line_ptr
+]
+
+last_return_line_ptr = return_line_ptr
+return_line_ptr = return_line(location)
+return_line = 9 #or whatever line is after this one
+for var in variable pointer():
+  
+up_jump_direct(FUNCTION_START_DEFRULE)
+
+
+#at return statments 
+return_value_ptr = return_value
+
+#at the end of the function
+up_jump_direct(return_line_ptr)
 
 
 """

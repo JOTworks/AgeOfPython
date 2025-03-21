@@ -3,11 +3,18 @@ from scraper.aoe2scriptEnums import *
 from scraper.aoe2scriptEnums import Age, SN
 from scraper.aoe2scriptFunctions import do_nothing
 
-myvariable = Age.castle_age
+def foo():
+    bar = 1
+    bar = bar + 7
 
-SN.cap_civilian_explorers = 0
-SN.cap_civilian_explorers = myvariable
-myvariable = SN.maximum_wood
+def fib(n):
+    if n >= 1:
+        return n
+    else:
+        return 0
+        
+wa = 1
+foo()
 
 #learn how break and continue keywords work
 #ADD LATER

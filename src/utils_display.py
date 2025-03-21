@@ -24,6 +24,8 @@ def display_scanner(myScanner):
         token_list.append(row)
     print_column(token_list, 3)
 
+def print_dim(string):
+    print(Style.DIM + string + Style.NORMAL)
 
 def print_bright(string):
     print(Style.BRIGHT + string + Style.NORMAL)
