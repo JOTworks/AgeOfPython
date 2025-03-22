@@ -1533,6 +1533,8 @@ class PlayerStance(Enum):
     enemy = 3
 class Point:
     pass #Point
+class State:
+    pass #added manually
 class PositionType(Enum):
     position_center = 0
     position_opposite = 1

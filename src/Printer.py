@@ -1,12 +1,11 @@
 import ast
-from Compiler import Command, DefRule, JumpType, Variable, aoeOp
+from Compiler import Command, Variable, aoeOp
 from scraper import *
-from scraper import mathOp, function_list
+from scraper import mathOp
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re
 from MyLogging import logger
-from enum import Enum
 from utils import get_enum_classes
 
 

@@ -786,6 +786,9 @@ def generate_aoe2scriptEnums():
     options = dict(zip(class_names, [i for i in range(len(class_names))]))
     lines += make_parameter_class_lines("AOE2OBJ", ParameterStorage(options, "", ""))
 
+    lines += 'class State:'
+    lines += '    pass #added manually'
+        
     output_path = os.path.join(os.path.dirname(__file__), "aoe2scriptEnums.py")
     with open(output_path, "w") as file:
         file.write("\n".join(lines))
@@ -795,7 +798,7 @@ def generate_aoe2scriptEnums():
 def generate_aoe2scriptFunctions():
     c_dict = open_file("command_dict.pkl")
     p_dict = open_file("parameter_dict.pkl")
-    lines = ["from aoe2scriptEnums import *"]
+    lines = ["from scraper.aoe2scriptEnums import *"]
     function_list_line = ['function_list = {']
     for command_name, command_storage in c_dict.items():
         function_list_line += make_function_param_list(command_name, command_storage, p_dict)
@@ -804,8 +807,9 @@ def generate_aoe2scriptFunctions():
     lines += function_list_line
     output_path = os.path.join(os.path.dirname(__file__), "aoe2scriptFunctions.py")
     with open(output_path, "w") as file:
-        file.write("\n".join(lines))
-
+        full_lines = "\n".join(lines)
+        full_lines = full_lines.replace('\\','|')
+        file.write(full_lines)
 
 # save_object_codes()
 # save_tech_codes()
