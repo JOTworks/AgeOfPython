@@ -1,7 +1,7 @@
 import ast
 from Compiler import Command, DefRule, JumpType, Variable, aoeOp
 from scraper import *
-from scraper import mathOp
+from scraper import mathOp, function_list
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re

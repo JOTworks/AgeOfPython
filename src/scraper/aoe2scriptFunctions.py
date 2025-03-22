@@ -1,16 +1,5 @@
-from .aoe2scriptEnums import *
-
-class Point():
-    def __init__(self, x, y):
-        pass
-class State():
-    def __init__(self, one, two, three, four):
-        pass
-class Const():
-    def __init__(self, num):
-        pass
-
-
+from aoe2scriptEnums import *
+from aoe2scriptEnums import EventType
 def acknowledge_event(EventType: EventType,EventId: int,):
     """
  Acknowledges a received event by resetting the associated flag. Scenario triggers that execute an AI Script Goal effect are the only events that AI scripts can detect. This command, along withevent-detected, is used to detect an AI Script Goal effect from a scenario trigger, often with the intention of changing the AI behavior after the scenario trigger has fired. The scenario designer chooses an AI Trigger number for the AI Script Goal effect in the scenario editor. Then, the event-detected command in the AI script will detect when this trigger effect happens. The event-detected command will remain true after the AI Script Goal trigger effect fires, so acknowledge-event is used to reset the event-detected flag so that event-detected will no longer be true, similar to how thedisable-timercommand clears a timer that has triggered or how theacknowledge-tauntcommand accepts the taunt message. 
@@ -339,14 +328,14 @@ def chat_local_using_id(LanguageId: int,):
     """
  Displays a string, defined by a string id, as a local chat message to all players. For more info on String ids, see the description of theLanguageIdparameter. For example, string id 22322 in English is "No wonder thou wert victorious! I shalt abdicate." Local chat messages display chat messages in white rather than with the AI's player color, making this command strictly inferior tochat-to-all-using-id. 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 """
     pass
 def chat_local_using_range(LanguageId: int,Value: int,):
     """
  Displays a random string from a given range as a local chat message to all players. The random string is defined by a string id randomly picked out of a given string id range. For more info on String ids, see the description of theLanguageIdparameter. For example, string ids from 22300 through 22321 include all of the possible random excuses the default AI can give for why it lost the game. Local chat messages display chat messages in white rather than with the AI's player color, making this command strictly inferior tochat-to-all-using-range. 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 :param Value: Range: A 16-bit signed integer (-32768 to 32767). Values for goals and extended strategic numbers (SNs 242-511) have a 32-bit signed integer range instead (-2,147,483,648 to 2,147,483,647).
  An integer value. Used for many different purposes. 
 """
@@ -362,14 +351,14 @@ def chat_to_all_using_id(LanguageId: int,):
     """
  Sends a string, defined by a string id, as a chat message to all players. For more info on String ids, see the description of theLanguageIdparameter. For example, string id 22322 in English is "No wonder thou wert victorious! I shalt abdicate." 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 """
     pass
 def chat_to_all_using_range(LanguageId: int,Value: int,):
     """
  Sends a random string from a given range as a chat message to all players. The random string is defined by a string id randomly picked out of a given string id range. For more info on String ids, see the description of theLanguageIdparameter. For example, string ids from 22300 through 22321 include all of the possible random excuses the default AI can give for why it lost the game. 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 :param Value: Range: A 16-bit signed integer (-32768 to 32767). Values for goals and extended strategic numbers (SNs 242-511) have a 32-bit signed integer range instead (-2,147,483,648 to 2,147,483,647).
  An integer value. Used for many different purposes. 
 """
@@ -385,14 +374,14 @@ def chat_to_allies_using_id(LanguageId: int,):
     """
  Sends a string, defined by a string id, as a chat message to allied players. For more info on String ids, see the description of theLanguageIdparameter. For example, string id 22322 in English is "No wonder thou wert victorious! I shalt abdicate." 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 """
     pass
 def chat_to_allies_using_range(LanguageId: int,Value: int,):
     """
  Sends a random string from a given range as a chat message to allies. The random string is defined by a string id randomly picked out of a given string id range. For more info on String ids, see the description of theLanguageIdparameter. For example, string ids from 22300 through 22321 include all of the possible random excuses the default AI can give for why it lost the game. 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 :param Value: Range: A 16-bit signed integer (-32768 to 32767). Values for goals and extended strategic numbers (SNs 242-511) have a 32-bit signed integer range instead (-2,147,483,648 to 2,147,483,647).
  An integer value. Used for many different purposes. 
 """
@@ -408,14 +397,14 @@ def chat_to_enemies_using_id(LanguageId: int,):
     """
  sends a string, defined by a string id, as a chat message to enemy players. For more info on String ids, see the description of theLanguageIdparameter. For example, string id 22322 in English is "No wonder thou wert victorious! I shalt abdicate." 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 """
     pass
 def chat_to_enemies_using_range(LanguageId: int,Value: int,):
     """
  Sends a random string from a given range as a chat message to enemies. The random string is defined by a string id randomly picked out of a given string id range. For more info on String ids, see the description of theLanguageIdparameter. For example, string ids from 22300 through 22321 include all of the possible random excuses the default AI can give for why it lost the game. 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 :param Value: Range: A 16-bit signed integer (-32768 to 32767). Values for goals and extended strategic numbers (SNs 242-511) have a 32-bit signed integer range instead (-2,147,483,648 to 2,147,483,647).
  An integer value. Used for many different purposes. 
 """
@@ -435,7 +424,7 @@ def chat_to_player_using_id(PlayerNumber: PlayerNumber,LanguageId: int,):
 :param PlayerNumber: Range: A valid player number.
  A valid player number. Here is a list with the possible PlayerNumber types which all commands with a PlayerNumber parameter can use. target-player, focus-player, lobby-player-#, scenario-player-#, and the any/every/this-any PlayerNumber types can only be used in commands where a PlayerNumber parameter is expected. If a fact command that uses an any-* wildcard parameter returns true, it will set the corresponding this-any-* rule variable for the rest of the rule, which can be used by any action command below that can use this-any-* rule variables. For example, if (players-building-count any-enemy >= 1) returns true, this-any-enemy will be set to the first enemy player that the AI knows has at least 1 building, and the AI can send a chat to this player with (chat-to-player this-any-enemy "I found you!"). However, once the rule has finished the this-any-* rule variables are reset. Several commands with the PlayerNumber parameter can also use any/enemy wildcard parameters and/or this-any-* rule variables from the lists at the bottom of the page. Here is a chart of which commands can use any/every wildcard parameters and/or this-any-* rule variables. Any command that isn't on this list cannot use any of them. Use these wildcard parameters and rule variables carefully, because the game likely won't generate an error if you use them with commands which don't support them.  
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 """
     pass
 def chat_to_player_using_range(PlayerNumber: PlayerNumber,LanguageId: int,Value: int,):
@@ -444,7 +433,7 @@ def chat_to_player_using_range(PlayerNumber: PlayerNumber,LanguageId: int,Value:
 :param PlayerNumber: Range: A valid player number.
  A valid player number. Here is a list with the possible PlayerNumber types which all commands with a PlayerNumber parameter can use. target-player, focus-player, lobby-player-#, scenario-player-#, and the any/every/this-any PlayerNumber types can only be used in commands where a PlayerNumber parameter is expected. If a fact command that uses an any-* wildcard parameter returns true, it will set the corresponding this-any-* rule variable for the rest of the rule, which can be used by any action command below that can use this-any-* rule variables. For example, if (players-building-count any-enemy >= 1) returns true, this-any-enemy will be set to the first enemy player that the AI knows has at least 1 building, and the AI can send a chat to this player with (chat-to-player this-any-enemy "I found you!"). However, once the rule has finished the this-any-* rule variables are reset. Several commands with the PlayerNumber parameter can also use any/enemy wildcard parameters and/or this-any-* rule variables from the lists at the bottom of the page. Here is a chart of which commands can use any/every wildcard parameters and/or this-any-* rule variables. Any command that isn't on this list cannot use any of them. Use these wildcard parameters and rule variables carefully, because the game likely won't generate an error if you use them with commands which don't support them.  
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 :param Value: Range: A 16-bit signed integer (-32768 to 32767). Values for goals and extended strategic numbers (SNs 242-511) have a 32-bit signed integer range instead (-2,147,483,648 to 2,147,483,647).
  An integer value. Used for many different purposes. 
 """
@@ -773,6 +762,11 @@ def idle_farm_count(compareOp: compareOp,Value: int,):
 """
     pass
 def log(String: str,):
+    """
+ Writes the given string to a log file. Used purely for testing purposes. Works only if logging is enabled. Logging is disabled in 1.0c (the old CD version of the game) and Userpatch. Useup-log-datainstead. However, logging can be enabled in DE. To do this, you need to launch the game with the parameters LOGSYSTEMS=AIScript and VERBOSELOGGING (case sensitive). To do this with the Steam version, open your Steam games library with the Steam client, right click on Age of Empires II: Definitive Edition in the left sidebar that lists the games you own, and click Properties. In the Properties window, under the General tab, type the parameters above separated by spaces. Then, when you launch the game these parameters will be active. The log produced in DE will be found in the Steam user folder, usually something like "C:|Users|[user ID]|Games|Age of Empires 2 DE|logs" but note that this log isn't just used by the AI (it would be best to log something identifying the AI log at the start of the game), some of these logs with VERBOSELOGGING can get quite large so it might be a good idea to periodically clean out the folder. 
+:param String: Range: A string (quoted text).
+ Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
+"""
     pass
 def log_trace(Value: int,):
     """
@@ -2457,6 +2451,15 @@ def up_lerp_tiles(Point1:Point,Point2:Point,Value: int,):
 """
     pass
 def up_log_data(Option: int,String: str,Value: int,):
+    """
+ Write a formatted text line to aoelog.txt. Set Option to 1 in order to write plain text. You must close the game in order to open aoelog.txt, which is located in the game folder, usually at "C:|Program Files (x86)|Microsoft Games|Age of Empires II". Please consider game performance when writing data. To log a message without referencing any data, simply leave the %d out of the chat message and use 'c: 0' as the last two parameters. In DE, this command does not write the data to an aoelog.txt file. Instead, you need to launch the game with the parameters 'LOGSYSTEMS=AIScript' and 'VERBOSELOGGING' (case sensitive)To do this with the Steam version, open your Steam games library with the Steam client, right click on Age of Empires II: Definitive Edition in the left sidebar that lists the games you own, and click Properties. In the Properties window, under the General tab, type the parameters above separated by spaces. Then, when you launch the game these parameters will be active. DE will not create the log file until the game has closed. The log produced in DE will be found in the Steam user folder, usually something like "C:|Users|[user ID]|Games|Age of Empires 2 DE|logs" but note that this log isn't just used by the AI (it would be best to log something identifying the AI log at the start of the game), some of these logs with VERBOSELOGGING can get quite large so it might be a good idea to periodically clean out the folder. 
+:param Option: Range: varies
+ A value that determines different ways the command will work. Here is a list:  
+:param String: Range: A string (quoted text).
+ Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
+:param Value: Range: A 16-bit signed integer (-32768 to 32767). Values for goals and extended strategic numbers (SNs 242-511) have a 32-bit signed integer range instead (-2,147,483,648 to 2,147,483,647).
+ An integer value. Used for many different purposes. 
+"""
     pass
 def up_modify_escrow(Resource: Resource,mathOp: mathOp,Value: int,):
     """
@@ -3060,7 +3063,7 @@ def up_store_text(LanguageId: int,):
     """
  Store a language string in the internal buffer. The buffer can be referenced by the chat-data commands using %s instead of %d with c: 7031232 (7031232 cannot be stored in a defconst). This buffer is shared by all AIs, so please store data before using it in a rule pass. 
 :param LanguageId: Range: a valid LanguageId.
- The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:\Program Files (x86)\Steam\steamapps\common\AoE2DE\resources\en\strings\key-value\key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
+ The ID assigned to a string (quoted text) stored in one of the language.dll files or in a string text file. All words and phrases used by the game are stored in these files. If you have the DE version, you can easily find a list of all language IDs in your Steam installation, usually at "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|en|strings|key-value|key-value-strings-utf8.txt". For example, language ID 22322 is "No wonder thou wert victorious! I shalt abdicate." 
 """
     pass
 def up_store_type_name(TypeId: int,):
@@ -3233,4 +3236,378 @@ def fe_sub_game_type(compareOp: compareOp,SubGameType: SubGameType,):
 """
     pass
 def xs_script_call(String: str,):
+    """
+ DE only. Call an XS script function from an .xs file. It is not necessary to defconst the function name. If the function name is misspelled or a function with that name doesn't exist in any included .xs files, the command will do nothing, without reporting an error. For more info on XS scripting, see this exhaustive guide:link. The function must be from a .xs file that has been "included" (loaded) by the AI script. To include a .xs file in an AI script, use the include command, like (include "Example XS File.xs"). Note that the filetype (.xs) must be included in the include command, and the filepath must be inside quotes. By default, .xs files must be placed in the game's xs folder, located at: "C:|Program Files (x86)|Steam|steamapps|common|AoE2DE|resources|_common|xs", but you can also load .xs files with a relative filepath name, using ".." to go up a filepath level from the xs folder and then follow the rest of the filepath to get to your .xs file. For example, to include a .xs file stored in your "My AI" folder within the default AI installation directory, you can use (include "../ai/My AI/Example XS File.xs"). Once you have included your .xs file, you can use xs-script-call to call any function from that file that doesn't have any parameters. So, if you have the code below in your XS file, you can call the helloWorld() function, but not the max() function. xs-script-call can be used as either a Fact or an Action, and it'll execute the function either way. However, if used as a Fact, xs-script-call will be a Fact that is considered false if your function returns 0, returns "false", or is a void function that doesn't return anything. Because of this, if you want to use xs-script-call successfully anywhere in a rule, it's a good idea to make this function a bool function that returns "true" or an int function that returns any non-zero value. The AI can't do anything with the value that is returned from this function, but the xs-script-call Fact itself will return true. If you do need an AI to be able use an integer result from an XS function, you can use the xsSetGoal() or xsSetStrategicNumber() functions within an XS function to modify the value of a goal or SN, which the AI script can then check. Likewise, xsGetGoal() and xsGetStrategicNumber() functions can allow an XS function to get the current value of a goal or SN. If you call an XS function more than once, it's a good idea to defconst it (see the examples below). Otherwise, each time you call the function in the AI script it will add an entry to the string table. Here is some example .xs code which is used in the examples section below: //This code is saved in a file called Example XS File.xsfloat max(float a = 0.0, float b = 2.0) {if(a > b)return (a);elsereturn (b);}bool helloWorld() {xsChatData("Hello World");return (true);}int rand() {int rand = xsGetRandomNumber(); //generates a random number between 0 and 32766rand++; //increase random number range to between 1 and 32767 so that zero isn't returned, making a xs-script-call condition falsexsSetGoal(510, rand);return (rand);}  
+:param String: Range: A string (quoted text).
+ Text inside double quotes. Used in chat messages. With some UP commands you can use %d or %s once in the message as a placeholder for a part of the chat message that should be replaced by a specified piece of data. 
+"""
     pass
+function_list = {
+    "acknowledge-event":("EventType","EventId",),
+    "acknowledge-taunt":("PlayerNumber","TauntId",),
+    "attack-now":(),
+    "attack-soldier-count":("compareOp","Value",),
+    "attack-warboat-count":("compareOp","Value",),
+    "build":("BuildingId",),
+    "build-forward":("BuildingId",),
+    "build-gate":("Perimeter",),
+    "build-wall":("Perimeter","WallId",),
+    "building-available":("BuildingId",),
+    "building-count":("compareOp","Value",),
+    "building-count-total":("compareOp","Value",),
+    "building-type-count":("BuildingId","compareOp","Value",),
+    "building-type-count-total":("BuildingId","compareOp","Value",),
+    "buy-commodity":("Commodity",),
+    "can-afford-building":("BuildingId",),
+    "can-afford-complete-wall":("Perimeter","WallId",),
+    "can-afford-research":("TechId",),
+    "can-afford-unit":("UnitId",),
+    "can-build":("BuildingId",),
+    "can-build-with-escrow":("BuildingId",),
+    "can-build-gate":("Perimeter",),
+    "can-build-gate-with-escrow":("Perimeter",),
+    "can-build-wall":("Perimeter","WallId",),
+    "can-build-wall-with-escrow":("Perimeter","WallId",),
+    "can-buy-commodity":("Commodity",),
+    "can-research":("TechId",),
+    "can-research-with-escrow":("TechId",),
+    "can-sell-commodity":("Commodity",),
+    "can-spy":(),
+    "can-spy-with-escrow":(),
+    "can-train":("UnitId",),
+    "can-train-with-escrow":("UnitId",),
+    "cc-add-resource":("Resource","Value",),
+    "cc-players-building-count":("PlayerNumber","compareOp","Value",),
+    "cc-players-building-type-count":("PlayerNumber","BuildingId","compareOp","Value",),
+    "cc-players-unit-count":("PlayerNumber","compareOp","Value",),
+    "cc-players-unit-type-count":("PlayerNumber","UnitId","compareOp","Value",),
+    "chat-local":("String",),
+    "chat-local-to-self":("String",),
+    "chat-local-using-id":("LanguageId",),
+    "chat-local-using-range":("LanguageId","Value",),
+    "chat-to-all":("String",),
+    "chat-to-all-using-id":("LanguageId",),
+    "chat-to-all-using-range":("LanguageId","Value",),
+    "chat-to-allies":("String",),
+    "chat-to-allies-using-id":("LanguageId",),
+    "chat-to-allies-using-range":("LanguageId","Value",),
+    "chat-to-enemies":("String",),
+    "chat-to-enemies-using-id":("LanguageId",),
+    "chat-to-enemies-using-range":("LanguageId","Value",),
+    "chat-to-player":("PlayerNumber","String",),
+    "chat-to-player-using-id":("PlayerNumber","LanguageId",),
+    "chat-to-player-using-range":("PlayerNumber","LanguageId","Value",),
+    "chat-trace":("Value",),
+    "cheats-enabled":(),
+    "civilian-population":("compareOp","Value",),
+    "civ-selected":("Civ",),
+    "clear-tribute-memory":("PlayerNumber","Resource",),
+    "commodity-buying-price":("Commodity","compareOp","Value",),
+    "commodity-selling-price":("Commodity","compareOp","Value",),
+    "current-age":("compareOp","Age",),
+    "current-age-time":("compareOp","Value",),
+    "current-score":("compareOp","Value",),
+    "death-match-game":(),
+    "defend-soldier-count":("compareOp","Value",),
+    "defend-warboat-count":("compareOp","Value",),
+    "delete-building":("BuildingId",),
+    "delete-unit":("UnitId",),
+    "difficulty":("compareOp","Difficulty",),
+    "disable-rule":("Value",),
+    "disable-self":(),
+    "disable-timer":("TimerId",),
+    "doctrine":("Value",),
+    "do-nothing":(),
+    "dropsite-min-distance":("Resource","compareOp","Value",),
+    "enable-rule":("Value",),
+    "enable-timer":("TimerId","Value",),
+    "enable-wall-placement":("Perimeter",),
+    "enemy-buildings-in-town":(),
+    "enemy-captured-relics":(),
+    "escrow-amount":("Resource","compareOp","Value",),
+    "event-detected":("EventType","EventId",),
+    "false":(),
+    "food-amount":("compareOp","Value",),
+    "game-time":("compareOp","Value",),
+    "game-type":("compareOp","GameType",),
+    "gate-count":("Perimeter","compareOp","Value",),
+    "generate-random-number":("Value",),
+    "goal":("GoalId","Value",),
+    "gold-amount":("compareOp","Value",),
+    "hold-koh-ruin":(),
+    "hold-relics":(),
+    "housing-headroom":("compareOp","Value",),
+    "idle-farm-count":("compareOp","Value",),
+    "log":("String",),
+    "log-trace":("Value",),
+    "map-size":("MapSize",),
+    "map-type":("MapType",),
+    "military-population":("compareOp","Value",),
+    "player-computer":("PlayerNumber",),
+    "player-human":("PlayerNumber",),
+    "player-in-game":("PlayerNumber",),
+    "player-number":("PlayerNumber",),
+    "player-resigned":("PlayerNumber",),
+    "player-valid":("PlayerNumber",),
+    "players-building-count":("PlayerNumber","compareOp","Value",),
+    "players-building-type-count":("PlayerNumber","BuildingId","compareOp","Value",),
+    "players-civ":("PlayerNumber","Civ",),
+    "players-civilian-population":("PlayerNumber","compareOp","Value",),
+    "players-current-age":("PlayerNumber","compareOp","Age",),
+    "players-current-age-time":("PlayerNumber","compareOp","Value",),
+    "players-military-population":("PlayerNumber","compareOp","Value",),
+    "players-population":("PlayerNumber","compareOp","Value",),
+    "players-score":("PlayerNumber","compareOp","Value",),
+    "players-stance":("PlayerNumber","PlayerStance",),
+    "players-tribute":("PlayerNumber","Resource","compareOp","Value",),
+    "players-tribute-memory":("PlayerNumber","Resource","compareOp","Value",),
+    "players-unit-count":("PlayerNumber","compareOp","Value",),
+    "players-unit-type-count":("PlayerNumber","UnitId","compareOp","Value",),
+    "population":("compareOp","Value",),
+    "population-cap":("compareOp","Value",),
+    "population-headroom":("compareOp","Value",),
+    "random-number":("compareOp","Value",),
+    "regicide-game":(),
+    "release-escrow":("Resource",),
+    "research":("TechId",),
+    "research-available":("TechId",),
+    "research-completed":("TechId",),
+    "resign":(),
+    "resource-found":("Resource",),
+    "sell-commodity":("Commodity",),
+    "set-author-email":(),
+    "set-author-name":(),
+    "set-author-version":(),
+    "set-difficulty-parameter":("DiffParameterId","Value",),
+    "set-doctrine":("Value",),
+    "set-escrow-percentage":("Resource","Value",),
+    "set-goal":("GoalId","Value",),
+    "set-shared-goal":("SharedGoalId","Value",),
+    "set-signal":("SignalId",),
+    "set-stance":("PlayerNumber","PlayerStance",),
+    "set-strategic-number":("SnId","Value",),
+    "shared-goal":("SharedGoalId","Value",),
+    "sheep-and-forage-too-far":(),
+    "soldier-count":("compareOp","Value",),
+    "spy":(),
+    "stance-toward":("PlayerNumber","PlayerStance",),
+    "starting-age":("compareOp","Age",),
+    "starting-resources":("compareOp","StartingResources",),
+    "stone-amount":("compareOp","Value",),
+    "strategic-number":("SnId","compareOp","Value",),
+    "taunt":("TauntId",),
+    "taunt-detected":("PlayerNumber","TauntId",),
+    "taunt-using-range":("TauntId","Value",),
+    "timer-triggered":("TimerId",),
+    "town-under-attack":(),
+    "trace-fact":(),
+    "train":("UnitId",),
+    "tribute-to-player":("PlayerNumber","Resource","Value",),
+    "true":(),
+    "unit-available":("UnitId",),
+    "unit-count":("compareOp","Value",),
+    "unit-count-total":("compareOp","Value",),
+    "unit-type-count":("UnitId","compareOp","Value",),
+    "unit-type-count-total":("UnitId","compareOp","Value",),
+    "victory-condition":("VictoryCondition",),
+    "wall-completed-percentage":("Perimeter","compareOp","Value",),
+    "wall-invisible-percentage":("Perimeter","compareOp","Value",),
+    "warboat-count":("compareOp","Value",),
+    "wood-amount":("compareOp","Value",),
+    "up-add-cost-data":("GoalId","typeOp","Value",),
+    "up-add-object-by-id":("SearchSource","typeOp","Id",),
+    "up-add-object-cost":("typeOp","ObjectId","typeOp","Value",),
+    "up-add-point":("Point","Point","typeOp","Value",),
+    "up-add-research-cost":("typeOp","TechId","typeOp","Value",),
+    "up-allied-goal":("PlayerNumber","GoalId","compareOp","Value",),
+    "up-allied-resource-amount":("PlayerNumber","ResourceType","compareOp","Value",),
+    "up-allied-resource-percent":("PlayerNumber","ResourceType","compareOp","Value",),
+    "up-allied-sn":("PlayerNumber","SnId","compareOp","Value",),
+    "up-assign-builders":("typeOp","BuildingId","typeOp","Value",),
+    "up-attacker-class":("compareOp","ClassId",),
+    "up-bound-point":("Point","Point",),
+    "up-bound-precise-point":("Point","Option","typeOp","Value",),
+    "up-build":("PlacementType","EscrowGoalId","typeOp","BuildingId",),
+    "up-build-line":("Point","Point","typeOp","BuildingId",),
+    "up-building-type-in-town":("typeOp","BuildingId","compareOp","Value",),
+    "up-buy-commodity":("typeOp","ResourceType","typeOp","Value",),
+    "up-can-build":("EscrowGoalId","typeOp","BuildingId",),
+    "up-can-build-line":("EscrowGoalId","Point","typeOp","BuildingId",),
+    "up-can-research":("EscrowGoalId","typeOp","TechId",),
+    "up-can-search":("SearchSource",),
+    "up-can-train":("EscrowGoalId","typeOp","UnitId",),
+    "up-cc-add-resource":("typeOp","ResourceType","typeOp","Value",),
+    "up-cc-send-cheat":("String",),
+    "up-change-name":("String",),
+    "up-chat-data-to-all":("String","typeOp","Value",),
+    "up-chat-data-to-player":("PlayerNumber","String","typeOp","Value",),
+    "up-chat-data-to-self":("String","typeOp","Value",),
+    "up-clean-search":("SearchSource","ObjectData","SearchOrder",),
+    "up-compare-const":("Defconst","compareOp","Value",),
+    "up-compare-flag":("GoalId","compareOp","Flag",),
+    "up-compare-goal":("GoalId","compareOp","Value",),
+    "up-compare-sn":("GoalId","compareOp","Value",),
+    "up-compare-text":("typeOp","Defconst","compareOp","Value",),
+    "up-copy-point":("Point","Point",),
+    "up-create-group":("IndexGoalId","CountGoalId","typeOp","GroupId",),
+    "up-cross-tiles":("Point","Point","typeOp","Value",),
+    "up-defender-count":("compareOp","Value",),
+    "up-delete-distant-farms":("typeOp","Value",),
+    "up-delete-idle-units":("IdleType",),
+    "up-delete-objects":("typeOp","UnitId","typeOp","Value",),
+    "up-disband-group-type":("GroupType",),
+    "up-drop-resources":("Resource","typeOp","Value",),
+    "up-enemy-buildings-in-town":("compareOp","Value",),
+    "up-enemy-units-in-town":("compareOp","Value",),
+    "up-enemy-villagers-in-town":("compareOp","Value",),
+    "up-filter-distance":("typeOp","MinDistance","typeOp","MaxDistance",),
+    "up-filter-exclude":("CmdId","ActionId","OrderId","ClassId",),
+    "up-filter-garrison":("typeOp","MinGarrison","typeOp","MaxGarrison",),
+    "up-filter-include":("CmdId","ActionId","OrderId","OnMainland",),
+    "up-filter-range":("MinGarrison","MaxGarrison","MinDistance","MaxDistance",),
+    "up-filter-status":("typeOp","ObjectStatus","typeOp","ObjectList",),
+    "up-find-flare":("Point",),
+    "up-find-local":("typeOp","UnitId","typeOp","Value",),
+    "up-find-next-player":("PlayerStance","FindPlayerMethod","OutputGoalId",),
+    "up-find-player":("PlayerStance","FindPlayerMethod","OutputGoalId",),
+    "up-find-player-flare":("PlayerNumber","Point",),
+    "up-find-remote":("typeOp","UnitId","typeOp","Value",),
+    "up-find-resource":("typeOp","Resource","typeOp","Value",),
+    "up-find-status-local":("typeOp","UnitId","typeOp","Value",),
+    "up-find-status-remote":("typeOp","UnitId","typeOp","Value",),
+    "up-full-reset-search":(),
+    "up-gaia-type-count":("typeOp","Resource","compareOp","Value",),
+    "up-gaia-type-count-total":("typeOp","Resource","compareOp","Value",),
+    "up-garrison":("ObjectId","typeOp","UnitId",),
+    "up-gather-inside":("typeOp","BuildingId","typeOp","Option",),
+    "up-get-attacker-class":("ThreatSource",),
+    "up-get-cost-delta":("OutputGoalId",),
+    "up-get-event":("typeOp","EventId","Value",),
+    "up-get-fact":("FactId","FactParameter","OutputGoalId",),
+    "up-get-fact-max":("PlayerNumber","FactId","FactParameter","OutputGoalId",),
+    "up-get-fact-min":("PlayerNumber","FactId","FactParameter","OutputGoalId",),
+    "up-get-fact-sum":("PlayerNumber","FactId","FactParameter","OutputGoalId",),
+    "up-get-focus-fact":("FactId","FactParameter","OutputGoalId",),
+    "up-get-group-size":("typeOp","GroupId","OutputGoalId",),
+    "up-get-guard-state":("OutputGoalId",),
+    "up-get-indirect-goal":("typeOp","GoalId","OutputGoalId",),
+    "up-get-object-data":("ObjectData","OutputGoalId",),
+    "up-get-object-target-data":("ObjectData","OutputGoalId",),
+    "up-get-object-type-data":("typeOp","TypeId","ObjectData","OutputGoalId",),
+    "up-get-path-distance":("Point","Option","OutputGoalId",),
+    "up-get-player-color":("PlayerNumber","ColorId",),
+    "up-get-player-fact":("PlayerNumber","FactId","FactParameter","OutputGoalId",),
+    "up-get-point":("PositionType","Point",),
+    "up-get-point-contains":("Point","OutputGoalId","typeOp","ObjectId",),
+    "up-get-point-distance":("Point","Point","OutputGoalId",),
+    "up-get-point-elevation":("Point","OutputGoalId",),
+    "up-get-point-terrain":("Point","Terrain",),
+    "up-get-point-zone":("Point","OutputGoalId",),
+    "up-get-precise-time":("OptionGoalId","OutputGoalId",),
+    "up-get-projectile-player":("ProjectileType","OutputGoalId",),
+    "up-get-rule-id":("GoalId",),
+    "up-get-search-state":("OutputGoalId",),
+    "up-get-shared-goal":("typeOp","SharedGoalId","Value",),
+    "up-get-signal":("typeOp","SignalId","Value",),
+    "up-get-target-fact":("FactId","FactParameter","OutputGoalId",),
+    "up-get-threat-data":("ThreatTime","ThreatPlayer","ThreatSource","ThreatTarget",),
+    "up-get-timer":("typeOp","TimerId","OutputGoalId",),
+    "up-get-treaty-data":("OutputGoalId",),
+    "up-get-upgrade-id":("PlayerNumber","Option","TypeGoalId","OutputGoalId",),
+    "up-get-victory-data":("VictoryPlayer","VictoryType","VictoryTime",),
+    "up-get-victory-limit":("OutputGoalId",),
+    "up-group-size":("typeOp","GroupId","compareOp","Value",),
+    "up-guard-unit":("ObjectId","typeOp","UnitId",),
+    "up-idle-unit-count":("IdleType","compareOp","Value",),
+    "up-jump-direct":("typeOp","RuleId",),
+    "up-jump-dynamic":("typeOp","RuleDelta",),
+    "up-jump-rule":("RuleDelta",),
+    "up-lerp-percent":("Point","Point","typeOp","Percent",),
+    "up-lerp-tiles":("Point","Point","typeOp","Value",),
+    "up-log-data":("Option","String","typeOp","Value",),
+    "up-modify-escrow":("Resource","mathOp","Value",),
+    "up-modify-flag":("GoalId","mathOp","Flag",),
+    "up-modify-goal":("GoalId","mathOp","Value",),
+    "up-modify-group-flag":("Option","typeOp","GroupId",),
+    "up-modify-sn":("SnId","mathOp","Value",),
+    "up-object-data":("ObjectData","compareOp","Value",),
+    "up-object-target-data":("ObjectData","compareOp","Value",),
+    "up-object-type-count":("typeOp","ObjectId","compareOp","Value",),
+    "up-object-type-count-total":("typeOp","ObjectId","compareOp","Value",),
+    "up-path-distance":("Point","Option","compareOp","Value",),
+    "up-pending-objects":("typeOp","ObjectId","compareOp","Value",),
+    "up-pending-placement":("typeOp","BuildingId",),
+    "up-player-distance":("PlayerNumber","compareOp","Value",),
+    "up-players-in-game":("PlayerStance","compareOp","Value",),
+    "up-point-contains":("Point","typeOp","ObjectId",),
+    "up-point-distance":("Point","Point","compareOp","Value",),
+    "up-point-elevation":("Point","compareOp","Value",),
+    "up-point-explored":("Point","compareOp","ExploredState",),
+    "up-point-terrain":("Point","compareOp","Terrain",),
+    "up-point-zone":("Point","compareOp","Value",),
+    "up-projectile-detected":("ProjectileType","compareOp","Value",),
+    "up-projectile-target":("ProjectileType","compareOp","ClassId",),
+    "up-release-escrow":(),
+    "up-remaining-boar-amount":("compareOp","Value",),
+    "up-remove-objects":("SearchSource","ObjectData","compareOp","Value",),
+    "up-request-hunters":("typeOp","Value",),
+    "up-research":("EscrowGoalId","typeOp","TechId",),
+    "up-research-status":("typeOp","TechId","compareOp","ResearchState",),
+    "up-reset-attack-now":(),
+    "up-reset-building":("Option","typeOp","BuildingId",),
+    "up-reset-cost-data":("GoalId",),
+    "up-reset-filters":(),
+    "up-reset-group":("typeOp","GroupId",),
+    "up-reset-placement":("typeOp","BuildingId",),
+    "up-reset-scouts":(),
+    "up-reset-search":("LocalIndex","LocalList","RemoteIndex","RemoteList",),
+    "up-reset-target-priorities":("PriorityType","Option",),
+    "up-reset-unit":("typeOp","UnitId",),
+    "up-resource-amount":("ResourceType","compareOp","Value",),
+    "up-resource-percent":("ResourceType","compareOp","Value",),
+    "up-retask-gatherers":("Resource","typeOp","Value",),
+    "up-retreat-now":(),
+    "up-retreat-to":("ObjectId","typeOp","UnitId",),
+    "up-sell-commodity":("typeOp","ResourceType","typeOp","Value",),
+    "up-send-flare":("Point",),
+    "up-send-scout":("GroupType","ScoutMethod",),
+    "up-set-attack-stance":("UnitId","typeOp","AttackStance",),
+    "up-set-defense-priority":("typeOp","BuildingId","typeOp","Value",),
+    "up-set-event":("typeOp","EventId","typeOp","Value",),
+    "up-set-group":("SearchSource","typeOp","GroupId",),
+    "up-set-indirect-goal":("typeOp","GoalId","typeOp","Value",),
+    "up-set-offense-priority":("typeOp","ObjectId","typeOp","Value",),
+    "up-set-placement-data":("PlayerNumber","ObjectId","typeOp","Value",),
+    "up-set-precise-target-point":("Point",),
+    "up-set-shared-goal":("typeOp","SharedGoalId","typeOp","Value",),
+    "up-set-signal":("typeOp","SignalId","typeOp","Value",),
+    "up-set-target-by-id":("typeOp","Id",),
+    "up-set-target-object":("SearchSource","typeOp","Index",),
+    "up-set-target-point":("Point",),
+    "up-set-timer":("typeOp","TimerId","typeOp","Value",),
+    "up-setup-cost-data":("Option","GoalId",),
+    "up-store-map-name":("Option",),
+    "up-store-object-name":(),
+    "up-store-player-chat":("PlayerNumber",),
+    "up-store-player-name":("PlayerNumber",),
+    "up-store-tech-name":("typeOp","TechId",),
+    "up-store-text":("typeOp","LanguageId",),
+    "up-store-type-name":("typeOp","TypeId",),
+    "up-target-objects":("Option","DUCAction","Formation","AttackStance",),
+    "up-target-point":("Point","DUCAction","Formation","AttackStance",),
+    "up-timer-status":("TimerId","compareOp","TimerState",),
+    "up-train":("EscrowGoalId","typeOp","UnitId",),
+    "up-train-site-ready":("typeOp","UnitId",),
+    "up-tribute-to-player":("PlayerNumber","ResourceType","typeOp","Value",),
+    "up-ungarrison":("typeOp","ObjectId",),
+    "up-unit-type-in-town":("typeOp","UnitId","compareOp","Value",),
+    "up-update-targets":(),
+    "up-villager-type-in-town":("typeOp","UnitId","compareOp","Value",),
+    "fe-break-point":("Value","compareOp","Value","OptionGoalId",),
+    "fe-cc-effect-amount":("EffectId","ItemId","AttrId","Value",),
+    "fe-cc-effect-percent":("EffectId","ItemId","AttrId","Percent",),
+    "fe-filter-garrisoned":("typeOp","Option",),
+    "fe-set-signal":("typeOp","SignalId","typeOp","Value",),
+    "fe-sub-game-type":("compareOp","SubGameType",),
+    "xs-script-call":("String",),
+}

@@ -18,7 +18,7 @@
       "args": [
         //"block_code", "-v",
        //"-f","compare_boolOp_binOp", "-v", //"compare_boolOp_binOp.py${cwd}"
-        "-f","all_code", "-v",
+        "-f","all_code", "-vv",
         //"-f","TuskenRail", "-v", "-t",
       ]
     }

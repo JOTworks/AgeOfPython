@@ -3,6 +3,7 @@ import inspect
 from enum import Enum
 from scraper import *
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
+from scraper import function_list
 from collections import defaultdict
 from Memory import Memory
 from copy import copy
@@ -862,6 +863,22 @@ class DisableSelfChecker(compilerTransformer):
         self.generic_visit(node)
         return node
 
+class AddTypeOp(compilerTransformer):
+    #!#! need to add type of params back in for the printer to print! based on what is being passed into it
+    def visit_Command(self, node):
+            # Check if the function being called is `disable_self`
+            function_list_typeOp = {}
+            for function, args in function_list.items():
+                if "typeOp" in args:
+                    function_list_typeOp[function] = args
+
+            if isinstance(node.func, ast.Name) and node.func.id in function_list_typeOp.keys():
+                if self.unique_id(node) not in self.valid_disable_selfs:
+                    raise Exception(
+                        f"'disable_self' found outside of an If statement at line {node.lineno}"
+                    )
+            self.generic_visit(node)
+            return node  
 
 class Compiler:
     def __init__(self):

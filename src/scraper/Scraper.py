@@ -499,9 +499,11 @@ def get_arg_type(arg, p_dict):
 def make_function_param_list(command_name, command_storage: CommandStorage, p_dict):
     line = '    "'+command_name+'":('
     for arg in command_storage.args:
-        line += arg + ','
+        if arg in ["Point1", "Point2"]:
+            arg = "Point"
+        line += '"' + arg + '",'
     line += '),'
-    return line
+    return [line]
 
 def make_function_def_lines(command_name, command_storage: CommandStorage, p_dict):
     lines = []
@@ -794,10 +796,12 @@ def generate_aoe2scriptFunctions():
     c_dict = open_file("command_dict.pkl")
     p_dict = open_file("parameter_dict.pkl")
     lines = ["from aoe2scriptEnums import *"]
+    function_list_line = ['function_list = {']
     for command_name, command_storage in c_dict.items():
         function_list_line += make_function_param_list(command_name, command_storage, p_dict)
         lines += make_function_def_lines(command_name, command_storage, p_dict)
-
+    function_list_line += ['}']
+    lines += function_list_line
     output_path = os.path.join(os.path.dirname(__file__), "aoe2scriptFunctions.py")
     with open(output_path, "w") as file:
         file.write("\n".join(lines))
