@@ -851,6 +851,10 @@ def main(scrap_wesite = False, generate_files = True):
         save_parameter_options()
     if generate_files:
         delete_aoe2script_files()
-        generate_aoe2scriptFunctions()
-        generate_aoe2scriptFunctions() #second time for the ModuleNotFoundError skip
+        generate_aoe2scriptFunctions() 
         generate_aoe2scriptEnums()
+        generate_aoe2scriptEnums() #second time for the ModuleNotFoundError skip
+    
+
+if __name__ == "__main__":
+    main(scrap_wesite = False, generate_files = True)
