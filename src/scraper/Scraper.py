@@ -10,6 +10,8 @@ from pprint import pprint
 from typing import Dict
 from itertools import chain
 import inspect
+import logging
+logger = logging.getLogger(__name__)
 
 
 class ObjectStorage:
@@ -665,7 +667,11 @@ class UniqueParamGenerator:
         }
 
     def get_typeOp(self):
-        return {}
+        return {
+            "constant": 0,
+            "goal": 2,
+            "strategic_number": 1,
+        }
 
     def get_ObjectId(self):
         return dict(
@@ -772,33 +778,54 @@ def generate_aoe2scriptEnums():
     lines += make_parameter_class_lines("SN", ParameterStorage(options, "", ""))
 
     # add command enums
-    import aoe2scriptFunctions
-    command_names = [
-        name
-        for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isfunction)
-    ]
-    options = dict(zip(command_names, [i for i in range(len(command_names))]))
-    lines += make_parameter_class_lines("AOE2FUNC", ParameterStorage(options, "", ""))
+    try:
+        import aoe2scriptFunctions
+        command_names = [
+            name
+            for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isfunction)
+        ]
+        options = dict(zip(command_names, [i for i in range(len(command_names))]))
+        lines += make_parameter_class_lines("AOE2FUNC", ParameterStorage(options, "", ""))
+        
+        class_names = [
+            name for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isclass)
+        ]
+        options = dict(zip(class_names, [i for i in range(len(class_names))]))
+        lines += make_parameter_class_lines("AOE2OBJ", ParameterStorage(options, "", ""))
+    except ModuleNotFoundError as e:
+        if e.name == "aoe2scriptEnums":
+            logger.info("aoe2scriptEnums not found, (expsected first run)")
+        else:
+            raise e
 
-    class_names = [
-        name for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isclass)
-    ]
-    options = dict(zip(class_names, [i for i in range(len(class_names))]))
-    lines += make_parameter_class_lines("AOE2OBJ", ParameterStorage(options, "", ""))
-
-    lines += 'class State:'
-    lines += '    pass #added manually'
+    lines += ['class State():']
+    lines += ['    pass #added manually']
         
     output_path = os.path.join(os.path.dirname(__file__), "aoe2scriptEnums.py")
     with open(output_path, "w") as file:
         file.write("\n".join(lines))
+    logger.info("aoe2scriptEnums.py generated")
 
-    
+def delete_aoe2script_files():
+    try:
+        os.remove(os.path.join(os.path.dirname(__file__), "aoe2scriptEnums.py"))
+        logger.info("aoe2scriptEnums.py removed")
+    except FileNotFoundError:
+        logger.info("aoe2scriptEnums.py not found")
+    try:
+        os.remove(os.path.join(os.path.dirname(__file__), "aoe2scriptFunctions.py"))
+        logger.info("aoe2scriptFunctions.py removed")
+    except FileNotFoundError:
+        logger.info("aoe2scriptEnums.py not found")
 
 def generate_aoe2scriptFunctions():
     c_dict = open_file("command_dict.pkl")
     p_dict = open_file("parameter_dict.pkl")
-    lines = ["from scraper.aoe2scriptEnums import *"]
+    lines = []
+    lines += ['try:']
+    lines += ['    from scraper.aoe2scriptEnums import *']
+    lines += ['except:']
+    lines += ['    from aoe2scriptEnums import *']
     function_list_line = ['function_list = {']
     for command_name, command_storage in c_dict.items():
         function_list_line += make_function_param_list(command_name, command_storage, p_dict)
@@ -810,14 +837,20 @@ def generate_aoe2scriptFunctions():
         full_lines = "\n".join(lines)
         full_lines = full_lines.replace('\\','|')
         file.write(full_lines)
+    logger.info("aoe2scriptFunctions.py generated")
 
-# save_object_codes()
-# save_tech_codes()
-# save_strategic_number_names()
-# save_strategic_number_info()
-# save_command_names()
-# save_parameter_names() 
-# save_command_parameters()
-# save_parameter_options()
-# generate_aoe2scriptEnums()
-generate_aoe2scriptFunctions()
+def main(scrap_wesite = False, generate_files = True):
+    if scrap_wesite:
+        save_object_codes()
+        save_tech_codes()
+        save_strategic_number_names()
+        save_strategic_number_info()
+        save_command_names()
+        save_parameter_names() 
+        save_command_parameters()
+        save_parameter_options()
+    if generate_files:
+        delete_aoe2script_files()
+        generate_aoe2scriptFunctions()
+        generate_aoe2scriptFunctions() #second time for the ModuleNotFoundError skip
+        generate_aoe2scriptEnums()

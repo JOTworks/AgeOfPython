@@ -178,6 +178,10 @@ class AstToCustomNodeTransformer(compilerTransformer):
         self.command_names = command_names
         self.object_names = object_names
         self.aoe2_enums = get_enum_classes()
+        self.function_list_typeOp = {}
+        for function, args in function_list.items():
+            if "typeOp" in args:
+                self.function_list_typeOp[function.replace('-','_')] = args
 
     def make_variable(self, node, offset_index, id_n):
         is_variable = False
@@ -216,7 +220,20 @@ class AstToCustomNodeTransformer(compilerTransformer):
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id in self.command_names:
-            return Command(AOE2FUNC[node.func.id], node.args, node)
+            command_args = node.args
+            if node.func.id in list(self.function_list_typeOp.keys()):
+                function_arg_types = self.function_list_typeOp[node.func.id]
+                typeOp_indexs = [index for index, element in enumerate(function_arg_types) if element == "typeOp"]
+                for index in typeOp_indexs:
+                    if type(command_args[index]) is Variable:
+                        type_op = typeOp.goal
+                    elif type(command_args[index]) is ast.Constant:
+                        type_op = typeOp.constant
+                    else:
+                        #todo: make SNs get tracked here for s:
+                        raise Exception(f"typeOp expects a variable or constant at index {index} not {type(command_args[index])}")
+                    command_args = command_args[:index] + [type_op] + command_args[index:]
+            return Command(AOE2FUNC[node.func.id], command_args, node)
 
         if isinstance(node.func, ast.Name) and node.func.id in self.object_names:
             return Constructor(getattr(AOE2OBJ, node.func.id), node.args, node)
@@ -862,23 +879,6 @@ class DisableSelfChecker(compilerTransformer):
                 )
         self.generic_visit(node)
         return node
-
-class AddTypeOp(compilerTransformer):
-    #!#! need to add type of params back in for the printer to print! based on what is being passed into it
-    def visit_Command(self, node):
-            # Check if the function being called is `disable_self`
-            function_list_typeOp = {}
-            for function, args in function_list.items():
-                if "typeOp" in args:
-                    function_list_typeOp[function] = args
-
-            if isinstance(node.func, ast.Name) and node.func.id in function_list_typeOp.keys():
-                if self.unique_id(node) not in self.valid_disable_selfs:
-                    raise Exception(
-                        f"'disable_self' found outside of an If statement at line {node.lineno}"
-                    )
-            self.generic_visit(node)
-            return node  
 
 class Compiler:
     def __init__(self):

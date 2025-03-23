@@ -1,4 +1,7 @@
-from scraper.aoe2scriptEnums import *
+try:
+    from scraper.aoe2scriptEnums import *
+except:
+    from aoe2scriptEnums import *
 def acknowledge_event(EventType: EventType,EventId: int,):
     """
  Acknowledges a received event by resetting the associated flag. Scenario triggers that execute an AI Script Goal effect are the only events that AI scripts can detect. This command, along withevent-detected, is used to detect an AI Script Goal effect from a scenario trigger, often with the intention of changing the AI behavior after the scenario trigger has fired. The scenario designer chooses an AI Trigger number for the AI Script Goal effect in the scenario editor. Then, the event-detected command in the AI script will detect when this trigger effect happens. The event-detected command will remain true after the AI Script Goal trigger effect fires, so acknowledge-event is used to reset the event-detected flag so that event-detected will no longer be true, similar to how thedisable-timercommand clears a timer that has triggered or how theacknowledge-tauntcommand accepts the taunt message. 
