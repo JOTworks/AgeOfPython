@@ -2,8 +2,10 @@ import ast
 import inspect
 from enum import Enum
 from scraper import *
+from scraper import typeOp
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
-from scraper import function_list
+
+from utils import get_function_list_typeOp
 from collections import defaultdict
 from Memory import Memory
 from copy import copy
@@ -67,8 +69,15 @@ class EnumNode(ast.Attribute):
         self.attr = attr.attr
         self.value = attr.value
         aoe2_enums = get_enum_classes()
-        arg_enum = aoe2_enums[attr.value.id]
-        arg = arg_enum[attr.attr]
+        
+        try:
+            arg_enum = aoe2_enums[attr.value.id]
+        except KeyError:
+            raise Exception(f"{attr.value.id} is not a valid parameterType")
+        try:
+            arg = arg_enum[attr.attr]
+        except KeyError:
+            raise Exception(f"{attr.attr} is not a valid option for parameterType: {attr.value.id}")
         assert arg is not str
         self.enum = arg
 
@@ -101,37 +110,65 @@ class aoeOp(ast.BoolOp):
 
 
 class Command(ast.Call):
-    def __init__(self, name: AOE2FUNC, args: list, node):
+    def __init__(self, function_name: AOE2FUNC, args: list, node):
         super().__init__()
+        
+        self.function_list_typeOp = get_function_list_typeOp()
+
         if node:
             self.lineno = node.lineno
             self.end_lineno = node.end_lineno
             self.col_offset = node.col_offset
             self.end_col_offset = node.end_col_offset
             self.file_path = node.file_path
+        
+        del node
+
         aoe2_enums = get_enum_classes()
         # TODO: this is where i can do hard type checking for command params
-        if not isinstance(name, AOE2FUNC):
-            raise TypeError(f"needs to be a AOE2FUNC, got {type(name)}")
+        if not isinstance(function_name, AOE2FUNC):
+            raise TypeError(f"needs to be a AOE2FUNC, got {type(function_name)}")
         self.func = ast.Name(
-            id=name, ctx=ast.Load()
+            id=function_name, ctx=ast.Load()
         )  # todo: check if this is redundant
         if not isinstance(args, list):
             raise TypeError("args must be a list")
-        for itr, arg in enumerate(args):
-            if type(arg) is EnumNode:
-                arg = arg.enum
-                args[itr] = arg
+        
+        if args:
+            args = self.add_typeOp_args(args, function_name.name)
+            for itr, arg in enumerate(args):
+                if type(arg) is EnumNode:
+                    arg = arg.enum
+                    args[itr] = arg
 
-            if type(arg) is ast.Constant:
-                pass
-            if type(arg) is Variable:
-                pass
-            if type(arg) not in [JumpType, Variable, ast.Constant] + list(
-                aoe2_enums.values()
-            ):
-                raise TypeError(f"arg {arg} is {type(arg)}")
+                if type(arg) is ast.Constant:
+                    pass
+                if type(arg) is Variable:
+                    pass
+                if type(arg) not in [JumpType, Variable, ast.Constant] + list(
+                    aoe2_enums.values()
+                ):
+                    raise TypeError(f"arg {arg} is {type(arg)}")
         self.args = args
+
+    def add_typeOp_args(self, args, name):
+        command_args = args
+        if name in list(self.function_list_typeOp.keys()):
+            function_arg_types = self.function_list_typeOp[name]
+            typeOp_indexs = [index for index, element in enumerate(function_arg_types) if element == "typeOp"]
+            for index in typeOp_indexs:
+                if type(command_args[index]) is Variable:
+                    type_op = typeOp.goal
+                elif type(command_args[index]) is ast.Constant:
+                    type_op = typeOp.constant
+                elif type(command_args[index]) is JumpType:
+                    logger.debug(f"JumpType always assume const, not goal")
+                    type_op = typeOp.constant
+                else:
+                    #todo: make SNs get tracked here for s:
+                    raise Exception(f"typeOp expects a variable or constant at index {index} not {type(command_args[index])}")
+                command_args = command_args[:index] + [type_op] + command_args[index:]
+        return command_args
 
     def __repr__(self):
         args_str = ", ".join(map(str, self.args))
@@ -178,10 +215,6 @@ class AstToCustomNodeTransformer(compilerTransformer):
         self.command_names = command_names
         self.object_names = object_names
         self.aoe2_enums = get_enum_classes()
-        self.function_list_typeOp = {}
-        for function, args in function_list.items():
-            if "typeOp" in args:
-                self.function_list_typeOp[function.replace('-','_')] = args
 
     def make_variable(self, node, offset_index, id_n):
         is_variable = False
@@ -220,20 +253,7 @@ class AstToCustomNodeTransformer(compilerTransformer):
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id in self.command_names:
-            command_args = node.args
-            if node.func.id in list(self.function_list_typeOp.keys()):
-                function_arg_types = self.function_list_typeOp[node.func.id]
-                typeOp_indexs = [index for index, element in enumerate(function_arg_types) if element == "typeOp"]
-                for index in typeOp_indexs:
-                    if type(command_args[index]) is Variable:
-                        type_op = typeOp.goal
-                    elif type(command_args[index]) is ast.Constant:
-                        type_op = typeOp.constant
-                    else:
-                        #todo: make SNs get tracked here for s:
-                        raise Exception(f"typeOp expects a variable or constant at index {index} not {type(command_args[index])}")
-                    command_args = command_args[:index] + [type_op] + command_args[index:]
-            return Command(AOE2FUNC[node.func.id], command_args, node)
+            return Command(AOE2FUNC[node.func.id], node.args, node)
 
         if isinstance(node.func, ast.Name) and node.func.id in self.object_names:
             return Constructor(getattr(AOE2OBJ, node.func.id), node.args, node)

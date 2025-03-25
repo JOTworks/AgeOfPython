@@ -4,6 +4,14 @@ import operator
 import inspect
 import enum
 import scraper.aoe2scriptEnums
+from scraper.aoe2scriptFunctions import function_list
+
+def get_function_list_typeOp():
+    function_list_typeOp = {}
+    for function, args in function_list.items():
+            if "typeOp" in args:
+                function_list_typeOp[function.replace('-','_')] = args
+    return function_list_typeOp
 
 def reverse_compare_op(compare_op):
     reverse_dict = {

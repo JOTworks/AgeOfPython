@@ -800,6 +800,8 @@ def generate_aoe2scriptEnums():
 
     lines += ['class State():']
     lines += ['    pass #added manually']
+    lines += ['class FuncCall():']
+    lines += ['    pass #added manually']
         
     output_path = os.path.join(os.path.dirname(__file__), "aoe2scriptEnums.py")
     with open(output_path, "w") as file:

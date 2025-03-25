@@ -1,12 +1,12 @@
 from scraper.aoe2scriptFunctions import *
 from scraper.aoe2scriptEnums import *
 from scraper.aoe2scriptEnums import PlayerNumber
-from scraper.aoe2scriptFunctions import chat_to_all, up_chat_data_to_player, disable_self
+from scraper.aoe2scriptFunctions import chat_to_all, up_chat_data_to_all, disable_self
 
 #asignment
 asi = 12
 asi = asi+18
-up_chat_data_to_player(PlayerNumber.my_player_number, "asi should be 30:%d", asi)
+up_chat_data_to_all("asi should be 30:%d", asi)
 
 #if
 if True:
