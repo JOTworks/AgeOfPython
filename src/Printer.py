@@ -77,7 +77,6 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                             expr_str = str(expr.value)
                     else:
                         expr_str = str(expr.value)
-
                 else:
                     expr_str = str(expr)
 

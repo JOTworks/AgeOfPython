@@ -668,9 +668,9 @@ class UniqueParamGenerator:
 
     def get_typeOp(self):
         return {
-            "constant": 0,
-            "goal": 2,
-            "strategic_number": 1,
+            "constant": 6,
+            "goal": 13,
+            "strategic_number": 20,
         }
 
     def get_ObjectId(self):

@@ -24,9 +24,9 @@ class mathOp(Enum):
     per = 11
     per_of = 10
 class typeOp(Enum):
-    constant = 0
-    goal = 2
-    strategic_number = 1
+    constant = 6
+    goal = 13
+    strategic_number = 20
 class ActionId(Enum):
     _1 = -1
     actionid_attack = 600
