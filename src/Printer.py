@@ -86,7 +86,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 if type(expr.value) is int:
                     expr_str = str(expr.value)
                 elif type(expr.value) is str:
-                    expr_str = "'"+expr.value+"'"
+                    expr_str = '"'+expr.value+'"'
                 else: 
                     raise Exception(f"Constants need to be an int or str, not {type(expr.value)}")
             elif isinstance(expr, str):
