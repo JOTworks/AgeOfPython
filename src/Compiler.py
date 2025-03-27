@@ -764,6 +764,17 @@ class NumberDefrulesTransformer(compilerTransformer):
         super().__init__()
         self.defrule_counter = 0
 
+    def p_visit(self, node, tree_name="tree", vv=False):
+        #add trailing defrule so if you need to jump to the end its an empty command
+        node.body.append(
+            DefRule(
+                Command(AOE2FUNC.false, [], None),
+                [Command(AOE2FUNC.do_nothing, [], None)],
+                None,
+            )
+        )
+        return super().p_visit(node, tree_name, vv)
+    
     def visit_If(self, node):
         node.first_defrule = self.defrule_counter
         self.generic_visit(node)
