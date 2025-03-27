@@ -71,10 +71,13 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 if not self.TEST:
                     if type(expr) is mathOp: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
                         if type(node.args[itr+1]) is Variable:
-                            expr_str = str(int(expr.value) + 12) # goal mathOp are all 12 over constant mathOp                        elif type(node.args[itr+1]) is SN:
-                            expr_str = str(int(expr.value) + 24) # sn mathOp are all 24 over constant math
-                        else:
+                            expr_str = str(int(expr.value) + 12)
+                        elif type(node.args[itr+1]) is ast.Constant:
+                            expr_str = str(int(expr.value) + 24)
+                        elif type(node.args[itr+1]) is SnId:
                             expr_str = str(expr.value)
+                        else:
+                            raise Exception(f"expr.value is not a Variable or Constant, it is {type(node.args[itr+1])}")
                     else:
                         expr_str = str(expr.value)
                 else:
