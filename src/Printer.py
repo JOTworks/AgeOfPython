@@ -10,7 +10,7 @@ from utils import get_enum_classes
 
 
 class DefRulePrintVisitor(ast.NodeVisitor):
-    def __init__(self, final_string, NO_FILE=False, TEST=False):
+    def __init__(self, final_string, NO_FILE=False, TEST=True):
         super().__init__()
         self.final_string = final_string
         self.NO_FILE = NO_FILE
@@ -64,27 +64,32 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         self.final_string += red(")")
 
+    def evaluate_enum(self, expr, previous_expr, human_readable = True):
+        value_str = ''
+        if type(expr) is mathOp: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
+            if type(previous_expr) is Variable:
+                value_str = str(int(expr.value) + 12)
+            elif type(previous_expr) is ast.Constant:
+                value_str = str(int(expr.value) + 24)
+            elif type(previous_expr) is SnId:
+                value_str = str(expr.value)
+            else:
+                raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {previous_expr}")
+
+        else:
+            return expr.value
+    
+
     def visit_Command(self, node):  # adds (command arg1 arg2)
         self.final_string += blue("  (") + blue(node.func.id.name.replace("_", "-"))
+        
         for itr, expr in enumerate(node.args):
             if type(expr) in list(self.enum_classes.values()):
-                if not self.TEST:
-                    if type(expr) is mathOp: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
-                        if type(node.args[itr+1]) is Variable:
-                            expr_str = str(int(expr.value) + 12)
-                        elif type(node.args[itr+1]) is ast.Constant:
-                            expr_str = str(int(expr.value) + 24)
-                        elif type(node.args[itr+1]) is SnId:
-                            expr_str = str(expr.value)
-                        else:
-                            raise Exception(f"expr.value is not a Variable or Constant, it is {type(node.args[itr+1])}")
-                    else:
-                        expr_str = str(expr.value)
-                else:
-                    expr_str = str(expr)
-
+                expr_str = self.evaluate_enum(expr, node.args[itr-1])
+            
             elif isinstance(expr, Variable):
                 expr_str = str(expr.memory_location)
+            
             elif isinstance(expr, ast.Constant):
                 if type(expr.value) is int:
                     expr_str = str(expr.value)
@@ -92,8 +97,6 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                     expr_str = '"'+expr.value+'"'
                 else: 
                     raise Exception(f"Constants need to be an int or str, not {type(expr.value)}")
-            elif isinstance(expr, str):
-                expr_str = expr
             else:
                 raise Exception(f"visit_command has not implemeted {type(expr)}")
             

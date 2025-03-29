@@ -124,7 +124,7 @@ class Command(ast.Call):
         
         del node
 
-        aoe2_enums = get_enum_classes()
+        self.aoe2_enums = get_enum_classes()
         # TODO: this is where i can do hard type checking for command params
         if not isinstance(function_name, AOE2FUNC):
             raise TypeError(f"needs to be a AOE2FUNC, got {type(function_name)}")
@@ -133,23 +133,10 @@ class Command(ast.Call):
         )  # todo: check if this is redundant
         if not isinstance(args, list):
             raise TypeError("args must be a list")
-        
-        if args:
-            args = self.add_typeOp_args(args, function_name.name)
-            for itr, arg in enumerate(args):
-                if type(arg) is EnumNode:
-                    arg = arg.enum
-                    args[itr] = arg
-
-                if type(arg) is ast.Constant:
-                    pass
-                if type(arg) is Variable:
-                    pass
-                if type(arg) not in [JumpType, Variable, ast.Constant] + list(
-                    aoe2_enums.values()
-                ):
-                    raise TypeError(f"arg {arg} is {type(arg)}")
-        self.args = args
+        self._args = self.add_typeOp_args(args, function_name.name)
+        if self._args:
+            for itr, arg in enumerate(self._args):
+                self._args[itr] = self.validate_arg(arg)
 
     def add_typeOp_args(self, args, name):
         command_args = args
@@ -170,8 +157,35 @@ class Command(ast.Call):
                 command_args = command_args[:index] + [type_op] + command_args[index:]
         return command_args
 
+    @property
+    def args(self):
+        return self._args
+
+    def set_arg(self, index, arg):
+        if index >= len(self._args):
+            raise IndexError(f"index {index} out of range for args {self._args}")
+        if index < 0:
+            raise IndexError(f"index {index} out of range for args {self._args}")
+        self._args[index] = self.validate_arg(arg)
+
+    def validate_arg(self, arg):
+        if type(arg) is EnumNode:
+            arg = arg.enum
+
+        elif type(arg) is ast.Constant:
+            pass
+        elif type(arg) is Variable:
+            pass
+        elif type(arg) is str:
+            raise Exception("str is not a valid type for args")
+        elif type(arg) not in [JumpType, Variable, ast.Constant] + list(
+            self.aoe2_enums.values()
+        ):
+            raise TypeError(f"arg {arg} is {type(arg)}")
+        return arg
+
     def __repr__(self):
-        args_str = ", ".join(map(str, self.args))
+        args_str = ", ".join(map(str, self._args))
         return f"{self.func.id}({args_str})"
 
 
@@ -811,23 +825,23 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
                     arg_type = type(arg)
                     if arg_type == JumpType:
                         if arg is JumpType.jump_over_skip:
-                            subnode.args[i] = str(node.first_defrule + 2)
+                            subnode.set_arg(i, ast.Constant(node.first_defrule + 2))
 
                         elif arg is JumpType.last_rule_after_node:
-                            subnode.args[i] = str(node.last_defrule + 1)
+                            subnode.set_arg(i, ast.Constant(node.last_defrule + 1))
 
                         elif arg is JumpType.last_rule_in_node:
-                            subnode.args[i] = str(node.last_defrule)
+                            subnode.set_arg(i, ast.Constant(node.last_defrule))
 
                         # both are the same right now because normal test_jump_to_beginning has an empty first rule like that.
                         elif (
                             arg is JumpType.test_jump_to_beginning
                             or arg is JumpType.test_jump_to_beginning_after_init
                         ):
-                            subnode.args[i] = str(node.first_defrule + 1)
+                            subnode.set_arg(i, ast.Constant(node.first_defrule + 1))
 
                         else:
-                            subnode.args[i] = str(-1)
+                            subnode.set_arg(i, ast.Constant(-1))
                             logger.error(f"{arg} not implemented yet")
         self.generic_visit(node)
         return node
