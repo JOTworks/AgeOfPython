@@ -98,7 +98,7 @@ def save_to_file(data, file_name):
         pickle.dump(data, file)
 
 
-def open_file(file_name):
+def open_pkl_file(file_name):
     if not file_name.endswith(".pkl"):
         file_name += ".pkl"
     script_dir = os.path.dirname(__file__)
@@ -203,7 +203,7 @@ def to_bool(string):
 
 
 def save_strategic_number_info(test=None):
-    sn_touples = open_file("sn_touples_id_name.pkl")
+    sn_touples = open_pkl_file("sn_touples_id_name.pkl")
     if test:
         sn_touples = sn_touples[:test]
     soups = good_soup(
@@ -276,7 +276,7 @@ def save_command_names():
 
 
 def save_command_parameters(test=None):
-    command_names = open_file("command_names.pkl")
+    command_names = open_pkl_file("command_names.pkl")
     if test:
         command_names = command_names[:test]
     soups = good_soup(
@@ -347,7 +347,7 @@ def save_parameter_options(test=None):
     ['Version Introduced', 'Related Parameters', 'Used In These Commands']
     because there is not a param list. they should be blank? or accecp a number perhapse?
     """
-    parameter_names = open_file("parameter_names.pkl")
+    parameter_names = open_pkl_file("parameter_names.pkl")
     if test:
         parameter_names = parameter_names[:test]
     soups = good_soup(
@@ -622,10 +622,10 @@ class UniqueParamGenerator:
             + self.clear_names
             + self.class_names
         )
-        self.object_dict = open_file("object_dict.pkl")
-        self.tech_dict = open_file("tech_dict.pkl")
-        self.strategic_number_dict = open_file("strategic_number_dict.pkl")
-        self.parameter_dict = open_file("parameter_dict.pkl")
+        self.object_dict = open_pkl_file("object_dict.pkl")
+        self.tech_dict = open_pkl_file("tech_dict.pkl")
+        self.strategic_number_dict = open_pkl_file("strategic_number_dict.pkl")
+        self.parameter_dict = open_pkl_file("parameter_dict.pkl")
 
     def get_Perimeter(self):
         return {
@@ -755,14 +755,14 @@ def generate_aoe2scriptEnums():
     #todo: add all the PlayerNumber Options from the description
     #todo: sort out snId and SN enums
     #todo: forage_
-    p_dict = open_file("parameter_dict.pkl")
-    lines = [
-        "# --- Removed parameters --- #",
-        "# all of the parameter types from the website with their IDs.",
-        "# mathops and comparison ops are handdled by the intepreter.",
-        "#",
-        "from enum import Enum",
-    ]
+    p_dict = open_pkl_file("parameter_dict.pkl")
+    
+    script_dir = os.path.dirname(__file__)
+    file_path = os.path.join(script_dir, 'aoe2scriptEnums_header.py')
+    with open(file_path, "r") as file:
+        lines = file.readlines
+    lines = [line.rstrip('\n') for line in lines]
+
     unique_param_generator = UniqueParamGenerator()
     for parameter_name, parameter_storage in p_dict.items():
         assert isinstance(parameter_storage, ParameterStorage)
@@ -773,7 +773,7 @@ def generate_aoe2scriptEnums():
         lines += make_parameter_class_lines(parameter_name, parameter_storage)
 
     #add stategic numbers
-    sn_dict = open_file("strategic_number_dict.pkl")
+    sn_dict = open_pkl_file("strategic_number_dict.pkl")
     options = dict(zip([sn[3:] if sn[:3] == "sn_" else sn for sn in sn_dict.keys()], [i for i in range(len(sn_dict.keys()))]))
     lines += make_parameter_class_lines("SN", ParameterStorage(options, "", ""))
 
@@ -797,11 +797,6 @@ def generate_aoe2scriptEnums():
             logger.info("aoe2scriptEnums not found, (expsected first run)")
         else:
             raise e
-
-    lines += ['class State():']
-    lines += ['    pass #added manually']
-    lines += ['class FuncCall():']
-    lines += ['    pass #added manually']
         
     output_path = os.path.join(os.path.dirname(__file__), "aoe2scriptEnums.py")
     with open(output_path, "w") as file:
@@ -821,8 +816,8 @@ def delete_aoe2script_files():
         logger.info("aoe2scriptEnums.py not found")
 
 def generate_aoe2scriptFunctions():
-    c_dict = open_file("command_dict.pkl")
-    p_dict = open_file("parameter_dict.pkl")
+    c_dict = open_pkl_file("command_dict.pkl")
+    p_dict = open_pkl_file("parameter_dict.pkl")
     lines = []
     lines += ['try:']
     lines += ['    from scraper.aoe2scriptEnums import *']

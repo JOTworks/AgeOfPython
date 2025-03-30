@@ -2,32 +2,43 @@
 # all of the parameter types from the website with their IDs.
 # mathops and comparison ops are handdled by the intepreter.
 #
-from enum import Enum
-class compareOp(Enum):
-    less_than = 18
-    not_equal = 23
-    less_or_equal = 19
-    greater_than = 20
-    greater_or_equal = 21
-    equal = 22
-class mathOp(Enum):
-    eql = 0
-    add = 1
-    sub = 2
-    mul = 3
-    div_fl = 9
-    div_rd = 4
-    mod = 7
-    min = 5
-    max = 6
-    neg = 8
-    per = 11
-    per_of = 10
-class typeOp(Enum):
-    constant = 6
-    goal = 13
-    strategic_number = 20
-class ActionId(Enum):
+from aenum import Enum
+class Strenum(Enum):
+
+    @property
+    def val(self):
+        return self.value[0]
+
+    @property
+    def string(self):
+        if type(self.value) is tuple and len(self.value) > 1 and type(self.value[1]) is str:
+            return self.value[1]
+        return self.name
+class compareOp(Strenum):
+    less_than = 18, '<'
+    not_equal = 23, '!='
+    less_or_equal = 19, '<='
+    greater_than = 20, '>'
+    greater_or_equal = 21, '>='
+    equal = 22, '=='
+class mathOp(Strenum):
+    eql = 0, '='
+    add = 1, '+'
+    sub = 2, '-'
+    mul = 3, '*'
+    div_fl = 9, 'z/'
+    div_rd = 4, '/'
+    mod = 7, 'mod'
+    min = 5, 'min'
+    max = 6, 'max'
+    neg = 8, 'neg'
+    per = 11, '%*'
+    per_of = 10, '%/'
+class typeOp(Strenum):
+    constant = 6, 'c:'
+    goal = 13, 'g:'
+    strategic_number = 20, 's:'
+class ActionId(Strenum):
     _1 = -1
     actionid_attack = 600
     actionid_defend = 601
@@ -52,19 +63,19 @@ class ActionId(Enum):
     actionid_research = 620
     actionid_unload = 621
     actionid_relic = 631
-class Age(Enum):
+class Age(Strenum):
     dark_age = 0
     feudal_age = 1
     castle_age = 2
     imperial_age = 3
     post_imperial_age = 105
-class AttackStance(Enum):
+class AttackStance(Strenum):
     _1 = -1
     stance_aggressive = 0
     stance_defensive = 1
     stance_stand_ground = 2
     stance_no_attack = 3
-class AttrId(Enum):
+class AttrId(Strenum):
     attribute_hp = 0
     attribute_los = 1
     attribute_obj_max = 2
@@ -111,7 +122,7 @@ class AttrId(Enum):
     attribute_max_dup_missiles = 107
     attribute_garrison_heal_rate = 108
     attribute_regenration_rate = 109
-class BuildingId(Enum):
+class BuildingId(Strenum):
     town_center = 109
     town_center_foundation = 621
     house = 70
@@ -156,7 +167,7 @@ class BuildingId(Enum):
     gate_vertical_closed = 667
     gate_vertical_open = 673
     gate_vertical = 673
-class Civ(Enum):
+class Civ(Strenum):
     gaia = 0
     briton = 1
     frankish = 2
@@ -206,7 +217,7 @@ class Civ(Enum):
     achaemenids = 46
     athenians = 47
     spartans = 48
-class ClassId(Enum):
+class ClassId(Strenum):
     archery_class = 900
     cavalry_archer_class = 936
     archery_cannon_class = 944
@@ -231,7 +242,7 @@ class ClassId(Enum):
     tower_class = 952
     gate_class = 939
     miscellaneous_class = 911
-class CmdId(Enum):
+class CmdId(Strenum):
     cmdid_flag = 0
     cmdid_livestock_gaia = 1
     cmdid_civilian_building = 2
@@ -245,23 +256,23 @@ class CmdId(Enum):
     cmdid_military_building = 10
 class ColorId:
     pass #unImplemented
-class Commodity(Enum):
+class Commodity(Strenum):
     food = 0
     wood = 1
     stone = 2
 class Defconst:
     pass #unImplemented
-class Difficulty(Enum):
+class Difficulty(Strenum):
     extreme = -1
     hardest = 0
     hard = 1
     moderate = 2
     easy = 3
     easiest = 4
-class DiffParameterId(Enum):
+class DiffParameterId(Strenum):
     ability_to_maintain_distance = 0
     ability_to_dodge_missiles = 1
-class DUCAction(Enum):
+class DUCAction(Strenum):
     action_default = 0
     action_move = 1
     action_patrol = 2
@@ -283,7 +294,7 @@ class DUCAction(Enum):
     action_none = 18
     action_attack_move = 19
     action_transform = 20
-class EffectId(Enum):
+class EffectId(Strenum):
     effect_set_attribute = 0
     effect_mod_resource = 1
     effect_enable_object = 2
@@ -298,13 +309,13 @@ class EscrowGoalId:
     pass #var
 class EventId:
     pass #int
-class EventType(Enum):
+class EventType(Strenum):
     trigger = 0
-class ExploredState(Enum):
+class ExploredState(Strenum):
     explored_no = 0
     explored_active = 15
     explored_yes = 128
-class FactId(Enum):
+class FactId(Strenum):
     game_time = 0
     population_cap = 1
     population_headroom = 2
@@ -362,20 +373,20 @@ class FactId(Enum):
     treaty_time = 54
 class FactParameter:
     pass #unImplemented
-class FindPlayerMethod(Enum):
+class FindPlayerMethod(Strenum):
     find_attacker = 0
     find_random = 1
     find_closest = 2
     find_ordered = 3
 class Flag:
     pass #unImplemented
-class Formation(Enum):
+class Formation(Strenum):
     _1 = -1
     formation_line = 2
     formation_box = 4
     formation_stagger = 7
     formation_flank = 8
-class GameType(Enum):
+class GameType(Strenum):
     random_map = 0
     regicide = 1
     death_match = 2
@@ -392,7 +403,7 @@ class GoalId:
     pass #var
 class GroupId:
     pass #int
-class GroupType(Enum):
+class GroupType(Strenum):
     group_type_land_attack = 100
     group_type_land_explore = 101
     group_type_water_attack = 102
@@ -403,20 +414,20 @@ class GroupType(Enum):
     group_type_forward_builder = 107
     group_type_monk = 108
     group_type_land_trade = 109
-class GuardFlag(Enum):
+class GuardFlag(Strenum):
     guard_flag_victory = 1
     guard_flag_resource = 2
     guard_flag_inverse = 4
 class Id:
     pass #int
-class IdleType(Enum):
+class IdleType(Strenum):
     idle_type_villager = 0
     idle_type_trade_cart = 1
     idle_type_fishing_ship = 2
     idle_type_trade_cog = 3
 class Index:
     pass #int
-class ItemId(Enum):
+class ItemId(Strenum):
     archer = 4
     crossbowman = 24
     arbalest = 492
@@ -894,7 +905,7 @@ class ItemId(Enum):
     ri_siege_engineers = 377
 class LanguageId:
     pass #unImplemented
-class LineId(Enum):
+class LineId(Strenum):
     stone_wall_line = -399
     watch_tower_line = -398
     archer_line = -299
@@ -984,13 +995,13 @@ class LineId(Enum):
     ancient_galley_line = -215
     incendiary_ship_line = -214
     catapult_ship_line = -213
-class LocalIndex(Enum):
+class LocalIndex(Strenum):
     keep = 0
     clear = 1
-class LocalList(Enum):
+class LocalList(Strenum):
     keep = 0
     clear = 1
-class MapSize(Enum):
+class MapSize(Strenum):
     miniature_map = 80
     tiny_map_tiny = 120
     small_map_small = 144
@@ -1005,7 +1016,7 @@ class MapSize(Enum):
     incredible_map = 360
     monstrous_map = 400
     ludicrous_map_ludicrous_ludikris = 480
-class MapType(Enum):
+class MapType(Strenum):
     scenario_map = -1
     arabia = 9
     archipelago = 10
@@ -1132,7 +1143,7 @@ class MinDistance:
     pass #int
 class MinGarrison:
     pass #int
-class ObjectData(Enum):
+class ObjectData(Strenum):
     object_data_index = -1
     object_data_id = 0
     object_data_type = 1
@@ -1224,7 +1235,7 @@ class ObjectData(Enum):
     object_data_charge_attack_amount = 87
     object_data_charge_attack_regeneration_rate = 88
     object_data_charge_attack_event_type = 89
-class ObjectId(Enum):
+class ObjectId(Strenum):
     archer = 4
     crossbowman = 24
     arbalest = 492
@@ -1461,16 +1472,16 @@ class ObjectId(Enum):
     gate_vertical_open = 673
     gate_vertical = 673
     flare = 274
-class ObjectList(Enum):
+class ObjectList(Strenum):
     list_active = 0
     list_inactive = 1
-class ObjectStatus(Enum):
+class ObjectStatus(Strenum):
     status_pending = 0
     status_ready = 2
     status_resource = 3
     status_down = 4
     status_gather = 5
-class OnMainland(Enum):
+class OnMainland(Strenum):
     On = 0
     Off = 1
     Ignore = -1
@@ -1478,7 +1489,7 @@ class Option:
     pass #unImplemented
 class OptionGoalId:
     pass #var
-class OrderId(Enum):
+class OrderId(Strenum):
     _1 = -1
     orderid_attack = 700
     orderid_defend = 701
@@ -1507,15 +1518,15 @@ class OutputGoalId:
     pass #var
 class Percent:
     pass #int
-class Perimeter(Enum):
+class Perimeter(Strenum):
     Inner = 1
     Outer = 2
-class PlacementType(Enum):
+class PlacementType(Strenum):
     place_normal = 0
     place_forward = 1
     place_control = 2
     place_point = 3
-class PlayerNumber(Enum):
+class PlayerNumber(Strenum):
     this_any_ally = 101
     this_any_computer = 102
     this_any_computer_ally = 103
@@ -1527,14 +1538,14 @@ class PlayerNumber(Enum):
     this_any_human_enemy = 109
     this_any_human_neutral = 110
     this_any_neutral = 111
-class PlayerStance(Enum):
+class PlayerStance(Strenum):
     ally = 0
     neutral = 1
     any = 2
     enemy = 3
 class Point:
     pass #Point
-class PositionType(Enum):
+class PositionType(Strenum):
     position_center = 0
     position_opposite = 1
     position_corner = 2
@@ -1549,10 +1560,10 @@ class PositionType(Enum):
     position_focus = 11
     position_object = 12
     position_point = 13
-class ProgressType(Enum):
+class ProgressType(Strenum):
     progress_type_train = 102
     progress_type_research = 103
-class ProjectileType(Enum):
+class ProjectileType(Strenum):
     projectile_town_center = 0
     projectile_castle = 1
     projectile_watch_tower = 2
@@ -1561,23 +1572,23 @@ class ProjectileType(Enum):
     projectile_siege = 5
     projectile_fortification = 6
     projectile_any = 7
-class PriorityType(Enum):
+class PriorityType(Strenum):
     priority_offense = 0
     priority_defense = 1
-class RemoteIndex(Enum):
+class RemoteIndex(Strenum):
     keep = 0
     clear = 1
-class RemoteList(Enum):
+class RemoteList(Strenum):
     keep = 0
     clear = 1
-class ResearchState(Enum):
+class ResearchState(Strenum):
     research_disabled = -1
     research_unavailable = 0
     research_available = 1
     research_pending = 2
     research_complete = 3
     research_queued = 4
-class Resource(Enum):
+class Resource(Strenum):
     food = 0
     wood = 1
     stone = 2
@@ -1586,7 +1597,7 @@ class Resource(Enum):
     boar_hunting = 5
     deer_hunting = 6
     live_boar = 7
-class ResourceType(Enum):
+class ResourceType(Strenum):
     amount_food = 0
     amount_wood = 1
     amount_stone = 2
@@ -1863,7 +1874,7 @@ class RuleDelta:
     pass #USER SHOULD NEVER USE THIS!
 class RuleId:
     pass #USER SHOULD NEVER USE THIS!
-class ScoutMethod(Enum):
+class ScoutMethod(Strenum):
     scout_center = 0
     scout_opposite = 1
     scout_corner = 2
@@ -1871,14 +1882,14 @@ class ScoutMethod(Enum):
     scout_border = 4
     scout_mirror = 5
     scout_flank = 6
-class SearchOrder(Enum):
+class SearchOrder(Strenum):
     search_order_none = 0
     search_order_asc = 1
     search_order_desc = 2
-class SearchSource(Enum):
+class SearchSource(Strenum):
     search_local = 1
     search_remote = 2
-class SetId(Enum):
+class SetId(Strenum):
     monk_set = 970
     trebuchet_set = 971
     huskarl_set = 972
@@ -1904,7 +1915,7 @@ class SharedGoalId:
     pass #USER SHOULD NEVER USE THIS!
 class SignalId:
     pass #int
-class SnId(Enum):
+class SnId(Strenum):
     sn_add_starting_resource_food = 138
     sn_add_starting_resource_gold = 139
     sn_add_starting_resource_stone = 140
@@ -2212,7 +2223,7 @@ class SnId(Enum):
     unknown_sn_199 = 199
     unknown_sn_200 = 200
     unknown_sn_211 = 211
-class StartingResources(Enum):
+class StartingResources(Strenum):
     low_resources = 1
     medium_resources = 2
     high_resources = 3
@@ -2221,14 +2232,14 @@ class StartingResources(Enum):
     random_resources = 6
 class String:
     pass #String
-class SubGameType(Enum):
+class SubGameType(Strenum):
     sub_game_type_empire_wars = 1
     sub_game_type_sudden_death = 1
     sub_game_type_regicide = 1
     sub_game_type_king_of_the_hill = 1
 class TauntId:
     pass #int
-class TechId(Enum):
+class TechId(Strenum):
     ri_crossbow = 100
     ri_elite_skirmisher = 98
     ri_arbalest = 237
@@ -2468,7 +2479,7 @@ class TechId(Enum):
     ri_arrowslits = 608
     ri_chemistry = 47
     ri_siege_engineers = 377
-class Terrain(Enum):
+class Terrain(Strenum):
     terrain_grass = 0
     terrain_water = 1
     terrain_water_beach = 2
@@ -2521,11 +2532,11 @@ class ThreatTime:
     pass #var
 class TimerId:
     pass #int
-class TimerState(Enum):
+class TimerState(Strenum):
     timer_disabled = 0
     timer_triggered = 1
     timer_running = 2
-class TypeId(Enum):
+class TypeId(Strenum):
     archer = 4
     crossbowman = 24
     arbalest = 492
@@ -2762,7 +2773,7 @@ class TypeId(Enum):
     gate_vertical_open = 673
     gate_vertical = 673
     flare = 274
-class UnitId(Enum):
+class UnitId(Strenum):
     archer = 4
     crossbowman = 24
     arbalest = 492
@@ -2957,7 +2968,7 @@ class UnitId(Enum):
     flare = 274
 class Value:
     pass #int
-class VictoryCondition(Enum):
+class VictoryCondition(Strenum):
     standard = 0
     conquest = 1
     time_limit = 2
@@ -2969,9 +2980,9 @@ class VictoryTime:
     pass #var
 class VictoryType:
     pass #var
-class WallId(Enum):
+class WallId(Strenum):
     stone_wall_line = -399
-class SN(Enum):
+class SN(Strenum):
     add_starting_resource_food = 0
     add_starting_resource_gold = 1
     add_starting_resource_stone = 2
@@ -3279,7 +3290,7 @@ class SN(Enum):
     unknown_sn_199 = 304
     unknown_sn_200 = 305
     unknown_sn_211 = 306
-class AOE2FUNC(Enum):
+class AOE2FUNC(Strenum):
     acknowledge_event = 0
     acknowledge_taunt = 1
     attack_now = 2
@@ -3647,7 +3658,7 @@ class AOE2FUNC(Enum):
     warboat_count = 364
     wood_amount = 365
     xs_script_call = 366
-class AOE2OBJ(Enum):
+class AOE2OBJ(Strenum):
     ActionId = 0
     Age = 1
     AttackStance = 2

@@ -437,12 +437,12 @@ class AlocateAllMemory(compilerTransformer):
         return node
 
     def visit_Variable(self, node):
-        if location := self.memory.get(node.id):
-            node.memory_location = location
-        else:
+        if not (location := self.memory.get(node.id)):
             self.memory.malloc(node.id, int)
             location = self.memory.get(node.id)
-            node.memory_location = location
+            
+        node.memory_location = location
+        node.memory_name = self.memory.get_name_at_location(location)
         return node
 
 

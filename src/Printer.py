@@ -1,7 +1,7 @@
 import ast
 from Compiler import Command, Variable, aoeOp
 from scraper import *
-from scraper import mathOp
+from scraper import mathOp, compareOp
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re
@@ -16,6 +16,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.NO_FILE = NO_FILE
         self.enum_classes = get_enum_classes()
         self.TEST = TEST
+        self.def_const_list = set()
 
     def visit_if(self, node):
         """
@@ -64,32 +65,42 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         self.final_string += red(")")
 
-    def evaluate_enum(self, expr, previous_expr, human_readable = True):
+    def evaluate_enum(self, expr, next_expr, human_readable = True):
         value_str = ''
-        if type(expr) is mathOp: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
-            if type(previous_expr) is Variable:
-                value_str = str(int(expr.value) + 12)
-            elif type(previous_expr) is ast.Constant:
-                value_str = str(int(expr.value) + 24)
-            elif type(previous_expr) is SnId:
+        if type(expr) in [mathOp, compareOp]: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
+            if type(next_expr) is Variable:
+                prefix = typeOp.goal
+                value_str = str(int(expr.val) + 12)
+            elif type(next_expr) is ast.Constant:
+                prefix = typeOp.constant
+                value_str = str(int(expr.val) + 24)
+            elif type(next_expr) is SnId:
+                prefix = typeOp.strategic_number
                 value_str = str(expr.value)
             else:
-                raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {previous_expr}")
-
-        else:
-            return expr.value
+                raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {next_expr}")
+            return prefix.string + expr.string
+        
+        return expr.string
     
+    def add_def_consts(self):
+        for def_const in self.def_const_list:
+            self.final_string += f"(defconst {def_const})\n"
+        self.final_string += "\n"
+
 
     def visit_Command(self, node):  # adds (command arg1 arg2)
         self.final_string += blue("  (") + blue(node.func.id.name.replace("_", "-"))
         
         for itr, expr in enumerate(node.args):
             if type(expr) in list(self.enum_classes.values()):
-                expr_str = self.evaluate_enum(expr, node.args[itr-1])
+                expr_str = self.evaluate_enum(expr, node.args[itr+1])
             
             elif isinstance(expr, Variable):
-                expr_str = str(expr.memory_location)
-            
+                #expr_str = str(expr.memory_location) #todo: add option back in to make it not human readable
+                expr_str = expr.memory_name
+                self.def_const_list.add(expr.memory_name + " " + str(expr.memory_location))
+
             elif isinstance(expr, ast.Constant):
                 if type(expr.value) is int:
                     expr_str = str(expr.value)
@@ -110,6 +121,7 @@ class Printer:
     def __init__(self, tree):
         self.tree = tree
         self.final_string = ""
+        self.def_const_list = set()
 
     @property
     def no_color_final_string(self):
@@ -134,6 +146,8 @@ class Printer:
     def print_all(self, TEST=False):
         visitor = DefRulePrintVisitor(self.final_string, TEST=TEST)
         visitor.visit(self.tree)
+        visitor.add_def_consts()
+        
         self.final_string = visitor.final_string
         return visitor.final_string
 

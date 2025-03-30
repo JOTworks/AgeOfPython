@@ -32,7 +32,7 @@ class Memory:
         self._LAST_REGISTER = 15999
         # self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
         self._func_stack = ["main"]
-        self._used_memory = {"main":SortedDict({})}  # {scope: SortedDict({start: StoreddMemory})}
+        self._used_memory = {"main":SortedDict({})}  # {scope: SortedDict({varname: StoreddMemory})}
         self._func_blocks = SortedDict({})  # {start: StoredFuncCall}
         self._open_memory = SortedDict({41: 15999})  # {start: end}
 
@@ -115,6 +115,14 @@ class Memory:
         if self.verbose_memory:
             print_dim(f"FREE: {var_name} {var.var_type} {var.length} {var.start}")
             self.print_memory()
+
+    def get_name_at_location(self, reg_number):
+        for scope, memory_dict in self._used_memory.items():
+            for start, stored_memory in memory_dict.items():
+                if stored_memory.start >= reg_number >= stored_memory.start + stored_memory.length - 1:
+                    name = str(stored_memory.name) + "-" + str(reg_number)
+                    return name
+        raise Exception(f"could not find {reg_number} in {self._used_memory}")
 
     def get(self, var_name, abstracted_offset="0"):
         try:

@@ -10,6 +10,7 @@ dependencies = []
 dev = [
     "colorama>=0.4.6",
     "pytest>=7.0.1",
+    "aenum>=3.1.10",
 ]
 
 [tool.pytest.ini_options]
