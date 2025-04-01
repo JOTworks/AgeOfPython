@@ -3,15 +3,17 @@ from scraper.aoe2scriptEnums import *
 from scraper.aoe2scriptEnums import PlayerNumber
 from scraper.aoe2scriptFunctions import chat_to_all, up_chat_data_to_all, disable_self
 
-#asignment
-asi = 12
-asi = asi+18
-up_chat_data_to_all("asi should be 30:%d", asi)
+##asignment
+#asi = 12
+#asi = asi+18
+#if True:
+#    up_chat_data_to_all("asi should be 30:%d", asi)
+#    disable_self()
 
-#if
-if True:
-    chat_to_all("in if")
-    disable_self()
+###if
+#if True:
+#    chat_to_all("in if")
+#    disable_self()
 
 if True:
     if True:
@@ -34,10 +36,13 @@ if True:
         while_conditional = 0
     disable_self()
 
-#function
-def foo():
-    chat_to_all("in function")
+##function # functions dont work because they need the retern block and commands
+#def foo():
+#    chat_to_all("in function")
+#
+#if True:
+#    foo()
+#    disable_self()
 
-if True:
-    foo()
-    disable_self()
+#need to add empty rule to end of file
+#for loop incomenter needs to default to 1, not 0

@@ -580,7 +580,7 @@ class CompileTransformer(compilerTransformer):
         return node
 
     def const_constructor(self, value):
-        return ast.Constant(value=0)
+        return ast.Constant(value=value)
 
     def jump_constructor(self, jump_type):
         return Command(AOE2FUNC.up_jump_direct, [jump_type], None)
@@ -818,41 +818,49 @@ class NumberDefrulesTransformer(compilerTransformer):
 
 
 class ReplaceAllJumpStatementsTransformer(compilerTransformer):
+    
+    def calculate_jump(self, command, node):
+        for i, jump in enumerate(command.args):
+            if type(jump) is not JumpType:
+                continue
+            
+            if jump is JumpType.jump_over_skip:
+                command.set_arg(i, ast.Constant(node.first_defrule + 2))
+
+            elif jump is JumpType.last_rule_after_node:
+                command.set_arg(i, ast.Constant(node.last_defrule + 1))
+
+            elif jump is JumpType.last_rule_in_node:
+                command.set_arg(i, ast.Constant(node.last_defrule))
+
+            elif jump is JumpType.test_jump_to_beginning:
+                command.set_arg(i, ast.Constant(node.first_defrule + 1))
+
+            elif jump is JumpType.test_jump_to_beginning_after_init:
+                command.set_arg(i, ast.Constant(node.first_defrule + 2))
+            else:
+                command.set_arg(i, ast.Constant(-1))
+                logger.error(f"{jump} not implemented yet")
+    
     def replace_jump(self, node):
-        for subnode in ast.walk(node):
+        for subnode in node.body:
+            if isinstance(subnode, DefRule):
+                for defrule_subnode in subnode.body:
+                    self.calculate_jump(defrule_subnode, node)
             if isinstance(subnode, Command):
-                for i, arg in enumerate(subnode.args):
-                    arg_type = type(arg)
-                    if arg_type == JumpType:
-                        if arg is JumpType.jump_over_skip:
-                            subnode.set_arg(i, ast.Constant(node.first_defrule + 2))
-
-                        elif arg is JumpType.last_rule_after_node:
-                            subnode.set_arg(i, ast.Constant(node.last_defrule + 1))
-
-                        elif arg is JumpType.last_rule_in_node:
-                            subnode.set_arg(i, ast.Constant(node.last_defrule))
-
-                        # both are the same right now because normal test_jump_to_beginning has an empty first rule like that.
-                        elif (
-                            arg is JumpType.test_jump_to_beginning
-                            or arg is JumpType.test_jump_to_beginning_after_init
-                        ):
-                            subnode.set_arg(i, ast.Constant(node.first_defrule + 1))
-
-                        else:
-                            subnode.set_arg(i, ast.Constant(-1))
-                            logger.error(f"{arg} not implemented yet")
-        self.generic_visit(node)
+                self.calculate_jump(subnode, node)
         return node
 
     def visit_For(self, node):
+        self.generic_visit(node)
         return self.replace_jump(node)
 
     def visit_While(self, node):
+        self.generic_visit(node)
         return self.replace_jump(node)
 
     def visit_If(self, node):
+        self.generic_visit(node)
         return self.replace_jump(node)
 
     def visit_Name(self, node):
