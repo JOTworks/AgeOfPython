@@ -68,6 +68,30 @@ return_value_ptr = return_value
 up_jump_direct(return_line_ptr)
 
 
+10001 - 10020 are return locations
+10000 is return pointer
+
+
+10000: += 1
+10000*: = current-location + 1
+function args = args_input
+jump to function
+
+get 10041* value 15900
+jump 
+
+10041: 15901
+
+15900: -1
+15901: 18
+15902: -1
+15903: -1
+
+
+#FUNCTION
+
+
+
 """
 def function(Args):
     lines

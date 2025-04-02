@@ -26,7 +26,6 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             self.visit(item)
 
     def visit_FunctionDef(self, node):
-        print("FunctionDef")
         self.final_string += yellow(f";--- DEF {node.name} ---;\n")
         self.generic_visit(node)
         self.final_string += yellow(f";--- END {node.name} ---;\n")
@@ -84,10 +83,8 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         return expr.string
     
     def add_def_consts(self):
-        for def_const in self.def_const_list:
-            self.final_string += f"(defconst {def_const})\n"
-        self.final_string += "\n"
-
+        def_const_string = '\n'.join([f"(defconst {def_const})" for def_const in self.def_const_list])
+        self.final_string = '\n' + def_const_string + '\n' + self.final_string + '\n'
 
     def visit_Command(self, node):  # adds (command arg1 arg2)
         self.final_string += blue("  (") + blue(node.func.id.name.replace("_", "-"))

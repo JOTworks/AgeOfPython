@@ -27,14 +27,14 @@ class StoredFuncCall(StoredMemory):
         self.arguments = arguments
 class Memory:
     def __init__(self):
-        self.verbose_memory = True
+        self.verbose_memory = False #todo: make this an option
         self._FIRST_REGISTER = 41
-        self._LAST_REGISTER = 15999
+        self._LAST_REGISTER = 15899 #15900 - 15999 is for the function stack
         # self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
         self._func_stack = ["main"]
         self._used_memory = {"main":SortedDict({})}  # {scope: SortedDict({varname: StoreddMemory})}
         self._func_blocks = SortedDict({})  # {start: StoredFuncCall}
-        self._open_memory = SortedDict({41: 15999})  # {start: end}
+        self._open_memory = SortedDict({self._FIRST_REGISTER: self._LAST_REGISTER})  # {start: end}
 
     def print_memory(self):
         print(f"{self.free_memory_count=}")

@@ -13,6 +13,15 @@ from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_com
 from utils_display import print_bordered
 from MyLogging import logger
 
+FUNC_DEPTH_COUNT = "func_depth_count"
+reserved_function_names = [
+    'range',
+]
+
+def new_jump(jump_type):
+        return Command(AOE2FUNC.up_jump_direct, [jump_type], None)
+def new_do_nothing():
+        return Command(AOE2FUNC.do_nothing, [], None)
 
 def check_terminal_nodes(tree, node_type):
     for node in ast.walk(tree):
@@ -51,7 +60,20 @@ class JumpType(Enum):
     test_jump_to_beginning_after_init = 3
     jump_over_skip = 4
     last_rule_after_node = 5
+    set_return_pointer = 6
+    jump_to_func = 7
+    jump_back_to_after_call = 8
+    last_rule_in_file = 9
 
+class FuncModule(ast.Module): 
+    def __init__(self, name: str, args: list = [], node=None):
+        super().__init__()
+        self.lineno = node.lineno if node else None
+        self.name = name
+        self.args = args
+        self.body = []
+        self.type_ignores = []
+        self.file_path = None
 
 class Constructor(ast.Call):
     def __init__(self, object_name: str, args: list = [], lineno="."):
@@ -89,7 +111,9 @@ class Variable(ast.Name):
     """
 
     def __init__(self, args):
-        self.offset_index = args.pop("offset_index")
+        if "offset_index" in args:
+            self.offset_index = args.pop("offset_index")
+        
         super().__init__(**args)
 
     pass
@@ -149,8 +173,25 @@ class Command(ast.Call):
                 elif type(command_args[index]) is ast.Constant:
                     type_op = typeOp.constant
                 elif type(command_args[index]) is JumpType:
-                    logger.debug(f"JumpType always assume const, not goal")
-                    type_op = typeOp.constant
+                    if command_args[index] in [
+                        JumpType.jump_back_to_after_call,
+                    ]:
+                        type_op = typeOp.goal
+                    elif command_args[index] in [
+                        JumpType.last_rule_in_file,
+                        JumpType.last_rule_in_node,
+                        JumpType.test_jump_to_beginning,
+                        JumpType.jump_over_test,
+                        JumpType.test_jump_to_beginning_after_init,
+                        JumpType.jump_over_skip,
+                        JumpType.last_rule_after_node,
+                        JumpType.jump_to_func,
+                        JumpType.set_return_pointer,
+                    ]:
+                        type_op = typeOp.constant
+                    else:
+                        logger.error(f"assuming const, not goal: {command_args[index]}")
+                        type_op = typeOp.constant
                 else:
                     #todo: make SNs get tracked here for s:
                     raise Exception(f"typeOp expects a variable or constant at index {index} not {type(command_args[index])}")
@@ -448,11 +489,12 @@ class AlocateAllMemory(compilerTransformer):
 
 class CompileTransformer(compilerTransformer):
     # todo: make it so set_strategic_number(SN.initial_exploration_required, 0) could be replace with SN.initial_exploration_required = 0, and could have any expr in the asignment
-    def __init__(self, command_names):
+    def __init__(self, command_names, func_def_dict):
         super().__init__()
         self.command_names = command_names
         self.parent_map = {}
         self.temp_var_counter = 0
+        self.func_def_dict = func_def_dict
 
     def get_next_temp_var(self):
         self.temp_var_counter += 1
@@ -482,7 +524,63 @@ class CompileTransformer(compilerTransformer):
 
     def visit_Call(self, node, parent, in_field, in_node):
         self.generic_visit(node)
-        return node
+        func_name = node.func.id
+        func_def_node = self.func_def_dict[func_name]
+        if func_name in reserved_function_names:
+            return node
+        func_call_module = FuncModule(func_name, node.args, node)
+        
+        func_depth_incromenter = DefRule(
+            Command(AOE2FUNC.true, [], node),
+            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT}), mathOp.add, self.const_constructor(1)], node)], #todo: make a variable constructer 
+            node,
+            comment="FUNC_dept_inc " + str(node.lineno),
+        )
+
+        set_return_rule_pointer = DefRule(
+            Command(AOE2FUNC.true, [], node),
+            [Command(AOE2FUNC.up_set_indirect_goal, 
+                     [Variable({'id':FUNC_DEPTH_COUNT}), JumpType.set_return_pointer], node)], #! make sure this dosnt dercomnavigate the momory alocattor.
+            node,
+            comment="FUNC_ret_set " + str(node.lineno),
+        )
+
+        func_depth_decromenter = DefRule(
+            Command(AOE2FUNC.true, [], None),
+            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT}), mathOp.sub, self.const_constructor(1)], None)], #todo: make a variable constructer 
+            None, #todo: find a way to make this node and not have 3 lines of green comments in printer
+            comment="FUNC_depth_dec " + str(node.lineno),
+        )
+
+        asign_func_arg_commands = []
+        for i, arg in enumerate(node.args):
+            asign_func_arg_commands.append(
+                Command(AOE2FUNC.up_modify_goal, [
+                    Variable({'id':func_name + '.' + func_def_node.args.args[i].arg}), #!this is bad, somehow i need to pull it the same way the memory does it, or the same way the scope walker does it
+                    mathOp.eql, Variable({'id':arg.id})], node)
+                )
+        asign_func_args = DefRule(
+                Command(AOE2FUNC.true, [], node),
+                asign_func_arg_commands,
+                node,
+        )
+        jump_to_func = DefRule(
+            Command(AOE2FUNC.true, [], node),
+            [Command(AOE2FUNC.up_jump_direct, [JumpType.jump_to_func], node)],
+            node,
+        )
+
+        func_call_module.body = (
+            [
+                func_depth_incromenter,
+                set_return_rule_pointer,
+                asign_func_args,
+                jump_to_func,
+                func_depth_decromenter,
+            ]
+        )
+        return func_call_module
+        
 
     def visit_While(self, node, parent, in_field, in_node):
         """
@@ -493,14 +591,14 @@ class CompileTransformer(compilerTransformer):
 
         to_test = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [self.jump_constructor(JumpType.last_rule_in_node)],
+            [new_jump(JumpType.last_rule_in_node)],
             node_copy_with_short_offset(node, 2),
             comment="WHILE to_test " + str(node.lineno),
         )
 
         test = DefRule(
             self.visit_test(node.test),
-            [self.jump_constructor(JumpType.test_jump_to_beginning)],
+            [new_jump(JumpType.test_jump_to_beginning)],
             None,
             comment="WHILE test " + str(node.lineno),
         )
@@ -543,7 +641,7 @@ class CompileTransformer(compilerTransformer):
 
         test = DefRule(
             Command(AOE2FUNC.up_compare_goal, [node.target, op, stop], node),
-            [self.jump_constructor(JumpType.test_jump_to_beginning_after_init)],
+            [new_jump(JumpType.test_jump_to_beginning_after_init)],
             None,
             comment="FOR test " + str(node.lineno),
         )
@@ -555,7 +653,7 @@ class CompileTransformer(compilerTransformer):
         )
         jump_to_test = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [self.jump_constructor(JumpType.last_rule_in_node)],
+            [new_jump(JumpType.last_rule_in_node)],
             node_copy_with_short_offset(node, 2),
             comment="FOR to_test " + str(node.lineno),
         )
@@ -582,13 +680,10 @@ class CompileTransformer(compilerTransformer):
     def const_constructor(self, value):
         return ast.Constant(value=value)
 
-    def jump_constructor(self, jump_type):
-        return Command(AOE2FUNC.up_jump_direct, [jump_type], None)
-
     def visit_If(self, node, parent, in_field, in_node):
         self.generic_visit(node)
 
-        test_commands = [self.jump_constructor(JumpType.jump_over_skip)]
+        test_commands = [new_jump(JumpType.jump_over_skip)]
         if node.disable_self:
             test_commands.append(Command(AOE2FUNC.disable_self, [], node))
         test = DefRule(
@@ -600,7 +695,7 @@ class CompileTransformer(compilerTransformer):
 
         skip = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [self.jump_constructor(JumpType.last_rule_after_node)],
+            [new_jump(JumpType.last_rule_after_node)],
             node_copy_with_short_offset(node, 2),
             comment="IF skip " + str(node.lineno),
         )
@@ -772,23 +867,39 @@ class CompileTransformer(compilerTransformer):
                 assign_command.func.id = AOE2FUNC.up_modify_sn
         return assign_command
 
+    def visit_FunctionDef(self, node):
+        self.generic_visit(node)
 
+        set_jump_back = DefRule(
+            Command(AOE2FUNC.true, [], None),
+            [Command(AOE2FUNC.up_get_indirect_goal, [Variable({'id':FUNC_DEPTH_COUNT}), ast.Constant(15900)], None)],
+                None, #todo: find a way to make this node and not have 3 lines of green comments in printer
+                comment="FUNC_set_jump " + str(node.lineno),
+        ) 
+        jump_back_to_after_call = DefRule(
+            Command(AOE2FUNC.true, [], None),
+            [new_jump(JumpType.jump_back_to_after_call)],
+            None, #todo: find a way to make this node and not have 3 lines of green comments in printer
+            comment="FUNC_return " + str(node.lineno),
+        )
+        node.body = (
+            node.body 
+            + [
+                set_jump_back,
+                jump_back_to_after_call,
+            ]
+        )
+        return node    
 class NumberDefrulesTransformer(compilerTransformer):
     def __init__(self):
         super().__init__()
         self.defrule_counter = 0
-
-    def p_visit(self, node, tree_name="tree", vv=False):
-        #add trailing defrule so if you need to jump to the end its an empty command
-        node.body.append(
-            DefRule(
-                Command(AOE2FUNC.false, [], None),
-                [Command(AOE2FUNC.do_nothing, [], None)],
-                None,
-            )
-        )
-        return super().p_visit(node, tree_name, vv)
     
+    def p_visit(self, node, tree_name="tree", vv=False):
+        self.generic_visit(node)
+        result = super().p_visit(node, tree_name, vv)
+        return result, self.defrule_counter-1
+
     def visit_If(self, node):
         node.first_defrule = self.defrule_counter
         self.generic_visit(node)
@@ -815,10 +926,35 @@ class NumberDefrulesTransformer(compilerTransformer):
         node.defrule_num = self.defrule_counter
         self.defrule_counter += 1
         return node
+    
+    def visit_FunctionDef(self, node):
+        node.first_defrule = self.defrule_counter
+        self.generic_visit(node)
+        node.last_defrule = self.defrule_counter - 1
+        # raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
+        return node
+
+    def visit_FuncModule(self, node):
+        node.first_defrule = self.defrule_counter
+        self.generic_visit(node)
+        node.last_defrule = self.defrule_counter - 1
+        # raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
+        return node
 
 
 class ReplaceAllJumpStatementsTransformer(compilerTransformer):
-    
+    def __init__(self, rule_count):
+        self.rule_count = rule_count
+
+    def replace_calculate_global_jump(self, node):
+        for subnode in node.body:
+            for i, jump in enumerate(subnode.args):
+                if type(jump) is not JumpType:
+                    continue
+                if jump is JumpType.last_rule_in_file:
+                    subnode.set_arg(i, ast.Constant(self.rule_count))
+        return node
+
     def calculate_jump(self, command, node):
         for i, jump in enumerate(command.args):
             if type(jump) is not JumpType:
@@ -838,12 +974,25 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
 
             elif jump is JumpType.test_jump_to_beginning_after_init:
                 command.set_arg(i, ast.Constant(node.first_defrule + 2))
+            
+            elif jump is JumpType.jump_to_func:
+                command.set_arg(i, ast.Constant(-1)) #! needs a dict of functions and their start place
+                logger.error(f"{jump} not written")
+
+            elif jump is JumpType.set_return_pointer:
+                command.set_arg(i, ast.Constant(node.last_defrule)) #because currently the last rule is the one that decrements and wee need to not make that part of another defrule
+
+            elif jump is JumpType.jump_back_to_after_call:
+                command.set_arg(i, ast.Constant(15900))
+
             else:
                 command.set_arg(i, ast.Constant(-1))
                 logger.error(f"{jump} not implemented yet")
     
     def replace_jump(self, node):
         for subnode in node.body:
+            if isinstance(subnode, ast.Expr):
+                subnode = subnode.value #todo:check this doesnt break anything by having defrules stacked in expr
             if isinstance(subnode, DefRule):
                 for defrule_subnode in subnode.body:
                     self.calculate_jump(defrule_subnode, node)
@@ -851,6 +1000,14 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
                 self.calculate_jump(subnode, node)
         return node
 
+    def visit_FunctionDef(self, node): #! check to see if it needs to dig into Expr inside the funcDef body
+        self.generic_visit(node)
+        return self.replace_jump(node)
+    
+    def visit_FuncModule(self, node):
+        self.generic_visit(node)
+        return self.replace_jump(node)
+    
     def visit_For(self, node):
         self.generic_visit(node)
         return self.replace_jump(node)
@@ -869,14 +1026,16 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
         self.generic_visit(node)
         return node
 
+    def visit_DefRule(self, node): #should run before any other ones to catch global jumps first, also caches naket defrules in bodys
+        self.generic_visit(node)
+        return self.replace_calculate_global_jump(node)
+    
 
 class ScopeAllVariables(compilerTransformer):
     def __init__(self):
         super().__init__()
         self.scope_level = 0
         self.current_function = None
-
-    ast.FunctionDef
 
     def visit_FunctionDef(self, node):
         if self.current_function is not None:
@@ -945,6 +1104,14 @@ class Compiler:
         ]
         return
 
+    def get_func_def_dict(self, func_tree):
+        func_def_dict = {}
+        for func_def in func_tree.body:
+            if not isinstance(func_def, ast.FunctionDef):
+                raise Exception(f"func_def {func_def} is not a function def, its a {type(func_def)}")
+            func_def_dict[func_def.name] = func_def
+        return func_def_dict
+    
     def compile(self, trees, vv=False):
         trees.main_tree = AstToCustomNodeTransformer(
             self.command_names, self.object_names
@@ -957,21 +1124,11 @@ class Compiler:
         trees.main_tree = ReduceTransformer().p_visit(trees.main_tree, "main_tree", vv)
         trees.func_tree = ReduceTransformer().p_visit(trees.func_tree, "func_tree", vv)
         trees.func_tree = ScopeAllVariables().p_visit(trees.func_tree, "func_tree", vv)
-        trees.main_tree = CompileTransformer(self.command_names).p_visit(
+        func_def_dict = self.get_func_def_dict(trees.func_tree)
+        trees.main_tree = CompileTransformer(self.command_names, func_def_dict).p_visit(
             trees.main_tree, "main_tree", vv
         )
-        trees.func_tree = CompileTransformer(self.command_names).p_visit(
-            trees.func_tree, "func_tree", vv
-        )
-
-        memory = Memory()
-
-        trees.main_tree = AlocateAllMemory(
-            memory
-        ).p_visit(
-            trees.main_tree, "main_tree", vv
-        )  # find out last place vars are used, and automaticaly call free on them; walk through and keep a list of node and variable pairing, then add tag
-        trees.func_tree = AlocateAllMemory(memory).p_visit(
+        trees.func_tree = CompileTransformer(self.command_names, func_def_dict).p_visit(
             trees.func_tree, "func_tree", vv
         )
         trees.main_tree = GarenteeAllCommandsInDefRule().p_visit(
@@ -980,19 +1137,51 @@ class Compiler:
         trees.func_tree = GarenteeAllCommandsInDefRule().p_visit(
             trees.func_tree, "func_tree", vv
         )
-
+        
         combined_tree = trees.main_tree
-        combined_tree.body = combined_tree.body + trees.func_tree.body
+        combined_tree.body = (
+            [
+                DefRule(
+                    Command(AOE2FUNC.true, [], None),
+                    [
+                        Command(AOE2FUNC.set_goal, [Variable({'id':FUNC_DEPTH_COUNT}), ast.Constant(15900)], None), #todo: get rid of magic number 15900, and use actualy memory allocation
+                        Command(AOE2FUNC.disable_rule, [], None),
+                    ], None)]
+            +
+            combined_tree.body
+            + [
+                DefRule(
+                Command(AOE2FUNC.true, [], None),
+                [new_jump(JumpType.last_rule_in_file)],
+                None,
+            )]
+            + trees.func_tree.body
+            + [
+                DefRule(
+                Command(AOE2FUNC.false, [], None),
+                [new_do_nothing()],
+                None,
+            )]
+        )
 
-        combined_tree = NumberDefrulesTransformer().p_visit(
+        combined_tree, rule_count = NumberDefrulesTransformer().p_visit(
             combined_tree, "combined_tree", vv
         )
-        combined_tree = ReplaceAllJumpStatementsTransformer().p_visit(
+        combined_tree = ReplaceAllJumpStatementsTransformer(rule_count).p_visit(
             combined_tree, "combined_tree", vv
         )
 
-        print_bordered("Memory")
-        memory.print_memory()
+        memory = Memory()
+
+        trees.main_tree = AlocateAllMemory(memory).p_visit(
+            trees.main_tree, "main_tree", vv
+        )  # find out last place vars are used, and automaticaly call free on them; walk through and keep a list of node and variable pairing, then add tag
+        trees.func_tree = AlocateAllMemory(memory).p_visit(
+            trees.func_tree, "func_tree", vv
+        )
+        if vv:
+            print_bordered("Memory after all alocations")
+            memory.print_memory()
 
         return combined_tree
 
