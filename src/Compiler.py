@@ -897,7 +897,6 @@ class NumberDefrulesTransformer(compilerTransformer):
         self.func_def_dict = func_def_dict
     
     def p_visit(self, node, tree_name="tree", vv=False):
-        self.generic_visit(node)
         result = super().p_visit(node, tree_name, vv)
         return result, self.defrule_counter-1
 
@@ -1147,7 +1146,7 @@ class Compiler:
                     Command(AOE2FUNC.true, [], None),
                     [
                         Command(AOE2FUNC.set_goal, [Variable({'id':FUNC_DEPTH_COUNT}), ast.Constant(15900)], None), #todo: get rid of magic number 15900, and use actualy memory allocation
-                        Command(AOE2FUNC.disable_rule, [], None),
+                        Command(AOE2FUNC.disable_self, [], None),
                     ], None)]
             +
             combined_tree.body
