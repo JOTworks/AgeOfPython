@@ -891,9 +891,10 @@ class CompileTransformer(compilerTransformer):
         )
         return node    
 class NumberDefrulesTransformer(compilerTransformer):
-    def __init__(self):
+    def __init__(self, func_def_dict):
         super().__init__()
         self.defrule_counter = 0
+        self.func_def_dict = func_def_dict
     
     def p_visit(self, node, tree_name="tree", vv=False):
         self.generic_visit(node)
@@ -929,6 +930,7 @@ class NumberDefrulesTransformer(compilerTransformer):
     
     def visit_FunctionDef(self, node):
         node.first_defrule = self.defrule_counter
+        self.func_def_dict[node.name].first_defrule = self.defrule_counter
         self.generic_visit(node)
         node.last_defrule = self.defrule_counter - 1
         # raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
@@ -943,8 +945,9 @@ class NumberDefrulesTransformer(compilerTransformer):
 
 
 class ReplaceAllJumpStatementsTransformer(compilerTransformer):
-    def __init__(self, rule_count):
+    def __init__(self, func_def_dict, rule_count):
         self.rule_count = rule_count
+        self.func_def_dict = func_def_dict
 
     def replace_calculate_global_jump(self, node):
         for subnode in node.body:
@@ -976,8 +979,7 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
                 command.set_arg(i, ast.Constant(node.first_defrule + 2))
             
             elif jump is JumpType.jump_to_func:
-                command.set_arg(i, ast.Constant(-1)) #! needs a dict of functions and their start place
-                logger.error(f"{jump} not written")
+                command.set_arg(i, ast.Constant(self.func_def_dict[node.name].first_defrule))
 
             elif jump is JumpType.set_return_pointer:
                 command.set_arg(i, ast.Constant(node.last_defrule)) #because currently the last rule is the one that decrements and wee need to not make that part of another defrule
@@ -1164,10 +1166,10 @@ class Compiler:
             )]
         )
 
-        combined_tree, rule_count = NumberDefrulesTransformer().p_visit(
+        combined_tree, rule_count = NumberDefrulesTransformer(func_def_dict).p_visit(
             combined_tree, "combined_tree", vv
         )
-        combined_tree = ReplaceAllJumpStatementsTransformer(rule_count).p_visit(
+        combined_tree = ReplaceAllJumpStatementsTransformer(func_def_dict, rule_count).p_visit(
             combined_tree, "combined_tree", vv
         )
 
