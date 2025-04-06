@@ -4,7 +4,9 @@ from colorama import Fore, Style
 
 colorama.init(autoreset=True)
 
-
+#todo: no variables names are function names
+#todo: all functions have the correct parameters, unless the compareOp special grammer
+#todo: do not allow use of reserved words like range (may already be taken care of in the ast.parcer)
 class NodeCounter(ast.NodeVisitor):
     def __init__(self):
         self.counts = {}

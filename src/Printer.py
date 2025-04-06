@@ -1,7 +1,7 @@
 import ast
 from Compiler import Command, Variable, aoeOp
 from scraper import *
-from scraper import mathOp, compareOp
+from scraper import mathOp, compareOp, Strenum
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re
@@ -78,8 +78,10 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             elif type(next_expr) is SnId:
                 prefix = typeOp.strategic_number
                 value_str = str(expr.value)
+            elif isinstance(next_expr, Strenum):# in self.enum_classes.values():
+                prefix = typeOp.constant
             else:
-                raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {next_expr}")
+                raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {type(next_expr)}")
             return prefix.string + expr.string
         
         return expr.string

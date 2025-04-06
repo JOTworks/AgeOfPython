@@ -17,6 +17,7 @@ class JumpType(Enum):
     jump_to_func = 7
     jump_back_to_after_call = 8
     last_rule_in_file = 9
+    jump_to_else = 10
 
 class FuncModule(ast.Module): 
     def __init__(self, name: str, args: list = [], node=None):
@@ -142,6 +143,7 @@ class Command(ast.Call):
                         JumpType.last_rule_after_node,
                         JumpType.jump_to_func,
                         JumpType.set_return_pointer,
+                        JumpType.jump_to_else,
                     ]:
                         type_op = typeOp.constant
                     else:

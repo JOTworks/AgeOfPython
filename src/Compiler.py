@@ -1,10 +1,10 @@
 import ast
 import inspect
-
+from itertools import chain
 from scraper import *
 from scraper import AOE2FUNC
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
-from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType
+from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
 from Memory import Memory
 from copy import copy
 from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op
@@ -72,6 +72,13 @@ class AstToCustomNodeTransformer(compilerTransformer):
     def visit_Name(self, node):
         self.generic_visit(node)
         return self.make_variable(node, 0, node.id)
+
+    def visit_UnaryOp(self, node): #todo: move this to reduceTransformer class somehow. needs to happen before command generation in this class however
+        self.generic_visit(node)
+        if isinstance(node.op, ast.USub) and type(node.operand) is ast.Constant:
+            node.operand.value = -node.operand.value
+            return node.operand
+        return node
 
     def visit_Call(self, node):
         self.generic_visit(node)
@@ -246,7 +253,7 @@ class AlocateAllMemory(compilerTransformer):
                 )
             if location := self.memory.get(node.targets[0].id):
                 raise Exception(
-                    f"{node.targets[0].id} is already in memory! dont try to re Construct it"
+                    f"{node.targets[0].id} is already in memory! dont try to re Construct it, line {node.lineno}"
                 )
             else:
                 var_type = node.value.func.id
@@ -309,6 +316,8 @@ class CompileTransformer(compilerTransformer):
     def visit_Call(self, node, parent, in_field, in_node):
         self.generic_visit(node)
         func_name = node.func.id
+        if func_name in reserved_function_names:
+            return node
         func_def_node = self.func_def_dict[func_name]
         if func_name in reserved_function_names:
             return node
@@ -340,13 +349,14 @@ class CompileTransformer(compilerTransformer):
         for i, arg in enumerate(node.args):
             if type(arg) is Variable:
                 right_side = Variable({'id':arg.id})
-            elif type(arg) is ast.Constant:
+            elif type(arg) in [ast.Constant, EnumNode]:
                 right_side = arg
+                
             else:
-                raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}")
+                raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}, line {node.lineno}")
             asign_func_arg_commands.append(
                 Command(AOE2FUNC.up_modify_goal, [
-                    Variable({'id':func_name + '.' + func_def_node.args.args[i].arg}), #!this is bad, somehow i need to pull it the same way the memory does it, or the same way the scope walker does it
+                    Variable({'id':func_name + "." + func_def_node.args.args[i].arg}), #!this is bad, somehow i need to pull it the same way the memory does it, or the same way the scope walker does it
                     mathOp.eql, 
                     right_side,
                 ], node)
@@ -372,7 +382,6 @@ class CompileTransformer(compilerTransformer):
             ]
         )
         return func_call_module
-        
 
     def visit_While(self, node, parent, in_field, in_node):
         """
@@ -408,7 +417,7 @@ class CompileTransformer(compilerTransformer):
         same as if, only remove the one jump that skips the conditional
         """
         if type(node.iter) is not ast.Call or node.iter.func.id != "range":
-            raise Exception(f"for loops only support range, not {node.iter}")
+            raise Exception(f"for loops only support range, not {node.iter}, line {node.lineno}")
         self.generic_visit(node)
         if len(node.iter.args) == 1:
             start, stop, step = (
@@ -487,7 +496,7 @@ class CompileTransformer(compilerTransformer):
 
         skip = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [new_jump(JumpType.last_rule_after_node)],
+            [new_jump(JumpType.jump_to_else if node.orelse != [] else JumpType.last_rule_after_node)],
             node_copy_with_short_offset(node, 2),
             comment="IF skip " + str(node.lineno),
         )
@@ -542,7 +551,7 @@ class CompileTransformer(compilerTransformer):
             )
         else:
             raise Exception(
-                f"visit_compare Error! {type(node.left)=} and {type(node.comparators[0])=}"
+                f"visit_compare Error! {type(node.left)=} and {type(node.comparators[0])=}, line {node.lineno}"
             )
         return compare_comand
 
@@ -622,7 +631,7 @@ class CompileTransformer(compilerTransformer):
             ]:
                 if node.value.left.id != target.id:
                     raise Exception(
-                        f"we only have 2c not 3c {ast.dump(node.value)}, and {node.value.left}!={target}"
+                        f"we only have 2c not 3c {ast.dump(node.value)}, and {node.value.left}!={target} line {node.lineno}"
                     )
                 assign_command = Command(
                     modify_function,
@@ -694,6 +703,8 @@ class NumberDefrulesTransformer(compilerTransformer):
         result = super().p_visit(node, tree_name, vv)
         return result, self.defrule_counter-1
 
+    #def visit_body
+
     def visit_If(self, node):
         node.first_defrule = self.defrule_counter
         self.generic_visit(node)
@@ -751,6 +762,12 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
                     subnode.set_arg(i, ast.Constant(self.rule_count))
         return node
 
+    def get_first_defrule_num(self, body_list):
+        for node in ast.walk(ast.Module(body=body_list)):
+            if hasattr(node, "defrule_num"):
+                return node.defrule_num
+        raise Exception(f"no defrule_num found in body_list line {body_list[0].lineno}")
+
     def calculate_jump(self, command, node):
         for i, jump in enumerate(command.args):
             if type(jump) is not JumpType:
@@ -780,12 +797,20 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
             elif jump is JumpType.jump_back_to_after_call:
                 command.set_arg(i, ast.Constant(15900))
 
+            elif jump is JumpType.jump_to_else:
+                if type(node) is not ast.If:
+                    raise Exception(f"jump_to_else must only be in if statments, not {type(node)}")
+                command.set_arg(i, ast.Constant(self.get_first_defrule_num(node.orelse)))
             else:
                 command.set_arg(i, ast.Constant(-1))
-                logger.error(f"{jump} not implemented yet")
+                raise Exception(f"{jump} not implemented yet")
     
     def replace_jump(self, node):
-        for subnode in node.body:
+        subnode_lists = [node.body]
+        if hasattr(node, "orelse"):
+            subnode_lists.append(node.orelse)
+
+        for subnode in chain(*subnode_lists):
             if isinstance(subnode, ast.Expr):
                 subnode = subnode.value #todo:check this doesnt break anything by having defrules stacked in expr
             if isinstance(subnode, DefRule):
@@ -844,7 +869,8 @@ class ScopeAllVariables(compilerTransformer):
 
     def visit_Variable(self, node):
         self.generic_visit(node)
-        node.id = self.current_function + "." + node.id
+        if node.id not in reserved_function_names:
+            node.id = self.current_function + "." + node.id
         return node
 
 
@@ -873,6 +899,8 @@ class DisableSelfChecker(compilerTransformer):
                         # logger.debug(f"Found 'disable_self' in If body at line {stmt.lineno}")
             if not found:
                 new_body.append(stmt)
+        if found and node.orelse != []:
+            raise Exception(f"'disable_self' is not allowed in if statments with else clauses {node.lineno}")
         node.body = new_body
         self.generic_visit(node)
         return node
