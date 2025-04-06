@@ -690,14 +690,19 @@ class UniqueParamGenerator:
         return self.get_ObjectId() | self.get_TechId()
 
     def get_TechId(self):
-        return dict(
-            [
-                (tech.ai_name, tech.id)
-                if tech.ai_name
-                else (tech.name.replace(" ", "_"), tech.id)
-                for tech in self.tech_dict.values()
-            ]
-        )
+        tech_dict = {
+            'my_unique_unit_upgrade': '920',
+            'my_unique_research': '924',
+            'my_second_unique_research': '923',
+        }
+        for tech in self.tech_dict.values():
+            if tech.ai_name:
+                if tech.ai_name[:3] == "ri-":
+                    tech.ai_name = tech.ai_name[3:]
+                tech_dict[tech.ai_name] = tech.id
+            else:
+                tech_dict[tech.name.replace(" ", "_").replace("/", "_")] = tech.id
+        return tech_dict
 
     def get_SnId(self):
         return dict([(sn.name, sn.id) for sn in self.strategic_number_dict.values()])

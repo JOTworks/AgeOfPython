@@ -67,6 +67,8 @@ class DefRulePrintVisitor(ast.NodeVisitor):
     def evaluate_enum(self, expr, next_expr, human_readable = True):
         value_str = ''
         if type(expr) in [mathOp, compareOp]: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
+            if next_expr is None:
+                raise Exception(f"next_expr is None, but it should be a Variable or Constant or SnI, line {expr.lineno}")
             if type(next_expr) is Variable:
                 prefix = typeOp.goal
                 value_str = str(int(expr.val) + 12)
@@ -91,7 +93,8 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         
         for itr, expr in enumerate(node.args):
             if type(expr) in list(self.enum_classes.values()):
-                expr_str = self.evaluate_enum(expr, node.args[itr+1])
+                next_expr = node.args[itr+1] if itr+1 < len(node.args) else None
+                expr_str = self.evaluate_enum(expr, next_expr)
             
             elif isinstance(expr, Variable):
                 #expr_str = str(expr.memory_location) #todo: add option back in to make it not human readable

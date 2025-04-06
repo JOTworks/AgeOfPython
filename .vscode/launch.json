@@ -21,6 +21,7 @@
         //"-f","compare_boolOp_binOp", "-v", //"compare_boolOp_binOp.py${cwd}"
         "-f","all_code", "-vv",
         //"-f","TuskenRail", "-v", "-t",
+        //"-f","QuickElectrum", "-v", "-t"
       ]
     }
   ]

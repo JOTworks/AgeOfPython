@@ -40,6 +40,8 @@ def ast_to_aoe(item):
     }
     out_item = ast_to_aoe_dict.get(item, None)
     if out_item is None:
+        out_item = ast_to_aoe_dict.get(item.__class__, None)
+    if out_item is None:
         raise NotImplementedError(f"ast_to_aoe not implemented for {item}")
     return out_item
 

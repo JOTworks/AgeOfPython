@@ -906,7 +906,8 @@ class ItemId(Strenum):
 class LanguageId:
     pass #unImplemented
 class LineId(Strenum):
-    stone_wall_line = -399
+    my_unique_unit_line = -224 #todo: dont hard code this
+    stone_wall_line = -399 
     watch_tower_line = -398
     archer_line = -299
     cavalry_archer_line = -298
@@ -2240,6 +2241,9 @@ class SubGameType(Strenum):
 class TauntId:
     pass #int
 class TechId(Strenum):
+    my_unique_unit_upgrade = 920
+    my_unique_research = 924
+    my_second_unique_research = 923
     ri_crossbow = 100
     ri_elite_skirmisher = 98
     ri_arbalest = 237
