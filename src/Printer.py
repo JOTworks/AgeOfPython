@@ -59,7 +59,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
     def visit_aoeOp(self, node):
         # ADD (op THEN commands THEN )
         self.final_string += (
-            red("(") + red(node.op.__doc__) + red("\n")
+            red("(") + red(node.op.__doc__.lower()) + red("\n")
         )  # todo: check if __doc__ can cause errors.
         self.generic_visit(node)
         self.final_string += red(")")
