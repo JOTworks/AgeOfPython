@@ -2,7 +2,7 @@ import ast
 import inspect
 from itertools import chain
 from scraper import *
-from scraper import AOE2FUNC
+from scraper import AOE2FUNC, Integer
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
 from Memory import Memory
@@ -252,9 +252,7 @@ class AlocateAllMemory(compilerTransformer):
                     f"multiple targets is not suported on line {node.lineno}"
                 )
             if location := self.memory.get(node.targets[0].id):
-                raise Exception(
-                    f"{node.targets[0].id} is already in memory! dont try to re Construct it, line {node.lineno}"
-                )
+                logger.warning(f"{node.targets[0].id} is already in memory! {location} dont try to re Construct it, line {node.lineno}")
             else:
                 var_type = node.value.func.id
                 self.memory.malloc(node.targets[0].id, var_type)
@@ -270,7 +268,7 @@ class AlocateAllMemory(compilerTransformer):
 
     def visit_Variable(self, node):
         if not (location := self.memory.get(node.id)):
-            self.memory.malloc(node.id, int)
+            self.memory.malloc(node.id, Integer)
             location = self.memory.get(node.id)
             
         node.memory_location = location
@@ -664,6 +662,10 @@ class CompileTransformer(compilerTransformer):
                 node,
             )
         elif type(node.value) is Constructor:
+            if len(node.value.args) > 0:
+                raise Exception(
+                    f"we dont curently support constructors with args {[arg.value if hasattr(arg, 'value') else arg for arg in node.value.args]}, line {node.lineno}"
+                )
             return node
         else:
             # todo: allow var[0] instead of just var.x (uses ast.Subscript)

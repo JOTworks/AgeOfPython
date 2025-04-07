@@ -3,12 +3,6 @@
   "configurations": [
 
 
-
-
-
-
-
-
     {
       "name": "Python: main",
       "type": "debugpy",
@@ -21,7 +15,8 @@
         //"-f","compare_boolOp_binOp", "-v", //"compare_boolOp_binOp.py${cwd}"
         //"-f","all_code", "-vv",
         //"-f","TuskenRail", "-v", "-t",
-        "-f","QuickElectrum", "-v", "-t"
+        //"-f","QuickElectrum", "-v", "-t"
+        "-f","sheep_deer_test", "-v", "-t"
       ]
     }
   ]

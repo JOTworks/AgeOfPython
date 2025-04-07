@@ -1,8 +1,9 @@
-from scraper import AOE2OBJ, Point, State
+from scraper import AOE2OBJ, Point, State, Integer, AOE2VarType, aoe2scriptEnums
 from sortedcontainers import SortedDict
 from utils_display import print_bright, print_dim
 from pprint import pprint
 import ast
+import inspect
 
 
 class StoredMemory:
@@ -35,6 +36,9 @@ class Memory:
         self._used_memory = {"main":SortedDict({})}  # {scope: SortedDict({varname: StoreddMemory})}
         self._func_blocks = SortedDict({})  # {start: StoredFuncCall}
         self._open_memory = SortedDict({self._FIRST_REGISTER: self._LAST_REGISTER})  # {start: end}
+
+        classes = [cls for name, cls in inspect.getmembers(aoe2scriptEnums, inspect.isclass) if issubclass(cls, AOE2VarType) and cls is not AOE2VarType]
+        self.class_constructer_default_size = {cls:cls.length for cls in classes if cls.length}
 
     def print_memory(self):
         print(f"{self.free_memory_count=}")
@@ -72,8 +76,6 @@ class Memory:
             self.print_memory()
 
     def malloc(self, var_name, var_type, length=None, front=True):
-        class_constructer_default_size = {Point:2, State:4, int:1, list:8}
-            
         if var_type is AOE2OBJ.Point:
             var_type = Point
         if var_type is AOE2OBJ.State:
@@ -81,7 +83,7 @@ class Memory:
         if length and type(var_type) not in [list, AOE2OBJ.FuncCall]:
             raise Exception("Length can only be specified for list types")
         if not length:
-            length = class_constructer_default_size[var_type]
+            length = self.class_constructer_default_size[var_type]
         free_space_start = self.find_open_space(length, front)
 
         free_space_end = self._open_memory.pop(free_space_start)
@@ -129,9 +131,11 @@ class Memory:
             stored_memory = self.used_memory_in_scope()[var_name]
         except KeyError:
             return None
+        stored_memory.var_type.get_offset(abstracted_offset)
         if abstracted_offset.isdigit():
             offset = int(abstracted_offset)
-        elif abstracted_offset in ["x", "LocalIndex"]:
+        
+        elif abstracted_offset in ["x", "LocalIndex"]: #1#! NEXT THING! fix all memeory types now that they are classes with attributes in the AOE2 Import files
             offset = 0
         elif abstracted_offset in ["y", "LocalList"]:
             offset = 1
