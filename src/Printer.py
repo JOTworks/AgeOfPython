@@ -84,7 +84,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {type(next_expr)}")
             return prefix.string + expr.string
         
-        if type(expr) in [ObjectData, SearchSource]: #parameters that dont seem to have defconts internaly in AOE2
+        if type(expr) in [ObjectData, SearchSource, SearchOrder]: #parameters that dont seem to have defconts internaly in AOE2
             return str(expr.value)
 
         if type(expr) is SN:
