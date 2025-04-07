@@ -83,7 +83,9 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             else:
                 raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {type(next_expr)}")
             return prefix.string + expr.string
-        
+        if type(expr) is SN:
+            return 'sn-' + expr.string.replace("_", "-")
+
         return expr.string.replace("_", "-")
     
     def add_def_consts(self):
