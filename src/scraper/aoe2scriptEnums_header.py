@@ -17,15 +17,11 @@ class Strenum(Enum):
 
 
 class AOE2VarType():
-    params_to_offet = {
-        'LocalIndex':0,
-        'LocalList':1,
-        'RemoteIndex':2,
-        'RemoteList':3,
-    }
     @classmethod
     def get_offset(cls, abstracted_offset):
-        return cls.params_to_offet.get(abstracted_offset, None)
+        if abstracted_offset is None:
+            return 0
+        return cls.params_to_offet.get(abstracted_offset)
 
 class State(AOE2VarType):
     params_to_offet = {

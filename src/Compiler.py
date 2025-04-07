@@ -41,6 +41,8 @@ class AstToCustomNodeTransformer(compilerTransformer):
 
     def make_variable(self, node, offset_index, id_n):
         is_variable = False
+        if not(offset_index is None or type(offset_index) is str):
+            raise Exception(f"offset_index needs to be a str, not {type(offset_index)}, line {node.lineno}")
         if (
             id_n not in get_enum_classes()
             and id_n not in self.object_names
@@ -61,6 +63,7 @@ class AstToCustomNodeTransformer(compilerTransformer):
         return node
 
     def visit_Subscript(self, node):
+        raise Exception("subscript not supported, need to figure out how to pass int to make_variable() as offset_index")
         return self.make_variable(node, node.slice.value, node.value.id)
 
     def visit_Attribute(self, node):
@@ -71,7 +74,7 @@ class AstToCustomNodeTransformer(compilerTransformer):
 
     def visit_Name(self, node):
         self.generic_visit(node)
-        return self.make_variable(node, 0, node.id)
+        return self.make_variable(node, None, node.id)
 
     def visit_UnaryOp(self, node): #todo: move this to reduceTransformer class somehow. needs to happen before command generation in this class however
         self.generic_visit(node)
@@ -244,7 +247,6 @@ class AlocateAllMemory(compilerTransformer):
         self.memory = memory
 
     def visit_Assign(self, node):
-        self.generic_visit(node)
         assert isinstance(self.memory, Memory)
         if type(node.value) is Constructor:
             if len(node.targets) != 1:
@@ -256,6 +258,7 @@ class AlocateAllMemory(compilerTransformer):
             else:
                 var_type = node.value.func.id
                 self.memory.malloc(node.targets[0].id, var_type)
+        self.generic_visit(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
         return node
 
     def visit_FunctionDef(self, node):
@@ -267,9 +270,10 @@ class AlocateAllMemory(compilerTransformer):
         return node
 
     def visit_Variable(self, node):
-        if not (location := self.memory.get(node.id)):
+        if not (location := self.memory.get(node.id,node.offset_index)):
+            logger.error(f"we are doing strict typing. you need to initialize {node.id}")
             self.memory.malloc(node.id, Integer)
-            location = self.memory.get(node.id)
+            location = self.memory.get(node.id, node.offset_index)
             
         node.memory_location = location
         node.memory_name = self.memory.get_name_at_location(location)
@@ -323,7 +327,7 @@ class CompileTransformer(compilerTransformer):
         
         func_depth_incromenter = DefRule(
             Command(AOE2FUNC.true, [], node),
-            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT}), mathOp.add, self.const_constructor(1)], node)], #todo: make a variable constructer 
+            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), mathOp.add, self.const_constructor(1)], node)], #todo: make a variable constructer 
             node,
             comment="FUNC_dept_inc " + str(node.lineno),
         )
@@ -331,14 +335,14 @@ class CompileTransformer(compilerTransformer):
         set_return_rule_pointer = DefRule(
             Command(AOE2FUNC.true, [], node),
             [Command(AOE2FUNC.up_set_indirect_goal, 
-                     [Variable({'id':FUNC_DEPTH_COUNT}), JumpType.set_return_pointer], node)], #! make sure this dosnt dercomnavigate the momory alocattor.
+                     [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), JumpType.set_return_pointer], node)], #! make sure this dosnt dercomnavigate the momory alocattor.
             node,
             comment="FUNC_ret_set " + str(node.lineno),
         )
 
         func_depth_decromenter = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT}), mathOp.sub, self.const_constructor(1)], None)], #todo: make a variable constructer 
+            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), mathOp.sub, self.const_constructor(1)], None)], #todo: make a variable constructer 
             None, #todo: find a way to make this node and not have 3 lines of green comments in printer
             comment="FUNC_depth_dec " + str(node.lineno),
         )
@@ -354,7 +358,7 @@ class CompileTransformer(compilerTransformer):
                 raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}, line {node.lineno}")
             asign_func_arg_commands.append(
                 Command(AOE2FUNC.up_modify_goal, [
-                    Variable({'id':func_name + "." + func_def_node.args.args[i].arg}), #!this is bad, somehow i need to pull it the same way the memory does it, or the same way the scope walker does it
+                    Variable({'id':func_name + "." + func_def_node.args.args[i].arg,'offset_index':None}), #!this is bad, somehow i need to pull it the same way the memory does it, or the same way the scope walker does it
                     mathOp.eql, 
                     right_side,
                 ], node)
@@ -677,7 +681,7 @@ class CompileTransformer(compilerTransformer):
 
         set_jump_back = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [Command(AOE2FUNC.up_get_indirect_goal, [Variable({'id':FUNC_DEPTH_COUNT}), ast.Constant(15900)], None)],
+            [Command(AOE2FUNC.up_get_indirect_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), ast.Constant(15900)], None)],
                 None, #todo: find a way to make this node and not have 3 lines of green comments in printer
                 comment="FUNC_set_jump " + str(node.lineno),
         ) 
@@ -969,7 +973,7 @@ class Compiler:
                 DefRule(
                     Command(AOE2FUNC.true, [], None),
                     [
-                        Command(AOE2FUNC.set_goal, [Variable({'id':FUNC_DEPTH_COUNT}), ast.Constant(15900)], None), #todo: get rid of magic number 15900, and use actualy memory allocation
+                        Command(AOE2FUNC.set_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), ast.Constant(15900)], None), #todo: get rid of magic number 15900, and use actualy memory allocation
                         Command(AOE2FUNC.disable_self, [], None),
                     ], None)]
             +

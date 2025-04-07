@@ -121,30 +121,19 @@ class Memory:
     def get_name_at_location(self, reg_number):
         for scope, memory_dict in self._used_memory.items():
             for start, stored_memory in memory_dict.items():
-                if stored_memory.start >= reg_number >= stored_memory.start + stored_memory.length - 1:
+                if stored_memory.start <= reg_number <= stored_memory.start + stored_memory.length - 1:
                     name = str(stored_memory.name) + "-" + str(reg_number)
                     return name
         raise Exception(f"could not find {reg_number} in {self._used_memory}")
 
-    def get(self, var_name, abstracted_offset="0"):
+    def get(self, var_name, abstracted_offset=None):
         try:
             stored_memory = self.used_memory_in_scope()[var_name]
         except KeyError:
             return None
-        stored_memory.var_type.get_offset(abstracted_offset)
-        if abstracted_offset.isdigit():
-            offset = int(abstracted_offset)
         
-        elif abstracted_offset in ["x", "LocalIndex"]: #1#! NEXT THING! fix all memeory types now that they are classes with attributes in the AOE2 Import files
-            offset = 0
-        elif abstracted_offset in ["y", "LocalList"]:
-            offset = 1
-        elif abstracted_offset in ["z", "RemoteIndex"]:
-            offset = 2
-        elif abstracted_offset in ["t", "RemoteList"]:
-            offset = 3
-        else:
-            raise Exception(f"Invalid offset {abstracted_offset}")
+        offset = stored_memory.var_type.get_offset(abstracted_offset)
+
         if offset >= stored_memory.length:
             raise Exception(f"Out of index error {offset}>{var_name} len")
         return stored_memory.start + offset

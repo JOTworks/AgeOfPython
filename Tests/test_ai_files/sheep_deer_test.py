@@ -9,7 +9,7 @@ from scraper.aoe2scriptFunctions import (
 )
 from scraper.aoe2scriptEnums import (
     compareOp,BuildingId,Resource,ClassId,LineId,SearchOrder,SearchSource,ObjectData,Point,State,Age,
-    PositionType,DUCAction,PlayerNumber,Formation,ActionId,AttackStance,TimerState,
+    PositionType,DUCAction,PlayerNumber,Formation,ActionId,AttackStance,TimerState,Constant,Integer,
 )
 #=================SHEEP CLAIM AND DEER LURE==============================================================#
 #
@@ -25,6 +25,8 @@ from scraper.aoe2scriptEnums import (
 #todo: make variable delcarations work, variable types like state, point, etc
 #make it so all memeory types in my allocator are classes that inherit from same classs.
 #then we could also allow them to have specific attributes and even each have their own call num
+#todo: make initialization with numbers work
+#todo: make Constant initialization work so we dont need to use goals for all of those! (just make a defrule I think)
 
 #Paramters
 SheepSearchDistance = 30
