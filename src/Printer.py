@@ -93,7 +93,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             (defconst search-local 1)
             (defconst search-remote 2)
                            """
-        def_const_string = '\n'.join([f"(defconst {def_const})" for def_const in self.def_const_list])
+        def_const_string += '\n'.join([f"(defconst {def_const})" for def_const in self.def_const_list])
         self.final_string = '\n' + def_const_string + '\n' + self.final_string + '\n'
 
     def visit_Command(self, node):  # adds (command arg1 arg2)
