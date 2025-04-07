@@ -89,6 +89,10 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         return expr.string.replace("_", "-")
     
     def add_def_consts(self):
+        def_const_string = """
+            (defconst search-local 1)
+            (defconst search-remote 2)
+                           """
         def_const_string = '\n'.join([f"(defconst {def_const})" for def_const in self.def_const_list])
         self.final_string = '\n' + def_const_string + '\n' + self.final_string + '\n'
 
