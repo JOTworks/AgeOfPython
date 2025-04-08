@@ -31,17 +31,18 @@ from scraper.aoe2scriptEnums import (
 #Paramters
 SheepSearchDistance = 30
 TimeBeforeDeerLuring = 5
-TimeToStopDeerLuring = 100
+TimeToStopDeerLuring = 50000
 DistanceToShootDeer = 5
+DistanceToLureDeer = 50
 VillsToShootDeer = 2
 
 #timers #todo: make timers alocate memory and pass into functions
 t_sheep_claim = 1
 t_deer_lure = 2
 #Variables
-deer_hp = 0
-deer_id = 0
-deer_lure_stage = 0
+deer_hp = -1
+deer_id = -1
+deer_lure_stage = -1
 p_home = Point()
 p_home_100 = Point()
 sheep_point = Point()
@@ -111,19 +112,18 @@ if deer_lure_stage == -1 and game_time() > SN.home_exploration_time:
 if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
     #finding deer
     up_chat_data_to_all("deer_lure_stage:%d", deer_lure_stage)
-    up_chat_data_to_all("next to deer X:%d", point_next_to_deer.x)
-    up_chat_data_to_all("next to deer Y:%d", point_next_to_deer.y)
     
     if deer_lure_stage != 100: #allow for exploration first
         #search for deer around the town center and pick the closest one
         up_full_reset_search()
         up_set_target_point(p_home)
-        up_filter_distance(-1, 17)
+        up_filter_distance(-1, DistanceToLureDeer)
         SN.focus_player_number = 0
-        up_find_remote(Resource.deer_hunting, 40) #search 40 times for deer
+        up_find_remote(909, 40) #find 40 deer Max
         up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
         up_remove_objects(SearchSource.search_remote, ObjectData.object_data_index, compareOp.greater_than, 0) #only closest
         up_get_search_state(search_state) #check how many deer were found
+        up_chat_data_to_all("deer found:%d", search_state.RemoteIndex)
         
         if deer_lure_stage == -1 and search_state.RemoteIndex >= 1 and up_set_target_object(SearchSource.search_remote, 0):
             up_get_object_data(ObjectData.object_data_id, deer_id) #get the id of the deer
@@ -143,7 +143,7 @@ if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
             up_full_reset_search()
             up_find_local(LineId.scout_cavalry_line, 1)
             SN.target_point_adjustment = 6 #set to enable precise targetting
-            up_bound_precise_point(point_next_to_deer, 1, 50) #Option unimplmented
+            #up_bound_precise_point(point_next_to_deer, 1, 50) #Option unimplmented
             up_target_point(point_next_to_deer, DUCAction.action_move, Formation._1, AttackStance.stance_no_attack)
             SN.target_point_adjustment = 0 #reset
 
@@ -152,7 +152,7 @@ if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
     up_set_target_point(p_home)
     up_filter_distance(-1, DistanceToShootDeer)
     SN.focus_player_number = 0
-    up_find_remote(Resource.deer_hunting, 5) #find up to 5 deer
+    up_find_remote(909, 5) #find up to 5 deer
     up_remove_objects(SearchSource.search_remote, ObjectData.object_data_carry, compareOp.less_than, 120) #only live deer
     up_get_search_state(search_state) #see how many were found
 
@@ -169,7 +169,7 @@ if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
         up_remove_objects(SearchSource.search_local, ObjectData.object_data_action, compareOp.equal, ActionId.actionid_build)
         up_remove_objects(SearchSource.search_local, ObjectData.object_data_dropsite, compareOp.equal, BuildingId.lumber_camp)
         up_remove_objects(SearchSource.search_local, ObjectData.object_data_index, compareOp.greater_than, VillsToShootDeer)
-        up_find_remote(Resource.deer_hunting, 10)
+        up_find_remote(909, 10) #deer
         up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)  
         up_remove_objects(SearchSource.search_remote, ObjectData.object_data_index, compareOp.greater_than, 0) #only closest
         up_target_objects(0, DUCAction.action_default, Formation._1, AttackStance._1)
