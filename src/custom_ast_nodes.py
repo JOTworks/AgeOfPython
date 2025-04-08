@@ -117,43 +117,47 @@ class Command(ast.Call):
                 self._args[itr] = self.validate_arg(arg)
 
     def add_typeOp_args(self, args, name):
-        command_args = args
-        if name in list(self.function_list_typeOp.keys()):
-            function_arg_types = self.function_list_typeOp[name]
-            typeOp_indexs = [index for index, element in enumerate(function_arg_types) if element == "typeOp"]
-            for index in typeOp_indexs:
-                if type(command_args[index]) is Variable:
-                    type_op = typeOp.goal
-                elif type(command_args[index]) is ast.Constant:
-                    type_op = typeOp.constant
-                elif type(command_args[index]) is EnumNode:
-                    type_op = typeOp.constant
-                elif type(command_args[index]) is JumpType:
-                    if command_args[index] in [
-                        JumpType.jump_back_to_after_call,
-                    ]:
+        try:
+            command_args = args
+            if name in list(self.function_list_typeOp.keys()):
+                function_arg_types = self.function_list_typeOp[name]
+                typeOp_indexs = [index for index, element in enumerate(function_arg_types) if element == "typeOp"]
+                for index in typeOp_indexs:
+                    if type(command_args[index]) is Variable:
                         type_op = typeOp.goal
-                    elif command_args[index] in [
-                        JumpType.last_rule_in_file,
-                        JumpType.last_rule_in_node,
-                        JumpType.test_jump_to_beginning,
-                        JumpType.jump_over_test,
-                        JumpType.test_jump_to_beginning_after_init,
-                        JumpType.jump_over_skip,
-                        JumpType.last_rule_after_node,
-                        JumpType.jump_to_func,
-                        JumpType.set_return_pointer,
-                        JumpType.jump_to_else,
-                    ]:
+                    elif type(command_args[index]) is ast.Constant:
                         type_op = typeOp.constant
+                    elif type(command_args[index]) is EnumNode:
+                        type_op = typeOp.constant
+                    elif type(command_args[index]) is JumpType:
+                        if command_args[index] in [
+                            JumpType.jump_back_to_after_call,
+                        ]:
+                            type_op = typeOp.goal
+                        elif command_args[index] in [
+                            JumpType.last_rule_in_file,
+                            JumpType.last_rule_in_node,
+                            JumpType.test_jump_to_beginning,
+                            JumpType.jump_over_test,
+                            JumpType.test_jump_to_beginning_after_init,
+                            JumpType.jump_over_skip,
+                            JumpType.last_rule_after_node,
+                            JumpType.jump_to_func,
+                            JumpType.set_return_pointer,
+                            JumpType.jump_to_else,
+                        ]:
+                            type_op = typeOp.constant
+                        else:
+                            logger.error(f"assuming const, not goal: {command_args[index]}")
+                            type_op = typeOp.constant
                     else:
-                        logger.error(f"assuming const, not goal: {command_args[index]}")
-                        type_op = typeOp.constant
-                else:
-                    #todo: make SNs get tracked here for s:
-                    raise Exception(f"typeOp expects a variable or constant at index {index} not {type(command_args[index])} for {self.func.id} at {self.lineno}")
-                command_args = command_args[:index] + [type_op] + command_args[index:]
-        return command_args
+                        #todo: make SNs get tracked here for s:
+                        raise Exception(f"typeOp expects a variable or constant at index {index} not {type(command_args[index])} for {self.func.id} at {self.lineno}")
+                    command_args = command_args[:index] + [type_op] + command_args[index:]
+            return command_args
+        except IndexError as e:
+            print(name, args, function_arg_types, self.lineno)
+            raise e
 
     @property
     def args(self):
