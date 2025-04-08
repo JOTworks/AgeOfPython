@@ -102,6 +102,7 @@ class ReduceTransformer(compilerTransformer):
     #todo: put back in BoolOp And Lists if they are alone in a conditional, so the user can decide when to short-curcit
     https://discord.com/channels/485565215161843714/485566694912163861/1306940924944715817
     """
+    #todo: make EscrowGoalId optional. if they have one less arg, place 0 in as the escro position arg
     def recursively_nested_comare_nodes(self, node):
         # create a list of compare nodes
         compare_node_list = []
@@ -876,7 +877,7 @@ class ScopeAllVariables(compilerTransformer):
     def visit_Variable(self, node):
         self.generic_visit(node)
         if node.id not in reserved_function_names:
-            node.id = self.current_function + "." + node.id
+            node.id = self.current_function + "." + node.id #make this a function that determins how variable names are made to be used elsewere
         return node
 
 

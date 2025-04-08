@@ -246,8 +246,9 @@ def set_gatherer_percentages(wood, food, gold, stone):
 
 def try_research(tech_id: TechId):
     if up_can_research(0, tech_id):
-        research(tech_id)
+        up_research(0, tech_id)
 
+#region Disable Self First Run Setup
 if True:
     SN.cap_civilian_builders = 200
     SN.percent_civilian_builders = 100
@@ -278,6 +279,8 @@ if True:
     SN.number_explore_groups = 1
     chat_to_all("glhf")
     disable_self()
+
+#endregion
 
 
 try_research(TechId.feudal_age)
