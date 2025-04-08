@@ -325,12 +325,12 @@ if (True): #set strategic_number starting
 if can_train(UnitId.villager):
   train(UnitId.villager)
 
-if can_build(BuildingId.house) and housing_headroom('<',3):
+if can_build(BuildingId.house) and housing_headroom() > 3:
   build(BuildingId.house)
 
 if (can_research(TechId.ri_loom) 
-    and building_type_count_total(BuildingId.house,'>',1) 
-    and (food_amount('<',50) or (housing_headroom('<',1) and not can_build(BuildingId.house)))
+    and building_type_count_total(BuildingId.house) > 1
+    and (food_amount() < 50 or (housing_headroom() < 1 and not can_build(BuildingId.house)))
    ):
   research(TechId.ri_loom)
   disable_self()
