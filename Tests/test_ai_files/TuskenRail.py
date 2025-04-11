@@ -375,7 +375,7 @@ if (True): #set strategic_number starting
 
 
 if can_build(BuildingId.house) and housing_headroom() < 3:
-  build(BuildingId.house)
+  up_build(PlacementType.place_normal, 0, BuildingId.house)
 
 if (can_research(TechId.ri_loom) 
     and building_type_count_total(BuildingId.house) > 1

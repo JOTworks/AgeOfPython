@@ -156,7 +156,7 @@ class Command(ast.Call):
                     command_args = command_args[:index] + [type_op] + command_args[index:]
             return command_args
         except IndexError as e:
-            print(name, args, function_arg_types, self.lineno)
+            print(name, args, function_arg_types,"lineno", self.lineno)
             raise e
 
     @property

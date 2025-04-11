@@ -9,25 +9,16 @@ from scraper import (
     research,
     can_train,
     train,
+    up_build,
     BuildingId,
     UnitId,
     TechId,
+    PlacementType,
+    up_target_objects,
+    Formation
 )
 
-if can_build(BuildingId.farm):
-    build(BuildingId.farm)
-else:
-    chat_to_all("Cannot build farm")
 
+up_target_objects(0)
 
-def try_research(tech_id: TechId) -> int:
-    if up_can_research(0, tech_id):
-        up_research(0, tech_id)
-        return 1
-    else:
-        chat_to_all("Cannot research")
-        return 3
-    
-    return
-
-table = try_research(TechId.ri_loom)
+up_build(BuildingId.house)

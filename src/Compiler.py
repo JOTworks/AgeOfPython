@@ -99,10 +99,42 @@ class AstToCustomTR(compilerTransformer):
             return node.operand
         return node
 
+    def add_missing_defaults(self, func_name, args, lineno=None):
+        parameter_type_defaults = {
+            EscrowGoalId.__name__: ast.Constant(0),
+            PlacementType.__name__: PlacementType.place_normal,
+            DUCAction.__name__: DUCAction.action_default,
+            Formation.__name__: Formation._1,
+            AttackStance.__name__: AttackStance._1,
+
+        }
+        parameters = inspect.signature(globals()[func_name]).parameters
+        if len(args) == len(parameters):
+            return args
+
+        if compareOp.__name__ in parameters:
+            logger.error(f"{func_name} is proably using drop compareOp syntax, line {lineno}")
+            return args
+        
+        missing_params = len(parameters) - len(args)
+        default_params_in_function = len([param for param in parameters if param in parameter_type_defaults])
+        if missing_params != default_params_in_function:
+            raise Exception(f"you must either ommit or define ALL default varaibles, line {lineno}")
+        for i, param in enumerate(parameters):
+            if param in parameter_type_defaults:
+                args = args[:i] + [parameter_type_defaults[param]] + args[i:]
+                missing_params -= 1
+            if missing_params == 0:
+                return args
+        
+        raise Exception(f"{func_name} is missing {missing_params} args, line {lineno}")
+        
+
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id in self.command_names:
-            return Command(AOE2FUNC[node.func.id], node.args, node)
+            command_args = self.add_missing_defaults(node.func.id, node.args, node.lineno)
+            return Command(AOE2FUNC[node.func.id], command_args, node)
 
         if isinstance(node.func, ast.Name) and node.func.id in self.object_names:
             return Constructor(getattr(AOE2OBJ, node.func.id), node.args, node)
