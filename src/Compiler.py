@@ -2,19 +2,20 @@ import ast
 import inspect
 from itertools import chain
 from scraper import *
-from scraper import AOE2FUNC, Integer
+from scraper import AOE2FUNC, Integer, Constant
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
 from Memory import Memory
 from copy import copy
-from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op
+from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return
 from utils_display import print_bordered
 from MyLogging import logger
 
 FUNC_DEPTH_COUNT = "func_depth_count"
+FUNC_RET_REG = 15800 #janky but up_set_indirect_goal needs an integer to store into, so either i need to sepreatly parce it out later, or start it as an integer here
 reserved_function_names = [
     'range',
-]
+] + list(get_enum_classes().keys()) + list(get_aoe2_var_types().keys())
 
 def new_jump(jump_type):
         return Command(AOE2FUNC.up_jump_direct, [jump_type], None)
@@ -31,14 +32,29 @@ class compilerTransformer(ast.NodeTransformer):
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
         return visitor(node)
+    
+    def visit_Return(self, node):
+        self.generic_visit(node)
+        if hasattr(node, 'body'):
+            for item in node.body:
+                item = self.visit(item)
+        return node
+    
+    def visit_Assign(self, node):
+        self.generic_visit(node)
+        if hasattr(node, 'body'):
+            for item in node.body:
+                item = self.visit(item)
+        return node
 
-class AstToCustomNodeTransformer(compilerTransformer):
+
+class AstToCustomTR(compilerTransformer):
     def __init__(self, command_names, object_names):
         super().__init__()
         self.command_names = command_names
         self.object_names = object_names
         self.aoe2_enums = get_enum_classes()
-
+    
     def make_variable(self, node, offset_index, id_n):
         is_variable = False
         if not(offset_index is None or type(offset_index) is str):
@@ -76,7 +92,7 @@ class AstToCustomNodeTransformer(compilerTransformer):
         self.generic_visit(node)
         return self.make_variable(node, None, node.id)
 
-    def visit_UnaryOp(self, node): #todo: move this to reduceTransformer class somehow. needs to happen before command generation in this class however
+    def visit_UnaryOp(self, node): #todo: move this to ReduceTR class somehow. needs to happen before command generation in this class however
         self.generic_visit(node)
         if isinstance(node.op, ast.USub) and type(node.operand) is ast.Constant:
             node.operand.value = -node.operand.value
@@ -93,7 +109,7 @@ class AstToCustomNodeTransformer(compilerTransformer):
         return node
 
 
-class ReduceTransformer(compilerTransformer):
+class ReduceTR(compilerTransformer):
     """
     Becasue Compare and BoolOp both short circit in python, they are build as lists (left and [right_list]) instead of recurcive (lef and right) like binOps.
     Because aoe2script only short circits on implied and, and not on any defined BoolOps, we are removing all lists in favor of recursion to simplify the compiler.
@@ -208,7 +224,7 @@ class ReduceTransformer(compilerTransformer):
         return in_op
 
 
-class GarenteeAllCommandsInDefRule(compilerTransformer):
+class WrapInDefRules(compilerTransformer):
     def __init__(self):
         super().__init__()
         self.defrule_stack = []
@@ -259,7 +275,7 @@ class AlocateAllMemory(compilerTransformer):
             else:
                 var_type = node.value.func.id
                 self.memory.malloc(node.targets[0].id, var_type)
-        self.generic_visit(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
+        node = super().visit_Return(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
         return node
 
     def visit_FunctionDef(self, node):
@@ -281,7 +297,7 @@ class AlocateAllMemory(compilerTransformer):
         return node
 
 
-class CompileTransformer(compilerTransformer):
+class CompileTR(compilerTransformer):
     # todo: make it so set_strategic_number(SN.initial_exploration_required, 0) could be replace with SN.initial_exploration_required = 0, and could have any expr in the asignment
     def __init__(self, command_names, func_def_dict):
         super().__init__()
@@ -289,6 +305,8 @@ class CompileTransformer(compilerTransformer):
         self.parent_map = {}
         self.temp_var_counter = 0
         self.func_def_dict = func_def_dict
+        self.current_func_def = None
+        self.aoe2_var_types = get_aoe2_var_types()
 
     def get_next_temp_var(self):
         self.temp_var_counter += 1
@@ -325,6 +343,7 @@ class CompileTransformer(compilerTransformer):
         if func_name in reserved_function_names:
             return node
         func_call_module = FuncModule(func_name, node.args, node)
+        
         
         func_depth_incromenter = DefRule(
             Command(AOE2FUNC.true, [], node),
@@ -612,10 +631,12 @@ class CompileTransformer(compilerTransformer):
         return test
 
     def visitAugAssign(self, node):
-        raise Exception("AugAssign should all be parced out by ReduceTransformer")
+        raise Exception("AugAssign should all be parced out by ReduceTR")
 
     def visit_Assign(self, node, parent, in_field, in_node):
-        #! todo: Make nested asignments work with binOp ect
+        #todo: Make nested asignments work with binOp ect
+        node.body = []
+        assign_command = []
         self.generic_visit(node)
         target = node.targets[0]
         if type(target) is Variable:
@@ -636,11 +657,11 @@ class CompileTransformer(compilerTransformer):
                     raise Exception(
                         f"we only have 2c not 3c {ast.dump(node.value)}, and {node.value.left}!={target} line {node.lineno}"
                     )
-                assign_command = Command(
+                assign_command.append( Command(
                     modify_function,
                     [target, ast_to_aoe(type(node.value.op)), node.value.right],
                     node,
-                )
+                ))
             else:
                 raise Exception(
                     f"only simple BinOp asignments are suported {ast.dump(node.value)}"
@@ -648,59 +669,150 @@ class CompileTransformer(compilerTransformer):
 
         elif type(node.value) is Variable:
             # todo: this will only work on ints, needs to be delt with in Memory management to exstend this command to each index of the variable
-            assign_command = Command(
+            assign_command.append( Command(
                 modify_function,
                 [target, mathOp.eql, node.value],
                 node,
-            )
+            ))
 
         elif type(node.value) is ast.Constant:
-            assign_command = Command(
+            assign_command.append( Command(
                 modify_function,
                 [target, mathOp.eql, node.value],
                 node,
-            )
+            ))
         elif type(node.value) is EnumNode:
-            assign_command = Command(
+            assign_command.append( Command(
                 modify_function,
                 [target, mathOp.eql, node.value.enum],
                 node,
-            )
+            ))
         elif type(node.value) is Constructor:
             if len(node.value.args) > 0:
                 raise Exception(
                     f"we dont curently support constructors with args {[arg.value if hasattr(arg, 'value') else arg for arg in node.value.args]}, line {node.lineno}"
                 )
             return node
+        
+        elif type(node.value) is FuncModule:
+            assign_command = self.make_set_returned_values_commands(node)
+
         else:
             # todo: allow var[0] instead of just var.x (uses ast.Subscript)
             raise Exception(f"{type(node.value)} not suported in asignments")
-        return assign_command
+        
+        node.body = [DefRule(
+            Command(AOE2FUNC.true, [], node),
+            assign_command,
+            node,
+            "FUNC_returned " + str(node.lineno),
+        )]
+        return node
 
-    def visit_FunctionDef(self, node):
-        self.generic_visit(node)
-
+    def make_jump_back_rules(self, lineno):
         set_jump_back = DefRule(
             Command(AOE2FUNC.true, [], None),
             [Command(AOE2FUNC.up_get_indirect_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), ast.Constant(15900)], None)],
                 None, #todo: find a way to make this node and not have 3 lines of green comments in printer
-                comment="FUNC_set_jump " + str(node.lineno),
+                comment="FUNC_set_jump " + str(lineno),
         ) 
         jump_back_to_after_call = DefRule(
             Command(AOE2FUNC.true, [], None),
             [new_jump(JumpType.jump_back_to_after_call)],
             None, #todo: find a way to make this node and not have 3 lines of green comments in printer
-            comment="FUNC_return " + str(node.lineno),
+            comment="FUNC_return " + str(lineno),
         )
-        node.body = (
-            node.body 
-            + [
-                set_jump_back,
-                jump_back_to_after_call,
-            ]
-        )
+        return [set_jump_back, jump_back_to_after_call]
+
+    def make_set_returned_values_commands(self, node): #todo: merge with make_set_return_pointers_commands at some point
+        #!#!make sure the fucntion happens first before the asigning
+        #instead of (set-goal 15800 1)
+        #it will be (up-set-goal-indirect return_Val_name G! 15800)]
+        return_values = get_list_from_return(node.targets)
+        funct_returns_values = get_list_from_return(self.func_def_dict[node.value.name].returns)
+        if len(return_values) != len(funct_returns_values):
+            if len(return_values) == 0:
+                return []
+            raise Exception(f"function {self.current_func_def.name} has {len(funct_returns_values)} returns, not {len(return_values)}, line {node.lineno}")
+
+        set_returned_values_commands = []
+        return_register_count = 0
+        for i, funct_ret_val in enumerate(funct_returns_values):
+            length = self.aoe2_var_types[funct_ret_val.id].length
+            for j in range(length):
+                
+                set_returned_values_commands.append(Command(
+                    AOE2FUNC.up_set_indirect_goal,
+                    [
+                        Variable({'id':return_values[i].id,'offset_index':j}),
+                        ast.Constant(FUNC_RET_REG+return_register_count),
+                    ],
+                    node,))
+                return_register_count += 1
+
+        return set_returned_values_commands
+    
+    def make_set_return_pointers_commands(self, node):
+        return_values = get_list_from_return(node.value)
+        funct_returns_values = get_list_from_return(self.current_func_def.returns)
+        if len(return_values) != len(funct_returns_values):
+            if len(return_values) == 0:
+                return []
+            raise Exception(f"function {self.current_func_def.name} has {len(funct_returns_values)} returns, not {len(return_values)}, line {node.lineno}")
+        set_return_pointers_commands = []
+        return_register_count = 0
+        for i, funct_ret_val in enumerate(funct_returns_values):
+            length = self.aoe2_var_types[funct_ret_val.id].length
+            for j in range(length):
+                if type(return_values[i]) is ast.Tuple:
+                    return_value = return_values[i].elts[j]
+                else:
+                    return_value = return_values[i]
+                    if length > 1:
+                        raise Exception(f"return value {return_values[i]} is a constant but has length {length}, line {node.lineno}")
+                    
+                if type(return_value) is ast.Constant:
+                    set_return_pointers_commands.append(Command(
+                        AOE2FUNC.set_goal,
+                        [ast.Constant(FUNC_RET_REG+return_register_count),
+                         ast.Constant(return_values[i].value),
+                        ],node,))
+                    
+                if type(return_value) is Variable: #! this will probably fail trying to return points. only returning the first part
+                    set_return_pointers_commands.append(Command(
+                        AOE2FUNC.up_set_indirect_goal,
+                        [
+                            Variable({'id':return_values[i].id,'offset_index':j}),
+                            ast.Constant(FUNC_RET_REG+return_register_count),
+                        ],
+                        node,
+                    ))   
+                return_register_count += 1
+
+        return set_return_pointers_commands
+
+    def visit_Return(self, node):
+        self.generic_visit(node)
+        jump_back_rules = self.make_jump_back_rules(node.lineno)
+            
+        set_return_pointers_commands = self.make_set_return_pointers_commands(node)
+        set_return_pointers_rule = [DefRule(
+            Command(AOE2FUNC.true, [], node),
+            set_return_pointers_commands,
+            node,
+            comment="FUNC_ret_val " + str(node.lineno),
+        )] if set_return_pointers_commands else []
+        
+        node.body = set_return_pointers_rule + jump_back_rules
+        return node
+
+    def visit_FunctionDef(self, node):
+        self.current_func_def = self.func_def_dict[node.name]
+        self.generic_visit(node)
+        jump_back_rules = self.make_jump_back_rules(node.lineno)
+        node.body = node.body + jump_back_rules
         return node    
-class NumberDefrulesTransformer(compilerTransformer):
+class NumberDefrulesTR(compilerTransformer):
     def __init__(self, func_def_dict):
         super().__init__()
         self.defrule_counter = 0
@@ -729,6 +841,20 @@ class NumberDefrulesTransformer(compilerTransformer):
     def visit_While(self, node):
         node.first_defrule = self.defrule_counter
         self.generic_visit(node)
+        node.last_defrule = self.defrule_counter - 1
+        # raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
+        return node
+    
+    def visit_Return(self, node):
+        node.first_defrule = self.defrule_counter
+        node = super().visit_Return(node)
+        node.last_defrule = self.defrule_counter - 1
+        # raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
+        return node
+    
+    def visit_Assign(self, node):
+        node.first_defrule = self.defrule_counter
+        node = super().visit_Assign(node)
         node.last_defrule = self.defrule_counter - 1
         # raise Exception(f"{node.first_defrule=},{node.last_defrule=}")
         return node
@@ -853,6 +979,14 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
         self.generic_visit(node)
         return node
 
+    def visit_Return(self, node): #overwriding defualt becuase we need to call replace_calculate_global_jump
+        self.generic_visit(node)
+        return self.replace_jump(node)
+
+    def visit_Assign(self, node): #overwriding defualt becuase we need to call replace_calculate_global_jump
+        self.generic_visit(node)
+        return self.replace_jump(node)
+    
     def visit_DefRule(self, node): #should run before any other ones to catch global jumps first, also caches naket defrules in bodys
         self.generic_visit(node)
         return self.replace_calculate_global_jump(node)
@@ -943,30 +1077,22 @@ class Compiler:
         return func_def_dict
     
     def compile(self, trees, vv=False):
-        trees.main_tree = AstToCustomNodeTransformer(
+        trees.main_tree = AstToCustomTR(
             self.command_names, self.object_names
         ).p_visit(trees.main_tree, "main_tree", vv)
-        trees.func_tree = AstToCustomNodeTransformer(
+        trees.func_tree = AstToCustomTR(
             self.command_names, self.object_names
         ).p_visit(trees.func_tree, "func_tree", vv)
         trees.main_tree = DisableSelfChecker().p_visit(trees.main_tree, "main_tree", vv)
         trees.func_tree = DisableSelfChecker().p_visit(trees.func_tree, "func_tree", vv)
-        trees.main_tree = ReduceTransformer().p_visit(trees.main_tree, "main_tree", vv)
-        trees.func_tree = ReduceTransformer().p_visit(trees.func_tree, "func_tree", vv)
+        trees.main_tree = ReduceTR().p_visit(trees.main_tree, "main_tree", vv)
+        trees.func_tree = ReduceTR().p_visit(trees.func_tree, "func_tree", vv)
         trees.func_tree = ScopeAllVariables().p_visit(trees.func_tree, "func_tree", vv)
         func_def_dict = self.get_func_def_dict(trees.func_tree)
-        trees.main_tree = CompileTransformer(self.command_names, func_def_dict).p_visit(
-            trees.main_tree, "main_tree", vv
-        )
-        trees.func_tree = CompileTransformer(self.command_names, func_def_dict).p_visit(
-            trees.func_tree, "func_tree", vv
-        )
-        trees.main_tree = GarenteeAllCommandsInDefRule().p_visit(
-            trees.main_tree, "main_tree", vv
-        )  # optimize commands together into defrules
-        trees.func_tree = GarenteeAllCommandsInDefRule().p_visit(
-            trees.func_tree, "func_tree", vv
-        )
+        trees.main_tree = CompileTR(self.command_names, func_def_dict).p_visit(trees.main_tree, "main_tree", vv)
+        trees.func_tree = CompileTR(self.command_names, func_def_dict).p_visit(trees.func_tree, "func_tree", vv)
+        trees.main_tree = WrapInDefRules().p_visit(trees.main_tree, "main_tree", vv)  # optimize commands together into defrules
+        trees.func_tree = WrapInDefRules().p_visit(trees.func_tree, "func_tree", vv)
         
         combined_tree = trees.main_tree
         combined_tree.body = (
@@ -994,12 +1120,8 @@ class Compiler:
             )]
         )
 
-        combined_tree, rule_count = NumberDefrulesTransformer(func_def_dict).p_visit(
-            combined_tree, "combined_tree", vv
-        )
-        combined_tree = ReplaceAllJumpStatementsTransformer(func_def_dict, rule_count).p_visit(
-            combined_tree, "combined_tree", vv
-        )
+        combined_tree, rule_count = NumberDefrulesTR(func_def_dict).p_visit(combined_tree, "combined_tree", vv)
+        combined_tree = ReplaceAllJumpStatementsTransformer(func_def_dict, rule_count).p_visit(combined_tree, "combined_tree", vv)
 
         memory = Memory()
 

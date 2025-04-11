@@ -59,6 +59,9 @@ class Integer(AOE2VarType):
     length = 1
     def __init__(self, value = None):
         self.value = value
-
+class Boolean(AOE2VarType):
+    length = 1
+    def __init__(self, value = None):
+        self.value = value
 class FuncCall():
     pass #added manually

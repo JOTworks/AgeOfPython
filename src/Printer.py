@@ -25,6 +25,17 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         for item in node.body:
             self.visit(item)
 
+    def visit_Return(self, node):
+        for item in node.body:
+            self.visit(item)
+        self.generic_visit(node)
+
+    def visit_Assign(self, node): #todo: when refactored i will need to print temp math first, function calls, then asigns
+        self.generic_visit(node)
+        for item in node.body: #currently this should be return value And assigns
+            self.visit(item)
+
+
     def visit_FunctionDef(self, node):
         self.final_string += yellow(f";--- DEF {node.name} ---;\n")
         self.generic_visit(node)

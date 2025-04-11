@@ -506,7 +506,7 @@ def make_function_param_list(command_name, command_storage: CommandStorage, p_di
         line += '"' + arg + '",'
     line += '),'
     return [line]
-!#!ClassId somehow just removed all ones with a * instead of removing the * and adding it to the list specificaly pray_animal_class
+#!ClassId somehow just removed all ones with a * instead of removing the * and adding it to the list specificaly pray_animal_class
 def make_function_def_lines(command_name, command_storage: CommandStorage, p_dict):
     lines = []
     args = command_storage.args

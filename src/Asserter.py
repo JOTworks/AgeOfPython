@@ -7,6 +7,8 @@ colorama.init(autoreset=True)
 #todo: no variables names are function names
 #todo: all functions have the correct parameters, unless the compareOp special grammer
 #todo: do not allow use of reserved words like range (may already be taken care of in the ast.parcer)
+#todo: check that all returns of a function match the return definition of python
+#todo: what happens if someone tries to put in a c: or g: to a function where it would normaly belong?
 class NodeCounter(ast.NodeVisitor):
     def __init__(self):
         self.counts = {}
@@ -21,6 +23,59 @@ class FunctionCallValidator(ast.NodeVisitor):
     def __init__(self, defined_functions):
         self.defined_functions = defined_functions
         self.errors = []
+
+    def visit_Return(self, node):
+        # Find the function this return belongs to
+        current_function = self.get_enclosing_function(node)
+        if current_function is None:
+            return  # Skip if not inside a function
+
+        # Get the annotated return type of the function
+        annotated_return_type = current_function.returns
+        if annotated_return_type is None:
+            return  # Skip if the function has no annotated return type
+
+        # Check the type of the return value
+        return_value = node.value
+        if return_value is not None:
+            if not self.is_type_compatible(return_value, annotated_return_type):
+                self.errors.append(
+                    f"line: {node.lineno}, Return value does not match the annotated return type '{annotated_return_type.id}' in function '{current_function.name}'"
+                )
+        else:
+            # If the return is `None`, ensure the annotated type is `None` or compatible
+            if not isinstance(annotated_return_type, ast.Name) or annotated_return_type.id != "None":
+                self.errors.append(
+                    f"line: {node.lineno}, Return value is None, but the annotated return type is '{annotated_return_type.id}' in function '{current_function.name}'"
+                )
+
+        self.generic_visit(node)
+        
+    def get_enclosing_function(self, node):
+        # Traverse up the AST to find the enclosing function definition
+        while node:
+            if isinstance(node, ast.FunctionDef):
+                return node
+            node = getattr(node, "parent", None)
+        return None
+
+    def is_type_compatible(self, return_value, annotated_return_type):
+        # Check compatibility between the return value and the annotated type
+        if isinstance(annotated_return_type, ast.Name):
+            # Handle basic types like int, str, etc.
+            if annotated_return_type.id == "int" and isinstance(return_value, ast.Constant) and isinstance(return_value.value, int):
+                return True
+            if annotated_return_type.id == "str" and isinstance(return_value, ast.Constant) and isinstance(return_value.value, str):
+                return True
+            if annotated_return_type.id == "float" and isinstance(return_value, ast.Constant) and isinstance(return_value.value, float):
+                return True
+            if annotated_return_type.id == "bool" and isinstance(return_value, ast.Constant) and isinstance(return_value.value, bool):
+                return True
+            if annotated_return_type.id == "None" and return_value is None:
+                return True
+        # Add more type compatibility checks as needed
+        return False
+
 
     def visit_Call(self, node):
         func_name = self.get_func_name(node)
@@ -128,9 +183,6 @@ class Asserter:
     def check_function_calls(self, tree):
         pass
 
-    def check(self, trees):
-        for tree in trees:
-            node_counts = self.get_node_counts(trees[tree])
-            self.check_unsuported(node_counts)
-        self.check_function_calls(trees["main_tree"])
-        self.check_function_calls(trees["function_tree"])
+    def check(self, tree):
+        self.check_unsuported(tree)
+        self.check_function_calls(tree)

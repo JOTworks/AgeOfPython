@@ -1,6 +1,7 @@
 #all_code
-from scraper.aoe2scriptFunctions import *
-from scraper.aoe2scriptFunctions import (
+from scraper import *
+from scraper import Integer as int, Boolean as bool
+from scraper import (
     can_build,
     build,
     chat_to_all,
@@ -8,9 +9,6 @@ from scraper.aoe2scriptFunctions import (
     research,
     can_train,
     train,
-)
-from scraper.aoe2scriptEnums import *
-from scraper.aoe2scriptEnums import (
     BuildingId,
     UnitId,
     TechId,
@@ -22,12 +20,14 @@ else:
     chat_to_all("Cannot build farm")
 
 
-def try_research(tech_id: TechId):
+def try_research(tech_id: TechId) -> int:
     if up_can_research(0, tech_id):
         up_research(0, tech_id)
+        return 1
+    else:
+        chat_to_all("Cannot research")
+        return 3
+    
+    return
 
-if can_train(UnitId.villager):
-    train(UnitId.villager)
-
-try_research(TechId.feudal_age)
-try_research(TechId.ri_loom)
+table = try_research(TechId.ri_loom)

@@ -4,7 +4,8 @@ import operator
 import inspect
 import enum
 import scraper.aoe2scriptEnums
-from scraper.aoe2scriptFunctions import function_list
+from scraper.aoe2scriptFunctions import function_list, AOE2VarType
+from MyLogging import logger
 
 def get_function_list_typeOp():
     function_list_typeOp = {}
@@ -107,6 +108,29 @@ def evaluate_expression(constant1, operator_str, constant2):
 
     return int(op_func(constant1, constant2))
 
+def get_aoe2_var_types():
+    aoe2_var_types = {}
+    for name, obj in inspect.getmembers(scraper.aoe2scriptEnums):
+        if inspect.isclass(obj) and issubclass(obj, AOE2VarType):
+            aoe2_var_types[name] = obj
+            if name == "Boolean":
+                aoe2_var_types["bool"] = obj
+            if name == "Integer":
+                aoe2_var_types["int"] = obj
+
+    return aoe2_var_types
+
+def get_list_from_return(value_returns):
+    if value_returns is None:
+        return_values = []
+    elif type(value_returns) is ast.Tuple:
+        return_values = value_returns.elts
+    elif type(value_returns) in [ast.List, list]:
+        return_values = value_returns
+    else: #todo: maybe make throw error if not a type that is part of the scraper import
+        return_values = [value_returns]
+        logger.error(f"Unknown return type {type(value_returns)}")
+    return return_values
 
 def get_enum_classes():
     enum_classes = {}

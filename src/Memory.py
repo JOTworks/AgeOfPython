@@ -1,4 +1,4 @@
-from scraper import AOE2OBJ, Point, State, Integer, AOE2VarType, aoe2scriptEnums
+from scraper import AOE2OBJ, Point, State, Integer, Boolean, AOE2VarType, aoe2scriptEnums
 from sortedcontainers import SortedDict
 from utils_display import print_bright, print_dim
 from pprint import pprint
@@ -30,7 +30,7 @@ class Memory:
     def __init__(self):
         self.verbose_memory = False #todo: make this an option
         self._FIRST_REGISTER = 41
-        self._LAST_REGISTER = 15899 #15900 - 15999 is for the function stack
+        self._LAST_REGISTER = 15799 #15900 - 15999 is for the function stack, 15800 - 15899 is for function returns
         # self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
         self._func_stack = ["main"]
         self._used_memory = {"main":SortedDict({})}  # {scope: SortedDict({varname: StoreddMemory})}
@@ -122,7 +122,7 @@ class Memory:
         for scope, memory_dict in self._used_memory.items():
             for start, stored_memory in memory_dict.items():
                 if stored_memory.start <= reg_number <= stored_memory.start + stored_memory.length - 1:
-                    name = str(stored_memory.name) + "-" + str(reg_number)
+                    name = str(stored_memory.name) + "-" + str(reg_number - stored_memory.start)
                     return name
         raise Exception(f"could not find {reg_number} in {self._used_memory}")
 

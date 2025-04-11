@@ -36,8 +36,10 @@ def main(file_name, arguments):
     #    f.write(ast_json)
 
     # *----ASSERTING----*#
-    # myAsserter = Asserter()
-    # myAsserter.check(trees)
+    #myAsserter = Asserter()
+    #myAsserter.check(trees.main_tree)
+    #myAsserter.check(trees.func_tree)
+    #myAsserter.check(trees.const_tree)
 
     # *----COMPILING----*#
     compiler = Compiler()

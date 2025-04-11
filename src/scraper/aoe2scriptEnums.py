@@ -3777,9 +3777,13 @@ class AOE2VarType():
 class State(AOE2VarType):
     params_to_offet = {
         'LocalIndex':0,
+        0:0,
         'LocalList':1,
+        1:1,
         'RemoteIndex':2,
+        2:2,
         'RemoteList':3,
+        3:3,
     }
     length = 4
     def __init__(self):
@@ -3791,7 +3795,9 @@ class State(AOE2VarType):
 class Point(AOE2VarType):
     params_to_offet = {
         'x':0,
+        0:0,
         'y':1,
+        1:1,
     }
     length = 2
     def __init__(self, x=None, y=None):
@@ -3799,6 +3805,9 @@ class Point(AOE2VarType):
         self.y = y
 
 class Constant(AOE2VarType):
+    params_to_offet = {
+        0:0,
+    }
     length = 1
     def __init__(self, value):
         self.value = value
@@ -3807,10 +3816,18 @@ class Constant(AOE2VarType):
         raise Exception(f"Constant do not have offsets or memory locations {abstracted_offset=}")
 
 class Integer(AOE2VarType):
-    params_to_offet = {}
+    params_to_offet = {
+        0:0,
+    }
     length = 1
     def __init__(self, value = None):
         self.value = value
-
+class Boolean(AOE2VarType):
+    params_to_offet = {
+        0:0,
+    }
+    length = 1
+    def __init__(self, value = None):
+        self.value = value
 class FuncCall():
     pass #added manually
