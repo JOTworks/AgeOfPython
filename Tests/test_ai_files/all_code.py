@@ -19,6 +19,12 @@ from scraper import (
 )
 
 
+
 up_target_objects(0)
 
-up_build(BuildingId.house)
+up_target_objects(0, _, Formation.formation_box, _)
+
+up_target_objects(0, DUCAction.action_delete, Formation._1, AttackStance._1)
+
+
+up_build(PlacementType.place_normal, 0, BuildingId.house)

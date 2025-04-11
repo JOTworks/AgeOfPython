@@ -3767,6 +3767,7 @@ class AOE2OBJ(Strenum):
     mathOp = 101
     typeOp = 102
 
+_ = "DEFAULT VALUE" # default value for all optional enums
 class AOE2VarType():
     @classmethod
     def get_offset(cls, abstracted_offset):

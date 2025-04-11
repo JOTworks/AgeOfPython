@@ -100,6 +100,8 @@ class AstToCustomTR(compilerTransformer):
         return node
 
     def add_missing_defaults(self, func_name, args, lineno=None):
+        #todo: make _ symbol reserved as a variable name
+        #todo: make _ get replaced as a default value as a shorthand.
         parameter_type_defaults = {
             EscrowGoalId.__name__: ast.Constant(0),
             PlacementType.__name__: PlacementType.place_normal,
@@ -109,25 +111,33 @@ class AstToCustomTR(compilerTransformer):
 
         }
         parameters = inspect.signature(globals()[func_name]).parameters
+        default_params_in_function = len([param for param in parameters if param in parameter_type_defaults])
+        
+        #if all args are set
         if len(args) == len(parameters):
+            if "_" not in [arg.id for arg in args if type(arg) is Variable]:
+                return args
+            
+            for i, param in enumerate(parameters):
+                if param in parameter_type_defaults and type(args[i]) is Variable:
+                    if args[i].id == "_":
+                        args[i] = parameter_type_defaults[param]
             return args
 
-        if compareOp.__name__ in parameters:
-            logger.error(f"{func_name} is proably using drop compareOp syntax, line {lineno}")
-            return args
-        
-        missing_params = len(parameters) - len(args)
-        default_params_in_function = len([param for param in parameters if param in parameter_type_defaults])
-        if missing_params != default_params_in_function:
-            raise Exception(f"you must either ommit or define ALL default varaibles, line {lineno}")
-        for i, param in enumerate(parameters):
-            if param in parameter_type_defaults:
-                args = args[:i] + [parameter_type_defaults[param]] + args[i:]
-                missing_params -= 1
-            if missing_params == 0:
+        else: #incorrect number of args
+            if compareOp.__name__ in parameters:
+                logger.error(f"{func_name} is proably using drop compareOp syntax, line {lineno}")
                 return args
-        
-        raise Exception(f"{func_name} is missing {missing_params} args, line {lineno}")
+            else:
+                if len(parameters) - len(args) != default_params_in_function:
+                    raise Exception(f"you must either ommit or define ALL default varaibles, use _ for default, line {lineno}")
+
+                for i, param in enumerate(parameters):
+                    if param in parameter_type_defaults:
+                        args = args[:i] + [parameter_type_defaults[param]] + args[i:]
+                return args
+                
+        raise Exception(f"should be imporsible to ge to here, line {lineno}")
         
 
     def visit_Call(self, node):
