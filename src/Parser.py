@@ -1,5 +1,5 @@
 import ast
-
+from scraper import Constant
 
 class Aoe2Tree:
     def __init__(
@@ -43,7 +43,7 @@ class Parser:
                         except AttributeError:
                             code = f"{node.lineno=}"
                         raise Exception(f"{code} may be using a module and that is not suported")
-                    if node.value.func.id == "Const":
+                    if node.value.func.id == Constant.__name__:
                         self.trees.const_tree.body.append(node)
                         self.trees.main_tree.body.remove(node)
 

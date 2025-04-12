@@ -3766,6 +3766,9 @@ class AOE2OBJ(Strenum):
     compareOp = 100
     mathOp = 101
     typeOp = 102
+    Constant = 800
+    Boolean = 801
+    Integer = 803
 
 _ = "DEFAULT VALUE" # default value for all optional enums
 class AOE2VarType():

@@ -15,16 +15,12 @@ from scraper import (
     TechId,
     PlacementType,
     up_target_objects,
-    Formation
+    Formation,
+    Integer,
+    Constant,
 )
 
+pushing_deer = Constant(1)
 
-
-up_target_objects(0)
-
-up_target_objects(0, _, Formation.formation_box, _)
-
-up_target_objects(0, DUCAction.action_delete, Formation._1, AttackStance._1)
-
-
-up_build(PlacementType.place_normal, 0, BuildingId.house)
+def rightous(word) -> Integer:
+    return 13

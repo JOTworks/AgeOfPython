@@ -55,6 +55,7 @@ class AstToCustomTR(compilerTransformer):
         self.object_names = object_names
         self.aoe2_enums = get_enum_classes()
     
+
     def make_variable(self, node, offset_index, id_n):
         is_variable = False
         if not(offset_index is None or type(offset_index) is str):
@@ -156,7 +157,7 @@ class ReduceTR(compilerTransformer):
     Becasue Compare and BoolOp both short circit in python, they are build as lists (left and [right_list]) instead of recurcive (lef and right) like binOps.
     Because aoe2script only short circits on implied and, and not on any defined BoolOps, we are removing all lists in favor of recursion to simplify the compiler.
     this mean the short circuting will vary based on compiler optimization step implementation
-    #!users should not count on commands in conditionals executing!
+    users should not count on commands in conditionals executing!
     #todo: put back in BoolOp And Lists if they are alone in a conditional, so the user can decide when to short-curcit
     https://discord.com/channels/485565215161843714/485566694912163861/1306940924944715817
     """
@@ -285,10 +286,6 @@ class WrapInDefRules(compilerTransformer):
 
 
 class AlocateAllMemory(compilerTransformer):
-    #! WIP
-    #! need to sort out asignments and mem alocation and Constructions.
-    #! referencing before asignment should be ok, becuase its a loop for the most part.
-    #! get functions working STAT
     """
     if there is an asignment then I know what type it is.
     - either asign to constructor
@@ -397,7 +394,7 @@ class CompileTR(compilerTransformer):
         set_return_rule_pointer = DefRule(
             Command(AOE2FUNC.true, [], node),
             [Command(AOE2FUNC.up_set_indirect_goal, 
-                     [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), JumpType.set_return_pointer], node)], #! make sure this dosnt dercomnavigate the momory alocattor.
+                     [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), JumpType.set_return_pointer], node)], 
             node,
             comment="FUNC_ret_set " + str(node.lineno),
         )
@@ -420,7 +417,7 @@ class CompileTR(compilerTransformer):
                 raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}, line {node.lineno}")
             asign_func_arg_commands.append(
                 Command(AOE2FUNC.up_modify_goal, [
-                    Variable({'id':func_name + "." + func_def_node.args.args[i].arg,'offset_index':None}), #!this is bad, somehow i need to pull it the same way the memory does it, or the same way the scope walker does it
+                    Variable({'id':func_name + "." + func_def_node.args.args[i].arg,'offset_index':None}),
                     mathOp.eql, 
                     right_side,
                 ], node)
@@ -767,7 +764,6 @@ class CompileTR(compilerTransformer):
         return [set_jump_back, jump_back_to_after_call]
 
     def make_set_returned_values_commands(self, node): #todo: merge with make_set_return_pointers_commands at some point
-        #!#!make sure the fucntion happens first before the asigning
         #instead of (set-goal 15800 1)
         #it will be (up-set-goal-indirect return_Val_name G! 15800)]
         return_values = get_list_from_return(node.targets)
@@ -1119,6 +1115,11 @@ class Compiler:
         return func_def_dict
     
     def compile(self, trees, vv=False):
+            
+        trees.const_tree = AstToCustomTR(
+            self.command_names, self.object_names
+        ).p_visit(trees.const_tree, "const_tree", vv)
+
         trees.main_tree = AstToCustomTR(
             self.command_names, self.object_names
         ).p_visit(trees.main_tree, "main_tree", vv)
@@ -1136,6 +1137,8 @@ class Compiler:
         trees.main_tree = WrapInDefRules().p_visit(trees.main_tree, "main_tree", vv)  # optimize commands together into defrules
         trees.func_tree = WrapInDefRules().p_visit(trees.func_tree, "func_tree", vv)
         
+
+
         combined_tree = trees.main_tree
         combined_tree.body = (
             [

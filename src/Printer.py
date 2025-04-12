@@ -10,13 +10,21 @@ from utils import get_enum_classes
 
 
 class DefRulePrintVisitor(ast.NodeVisitor):
-    def __init__(self, final_string, NO_FILE=False, TEST=True):
+    def __init__(self, final_string, const_tree = [], NO_FILE=False, TEST=True):
         super().__init__()
         self.final_string = final_string
         self.NO_FILE = NO_FILE
         self.enum_classes = get_enum_classes()
         self.TEST = TEST
         self.def_const_list = set()
+        try:
+            for node in const_tree.body:
+                name = node.targets[0].id
+                value = node.value.args[0].value
+                self.def_const_list.add(name + " " + str(value))
+        except IndexErrors:
+            raise Exception(f"defined Constant has no parameter, line {node.lineno}")
+        
 
     def visit_if(self, node):
         """
@@ -138,8 +146,9 @@ class DefRulePrintVisitor(ast.NodeVisitor):
 
 
 class Printer:
-    def __init__(self, tree):
-        self.tree = tree
+    def __init__(self, const_tree, combined_tree):
+        self.const_tree = const_tree
+        self.tree = combined_tree
         self.final_string = ""
         self.def_const_list = set()
 
@@ -164,7 +173,8 @@ class Printer:
         visitor.visit(self.tree)
 
     def print_all(self, TEST=False):
-        visitor = DefRulePrintVisitor(self.final_string, TEST=TEST)
+        
+        visitor = DefRulePrintVisitor(self.final_string, self.const_tree, TEST=TEST)
         visitor.visit(self.tree)
         visitor.add_def_consts()
         

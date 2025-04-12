@@ -51,7 +51,7 @@ def main(file_name, arguments):
         print(ast.dump((combined_tree), indent=4))
 
     # *----PRINTING----*#
-    myPrinter = Printer(combined_tree)
+    myPrinter = Printer(trees.const_tree, combined_tree)
     if "t" in arguments:
         myPrinter.print_all(TEST=True)  # currently makes it not go to numbers
     else:
@@ -66,7 +66,7 @@ def main(file_name, arguments):
 
     if "r" in arguments or "v" in arguments:
         print(myPrinter.final_string)
-        nonTestPrinter = Printer(combined_tree)
+        nonTestPrinter = Printer(trees.const_tree, combined_tree)
         nonTestPrinter.print_all(TEST=False)
         print(nonTestPrinter.non_readable_final_string)
 

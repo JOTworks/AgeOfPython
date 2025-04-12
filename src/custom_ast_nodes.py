@@ -58,7 +58,7 @@ class EnumNode(ast.Attribute):
         self.enum = arg
 
 
-class Variable(ast.Name):
+class Variable(ast.Name): #! give Variable a good constructor for comiler classes to use.
     """
     something I can replace ast.Name objects with when I konw it will
     need memory alocation so Memory has an esier time finding them in the walk.
