@@ -25,6 +25,8 @@ from scraper import (
     resource_found,
     can_research,
     up_send_flare,
+    current_age,
+    up_pending_objects,
     )
 from scraper import (
     SN,
@@ -282,8 +284,8 @@ if True:
 
 #endregion
 
-
-try_research(TechId.feudal_age)
+if unit_type_count_total(UnitId.villager) > 10:
+  try_research(TechId.feudal_age)
 try_research(TechId.ri_loom)
 
 if unit_type_count(UnitId.villager) == 8:
@@ -305,7 +307,7 @@ if up_find_local(BuildingId.town_center, 1):
   up_set_target_object(SearchSource.search_local, 0)   
   up_get_point(PositionType.position_object, tc_location)
   up_chat_data_to_player(PlayerNumber.my_player_number, "tc_location x %d", tc_location.x)
-  up_chat_data_to_player(PlayerNumber.my_player_number, "tc_location x %d", tc_location.y)
+  up_chat_data_to_player(PlayerNumber.my_player_number, "tc_location y %d", tc_location.y)
   disable_self()
 
 if True: # set counts
@@ -373,9 +375,23 @@ if (True): #set strategic_number starting
 
 #-----------------------------------------------------------
 
+house_point = Point()
+if True:
+  house_point.x = tc_location.x
+  house_point.y = tc_location.y
+  house_point.x += 9
+  house_point.y -= 8
+  disable_self()
 
-if can_build(BuildingId.house) and housing_headroom() < 3:
-  build(BuildingId.house)
+up_chat_data_to_player(PlayerNumber.my_player_number, "round_count_10 %d", round_count_10)
+if can_build(BuildingId.house) and housing_headroom() < 3 and up_pending_objects(ObjectId.house) < 1:
+  up_send_flare(house_point)
+  up_build_line(house_point, house_point, BuildingId.house)
+  up_chat_data_to_player(PlayerNumber.my_player_number, "house_point x %d", house_point.x)
+  up_chat_data_to_player(PlayerNumber.my_player_number, "house_point y %d", house_point.y)
+  house_point.x += 0
+  house_point.y += 2
+  
 
 if (can_research(TechId.ri_loom) 
     and building_type_count_total(BuildingId.house) > 1
@@ -384,15 +400,12 @@ if (can_research(TechId.ri_loom)
   research(TechId.ri_loom)
   disable_self()
 
-if can_research(TechId.ri_loom):
-   research(TechId.ri_loom)
-
 if can_train(UnitId.villager):
   train(UnitId.villager)
 
-#berry_uper = Point()
-#berry_lower = Point()
-#trash = 0
+berry_uper = Point()
+berry_lower = Point()
+trash = 0
 
 #if resource_found(Resource.food): #calculate berry bushes
 #  up_full_reset_search()
@@ -427,7 +440,8 @@ if can_train(UnitId.villager):
 #  berry_uper.y = berry_state[1]
 #  berry_lower.x = berry_state[2]
 #  berry_lower.y = berry_state[3]
-  
+
+#region Sheep Claim and Deer Lure 
 #=================SHEEP CLAIM AND DEER LURE==============================================================#
 #
 # Basically, this code just searches around the scout for gaia sheep and, if it finds any, tasks the 
@@ -454,8 +468,8 @@ DistanceToLureDeer = 50
 VillsToShootDeer = 4
 
 #timers #todo: make timers alocate memory and pass into functions
-t_sheep_claim = 1
-t_deer_lure = 2
+#t_sheep_claim = 1
+#t_deer_lure = 2
 #Variables
 deer_hp = -1
 deer_id = -1
@@ -467,38 +481,40 @@ deer_point = Point()
 point_next_to_deer = Point()
 search_state = State()
 
-##------------SHEEP CLAIM-------------#
-#if current_age() == Age.dark_age and unit_type_count(LineId.scout_cavalry_line) == 1:
-#    up_full_reset_search()
-#    up_find_local(LineId.scout_cavalry_line, 1) #add scout to local list
-#    up_set_target_object(SearchSource.search_local, 0) #do this to get his position
-#    up_get_point(PositionType.position_object, sheep_point) #save position in point
-#    up_set_target_point(sheep_point)
-#    up_filter_distance(-1, SheepSearchDistance) #don't look too far from the scout
-#    SN.focus_player_number = 0 #to find gaia, need to focus player 0
-#    up_find_remote(958, 1) #try to add one sheep to the remote list #todo: livestock_class is 958
-#    up_get_search_state(search_state) #to set up the check
-#
-#    searchSource = SearchSource.search_remote
-#    if search_state.RemoteIndex > 0: #found a sheep last rule
-#        up_full_reset_search()
-#        up_filter_distance(-1, SheepSearchDistance) #still uses last target point 
-#        up_find_remote(958, 5) #livestock_class
-#        up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc) #use closest sheep
-#        up_set_target_object(SearchSource.search_remote, 0) #get the position as above
-#        up_get_point(PositionType.position_object, sheep_point)
-#        up_bound_point(sheep_point, sheep_point) #be sure the point is on the map
-#        up_find_local(LineId.scout_cavalry_line, 1) #add the scout to the local list
-#        up_target_point(sheep_point, DUCAction.action_move, -1, AttackStance.stance_no_attack) #target the position of the sheep
-#        chat_to_player(PlayerNumber.my_player_number, "Move") #todo: add my_plyaer_number
-#        up_set_timer(t_sheep_claim, 4)
-#        g_sheep_claim = 1
-#
-#    if g_sheep_claim == 1 and up_timer_status(t_sheep_claim) == TimerState.timer_triggered: #reset the scout once the timer runs out (means the above rule hasn't fired, which means there are no more sheep nearby)
-#        chat_to_player(PlayerNumber.my_player_number, "Reset scout")
-#        up_set_timer(t_sheep_claim, -1)
-#        g_sheep_claim = 2
-#        up_reset_scouts() #reset everything
+#------------SHEEP CLAIM-------------#
+if current_age() == Age.dark_age and unit_type_count(LineId.scout_cavalry_line) == 1:
+    up_full_reset_search()
+    up_find_local(LineId.scout_cavalry_line, 1) #add scout to local list
+    up_set_target_object(SearchSource.search_local, 0) #do this to get his position
+    up_get_point(PositionType.position_object, sheep_point) #save position in point
+    up_set_target_point(sheep_point)
+    up_filter_distance(-1, SheepSearchDistance) #don't look too far from the scout
+    SN.focus_player_number = 0 #to find gaia, need to focus player 0
+    up_find_remote(958, 1) #try to add one sheep to the remote list #todo: livestock_class is 958
+    up_get_search_state(search_state) #to set up the check
+
+    searchSource = SearchSource.search_remote
+    if search_state.RemoteIndex > 0: #found a sheep last rule
+        up_full_reset_search()
+        up_filter_distance(-1, SheepSearchDistance) #still uses last target point 
+        up_find_remote(958, 5) #livestock_class
+        up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc) #use closest sheep
+        up_set_target_object(SearchSource.search_remote, 0) #get the position as above
+        up_get_point(PositionType.position_object, sheep_point)
+        up_bound_point(sheep_point, sheep_point) #be sure the point is on the map
+        up_find_local(LineId.scout_cavalry_line, 1) #add the scout to the local list
+        up_target_point(sheep_point, DUCAction.action_move, -1, AttackStance.stance_no_attack) #target the position of the sheep
+        #chat_to_player(PlayerNumber.my_player_number, "Move") #todo: add my_plyaer_number
+        up_set_timer(1, 4) #t_sheep_claim
+        g_sheep_claim = 1
+
+    if ( g_sheep_claim == 1 
+       and up_timer_status(1) == TimerState.timer_triggered #t_sheep_claim
+    ): #reset the scout once the timer runs out (means the above rule hasn't fired, which means there are no more sheep nearby)
+        chat_to_player(PlayerNumber.my_player_number, "Reset scout")
+        up_set_timer(1, -1) #t_sheep_claim
+        g_sheep_claim = 2
+        up_reset_scouts() #reset everything
 
 #------------DEER LURE-------------#
 if building_type_count(BuildingId.town_center) > 0:
@@ -509,18 +525,18 @@ if building_type_count(BuildingId.town_center) > 0:
     up_copy_point(p_home_100, p_home) #need to multiply by 100 for precise
     p_home_100.x = p_home_100.x * 100
     p_home_100.y = p_home_100.y * 100
-    chat_to_all("set TC location")
+    #chat_to_all("set TC location")
     disable_self()
 
 if True:
     SN.home_exploration_time = TimeToStopDeerLuring
-    chat_to_all("set home_exploration_time")
+    #chat_to_all("set home_exploration_time")
     disable_self()
 
 if deer_lure_stage == -1 and game_time() > SN.home_exploration_time:
     SN.total_number_explorers = 1
     SN.number_explore_groups = 1
-    chat_to_all("Stop Deer Luring")
+    #chat_to_all("Stop Deer Luring")
     up_reset_unit(LineId.scout_cavalry_line)
     deer_lure_stage = 100
     up_reset_scouts()
@@ -528,7 +544,7 @@ if deer_lure_stage == -1 and game_time() > SN.home_exploration_time:
 
 if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
     #finding deer
-    up_chat_data_to_all("deer_lure_stage:%d", deer_lure_stage)
+    #up_chat_data_to_all("deer_lure_stage:%d", deer_lure_stage)
     if deer_lure_stage != 100: #allow for exploration first
         #search for deer around the town center and pick the closest one
         up_full_reset_search()
@@ -539,7 +555,7 @@ if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
         up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
         up_remove_objects(SearchSource.search_remote, ObjectData.object_data_index, compareOp.greater_than, 0) #only closest
         up_get_search_state(search_state) #check how many deer were found
-        up_chat_data_to_all("deer found:%d", search_state.RemoteIndex)
+        #up_chat_data_to_all("deer found:%d", search_state.RemoteIndex)
         
         if deer_lure_stage == -1 and search_state.RemoteIndex >= 1 and up_set_target_object(SearchSource.search_remote, 0):
             up_get_object_data(ObjectData.object_data_id, deer_id) #get the id of the deer
@@ -553,7 +569,7 @@ if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
             up_get_object_data(ObjectData.object_data_precise_y, deer_point.y)
 
         if deer_hp > 0 and up_set_target_by_id(deer_id): #if the deer is still alive
-            chat_to_all("Push The Deer")
+            #chat_to_all("Push The Deer")
             up_copy_point(point_next_to_deer, deer_point) #copy deer position into a second point
             up_lerp_tiles(point_next_to_deer, p_home_100, -75) #move point one-quarter tile away from tc so the scout will be behind the deer
             up_full_reset_search()
@@ -571,13 +587,13 @@ if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
     up_find_remote(909, 5) #find up to 5 deer
     up_remove_objects(SearchSource.search_remote, ObjectData.object_data_carry, compareOp.less_than, 120) #only live deer
     up_get_search_state(search_state) #see how many were found
-
+    #up_chat_data_to_all("deer near TC: %d", search_state.RemoteIndex)
     #shoot the deer if not hunting boar and one is near the tc
     if ( search_state.RemoteIndex >= 1 #deer found near tc
-        and up_timer_status(t_deer_lure) != TimerState.timer_running #this is so the command doesnt loop continuously
+        and up_timer_status(2) != TimerState.timer_running #this is so the command doesnt loop continuously #t_deer_lure
         and (dropsite_min_distance(Resource.live_boar) == -1 or dropsite_min_distance(Resource.live_boar) >= 10) #no boar nearby
     ):
-        chat_to_all("Kill Deer")
+        #chat_to_all("Kill Deer")
         up_full_reset_search()
         up_set_target_point(p_home)
         up_find_local(ClassId.villager_class, 20)
@@ -589,7 +605,7 @@ if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
         up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)  
         up_remove_objects(SearchSource.search_remote, ObjectData.object_data_index, compareOp.greater_than, 0) #only closest
         up_target_objects(0, DUCAction.action_default, Formation._1, AttackStance._1)
-        up_set_timer(t_deer_lure, 15) #wait awhile before allowing this rule to fire again
+        up_set_timer(2, 15) #wait awhile before allowing this rule to fire again #t_deer_lure
 
         #reset the system once deer is shot
         if deer_hp < 2 and deer_lure_stage >= 0 and deer_lure_stage != 100:
@@ -600,3 +616,4 @@ if game_time() > TimeBeforeDeerLuring and game_time() < TimeToStopDeerLuring:
             up_reset_scouts()
 
 #==END======SHEEP CLAIM AND DEER LURE=======#
+#endregion
