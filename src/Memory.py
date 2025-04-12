@@ -5,7 +5,6 @@ from pprint import pprint
 import ast
 import inspect
 
-
 class StoredMemory:
     def __init__(self, name, var_type, length, start):
         self.name = name

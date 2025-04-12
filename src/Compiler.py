@@ -132,6 +132,12 @@ class AstToCustomTR(compilerTransformer):
                 
         raise Exception(f"should be imporsible to ge to here, line {lineno}")
         
+    def visit_UnaryOp(self, node):
+        self.generic_visit(node)
+        if isinstance(node.op, ast.USub) and type(node.operand) is ast.Constant:
+            node.operand.value = -node.operand.value
+            return node.operand
+        return node
 
     def visit_Call(self, node):
         self.generic_visit(node)
@@ -199,7 +205,7 @@ class ReduceTR(compilerTransformer):
             func_name = node.left.func.id.name
             function_obj = globals()[func_name]
             parameters = inspect.signature(function_obj).parameters
-            if "compareOp" in parameters:
+            if compareOp.__name__ in parameters:
                 node.left.append_args(ast_to_aoe(node.ops[0]))
                 node.left.append_args(node.comparators[0])
                 return node.left 
@@ -223,20 +229,15 @@ class ReduceTR(compilerTransformer):
         return aoeOp(node)
 
     def visit_UnaryOp(self, node):
-        self.generic_visit(node)
-        if isinstance(node.op, ast.USub) and type(node.operand) is ast.Constant:
-            node.operand.value = -node.operand.value
-            final_node = node
-        else:
-            in_op = ast.BoolOp(
-                op=node.op,
-                values=[node.operand],
-                lineno=node.lineno,
-                col_offset=node.col_offset,
-                end_lineno=node.end_lineno,
-                end_col_offset=node.end_col_offset,
-            )
-            final_node = aoeOp(in_op)
+        in_op = ast.BoolOp(
+            op=node.op,
+            values=[node.operand],
+            lineno=node.lineno,
+            col_offset=node.col_offset,
+            end_lineno=node.end_lineno,
+            end_col_offset=node.end_col_offset,
+        )
+        final_node = aoeOp(in_op)
         return final_node
 
     def visit_AugAssign(self, node):
@@ -636,9 +637,9 @@ class CompileTR(compilerTransformer):
         self.generic_visit(node)
         if not (
             len(node.values) == 2
-            or (len(node.values) == 1 and node.op.__doc__ == "Not")
+            or (len(node.values) == 1 and node.op.__doc__ == ast.Not.__doc__)
         ):
-            raise Exception(f"BoolOp must have 2 values nof {len(node.values)}")
+            raise Exception(f"BoolOp must have 2 values not {len(node.values)}")
 
         for itr, value in enumerate(node.values):
             if type(value) is ast.Constant:
@@ -1110,8 +1111,6 @@ class Compiler:
     
     def compile(self, trees, vv=False):
         
-        trees.main_tree = ReduceTR().p_visit(trees.main_tree, "main_tree", vv)
-        trees.func_tree = ReduceTR().p_visit(trees.func_tree, "func_tree", vv)
 
         trees.const_tree = AstToCustomTR(
             self.command_names, self.object_names
@@ -1125,7 +1124,10 @@ class Compiler:
         ).p_visit(trees.func_tree, "func_tree", vv)
         trees.main_tree = DisableSelfChecker().p_visit(trees.main_tree, "main_tree", vv)
         trees.func_tree = DisableSelfChecker().p_visit(trees.func_tree, "func_tree", vv)
-        
+        #is after astToCustom so it has Command objects to compare with in visit_compare()
+        trees.main_tree = ReduceTR().p_visit(trees.main_tree, "main_tree", vv)
+        trees.func_tree = ReduceTR().p_visit(trees.func_tree, "func_tree", vv)
+
         trees.func_tree = ScopeAllVariables().p_visit(trees.func_tree, "func_tree", vv)
         func_def_dict = self.get_func_def_dict(trees.func_tree)
         trees.main_tree = CompileTR(self.command_names, func_def_dict).p_visit(trees.main_tree, "main_tree", vv)

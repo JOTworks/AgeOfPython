@@ -30,7 +30,6 @@ def main(file_name, arguments):
         print(ast.dump(trees.const_tree, indent=4))
         print("_________")
 
-    # TODO: add ast tree viewer back in
     # ast_json = parse_and_convert_to_json(trees['main_tree'])
     # with open('ast.json', 'w') as f:
     #    f.write(ast_json)
