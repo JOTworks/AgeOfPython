@@ -22,5 +22,8 @@ from scraper import (
 
 pushing_deer = Constant(1)
 
-def rightous(word) -> Integer:
+def rightous(word, tabletop) -> Integer:
     return 13
+
+
+rightous(1,2)

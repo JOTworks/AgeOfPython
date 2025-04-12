@@ -93,16 +93,8 @@ class AstToCustomTR(compilerTransformer):
         self.generic_visit(node)
         return self.make_variable(node, None, node.id)
 
-    def visit_UnaryOp(self, node): #todo: move this to ReduceTR class somehow. needs to happen before command generation in this class however
-        self.generic_visit(node)
-        if isinstance(node.op, ast.USub) and type(node.operand) is ast.Constant:
-            node.operand.value = -node.operand.value
-            return node.operand
-        return node
-
     def add_missing_defaults(self, func_name, args, lineno=None):
-        #todo: make _ symbol reserved as a variable name
-        #todo: make _ get replaced as a default value as a shorthand.
+
         parameter_type_defaults = {
             EscrowGoalId.__name__: ast.Constant(0),
             PlacementType.__name__: PlacementType.place_normal,
@@ -161,7 +153,6 @@ class ReduceTR(compilerTransformer):
     #todo: put back in BoolOp And Lists if they are alone in a conditional, so the user can decide when to short-curcit
     https://discord.com/channels/485565215161843714/485566694912163861/1306940924944715817
     """
-    #todo: make EscrowGoalId optional. if they have one less arg, place 0 in as the escro position arg
     def recursively_nested_comare_nodes(self, node):
         # create a list of compare nodes
         compare_node_list = []
@@ -233,15 +224,19 @@ class ReduceTR(compilerTransformer):
 
     def visit_UnaryOp(self, node):
         self.generic_visit(node)
-        in_op = ast.BoolOp(
-            op=node.op,
-            values=[node.operand],
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            end_lineno=node.end_lineno,
-            end_col_offset=node.end_col_offset,
-        )
-        final_node = aoeOp(in_op)
+        if isinstance(node.op, ast.USub) and type(node.operand) is ast.Constant:
+            node.operand.value = -node.operand.value
+            final_node = node
+        else:
+            in_op = ast.BoolOp(
+                op=node.op,
+                values=[node.operand],
+                lineno=node.lineno,
+                col_offset=node.col_offset,
+                end_lineno=node.end_lineno,
+                end_col_offset=node.end_col_offset,
+            )
+            final_node = aoeOp(in_op)
         return final_node
 
     def visit_AugAssign(self, node):
@@ -322,7 +317,7 @@ class AlocateAllMemory(compilerTransformer):
         assert isinstance(self.memory, Memory)
         self.memory.malloc_func_call(
             node.name, node.args.args
-        )  # todo: i really dont like the args.args, figure out how that happend
+        )
         return node
 
     def visit_Variable(self, node):
@@ -337,7 +332,6 @@ class AlocateAllMemory(compilerTransformer):
 
 
 class CompileTR(compilerTransformer):
-    # todo: make it so set_strategic_number(SN.initial_exploration_required, 0) could be replace with SN.initial_exploration_required = 0, and could have any expr in the asignment
     def __init__(self, command_names, func_def_dict):
         super().__init__()
         self.command_names = command_names
@@ -385,14 +379,14 @@ class CompileTR(compilerTransformer):
         
         
         func_depth_incromenter = DefRule(
-            Command(AOE2FUNC.true, [], node),
-            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), mathOp.add, self.const_constructor(1)], node)], #todo: make a variable constructer 
+            Command(AOE2FUNC.true, [], None),
+            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), mathOp.add, self.const_constructor(1)], node)],
             node,
             comment="FUNC_dept_inc " + str(node.lineno),
         )
 
         set_return_rule_pointer = DefRule(
-            Command(AOE2FUNC.true, [], node),
+            Command(AOE2FUNC.true, [], None),
             [Command(AOE2FUNC.up_set_indirect_goal, 
                      [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), JumpType.set_return_pointer], node)], 
             node,
@@ -401,8 +395,8 @@ class CompileTR(compilerTransformer):
 
         func_depth_decromenter = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), mathOp.sub, self.const_constructor(1)], None)], #todo: make a variable constructer 
-            None, #todo: find a way to make this node and not have 3 lines of green comments in printer
+            [Command(AOE2FUNC.up_modify_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), mathOp.sub, self.const_constructor(1)], None)],
+            node,
             comment="FUNC_depth_dec " + str(node.lineno),
         )
 
@@ -423,12 +417,12 @@ class CompileTR(compilerTransformer):
                 ], node)
                 )
         asign_func_args = DefRule(
-                Command(AOE2FUNC.true, [], node),
+                Command(AOE2FUNC.true, [], None),
                 asign_func_arg_commands,
                 node,
         )
         jump_to_func = DefRule(
-            Command(AOE2FUNC.true, [], node),
+            Command(AOE2FUNC.true, [], None),
             [Command(AOE2FUNC.up_jump_direct, [JumpType.jump_to_func], node)],
             node,
         )
@@ -741,7 +735,7 @@ class CompileTR(compilerTransformer):
             raise Exception(f"{type(node.value)} not suported in asignments")
         
         node.body = [DefRule(
-            Command(AOE2FUNC.true, [], node),
+            Command(AOE2FUNC.true, [], None),
             assign_command,
             node,
             "FUNC_returned " + str(node.lineno),
@@ -752,13 +746,13 @@ class CompileTR(compilerTransformer):
         set_jump_back = DefRule(
             Command(AOE2FUNC.true, [], None),
             [Command(AOE2FUNC.up_get_indirect_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), ast.Constant(15900)], None)],
-                None, #todo: find a way to make this node and not have 3 lines of green comments in printer
+                None,
                 comment="FUNC_set_jump " + str(lineno),
         ) 
         jump_back_to_after_call = DefRule(
             Command(AOE2FUNC.true, [], None),
             [new_jump(JumpType.jump_back_to_after_call)],
-            None, #todo: find a way to make this node and not have 3 lines of green comments in printer
+            None,
             comment="FUNC_return " + str(lineno),
         )
         return [set_jump_back, jump_back_to_after_call]
@@ -816,7 +810,7 @@ class CompileTR(compilerTransformer):
                          ast.Constant(return_values[i].value),
                         ],node,))
                     
-                if type(return_value) is Variable: #! this will probably fail trying to return points. only returning the first part
+                if type(return_value) is Variable:
                     set_return_pointers_commands.append(Command(
                         AOE2FUNC.up_set_indirect_goal,
                         [
@@ -835,7 +829,7 @@ class CompileTR(compilerTransformer):
             
         set_return_pointers_commands = self.make_set_return_pointers_commands(node)
         set_return_pointers_rule = [DefRule(
-            Command(AOE2FUNC.true, [], node),
+            Command(AOE2FUNC.true, [], None),
             set_return_pointers_commands,
             node,
             comment="FUNC_ret_val " + str(node.lineno),
@@ -991,7 +985,7 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
                 self.calculate_jump(subnode, node)
         return node
 
-    def visit_FunctionDef(self, node): #! check to see if it needs to dig into Expr inside the funcDef body
+    def visit_FunctionDef(self, node):
         self.generic_visit(node)
         return self.replace_jump(node)
     
@@ -1115,7 +1109,10 @@ class Compiler:
         return func_def_dict
     
     def compile(self, trees, vv=False):
-            
+        
+        trees.main_tree = ReduceTR().p_visit(trees.main_tree, "main_tree", vv)
+        trees.func_tree = ReduceTR().p_visit(trees.func_tree, "func_tree", vv)
+
         trees.const_tree = AstToCustomTR(
             self.command_names, self.object_names
         ).p_visit(trees.const_tree, "const_tree", vv)
@@ -1128,8 +1125,7 @@ class Compiler:
         ).p_visit(trees.func_tree, "func_tree", vv)
         trees.main_tree = DisableSelfChecker().p_visit(trees.main_tree, "main_tree", vv)
         trees.func_tree = DisableSelfChecker().p_visit(trees.func_tree, "func_tree", vv)
-        trees.main_tree = ReduceTR().p_visit(trees.main_tree, "main_tree", vv)
-        trees.func_tree = ReduceTR().p_visit(trees.func_tree, "func_tree", vv)
+        
         trees.func_tree = ScopeAllVariables().p_visit(trees.func_tree, "func_tree", vv)
         func_def_dict = self.get_func_def_dict(trees.func_tree)
         trees.main_tree = CompileTR(self.command_names, func_def_dict).p_visit(trees.main_tree, "main_tree", vv)

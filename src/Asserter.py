@@ -9,6 +9,7 @@ colorama.init(autoreset=True)
 #todo: do not allow use of reserved words like range (may already be taken care of in the ast.parcer)
 #todo: check that all returns of a function match the return definition of python
 #todo: what happens if someone tries to put in a c: or g: to a function where it would normaly belong?
+#todo: make _ symbol reserved as a variable name, so it cant be used except as a placeholder variable
 class NodeCounter(ast.NodeVisitor):
     def __init__(self):
         self.counts = {}
