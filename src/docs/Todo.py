@@ -9,6 +9,8 @@
 #todo: make it actual allocation for the function return values and pointers, to get rid of magic numbers
 
 #COMPILER
+#todo: fixe compare op enums in function (nnot suing shortcut)
+#todo: fix variable compare to enum. expecialy with == even if other is disable
 #todo: asigning and using points and objects differntly from ints
 #todo: get nested binOp expressions working
 #todo: get expressions working in conditionals
