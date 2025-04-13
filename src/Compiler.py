@@ -6,7 +6,7 @@ from scraper import AOE2FUNC, Integer, Constant
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
 from Memory import Memory
-from copy import copy
+from copy import copy, deepcopy
 from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return
 from utils_display import print_bordered
 from MyLogging import logger
@@ -242,8 +242,19 @@ class ReduceTR(compilerTransformer):
 
     def visit_AugAssign(self, node):
         self.generic_visit(node)
+        if type(node.target) is not Variable:
+            raise Exception(f"AugAssign only supports Variables, not {type(node.target)}, line {node.lineno}")
+        node_target_copy = Variable({ #! copy() would be better but cannot get it to work
+            "id": node.target.id,
+            "ctx": node.target.ctx,
+            "offset_index": node.target.offset_index,
+            "lineno": node.target.lineno,
+            "end_lineno": node.target.end_lineno,
+            "col_offset": node.target.col_offset,
+            "end_col_offset": node.target.end_col_offset,
+        })
         in_op = ast.Assign(
-            targets=[node.target],
+            targets=[node_target_copy],
             value=ast.BinOp(
                 left=node.target,
                 op=node.op,
@@ -409,6 +420,8 @@ class CompileTR(compilerTransformer):
                 right_side = arg
                 
             else:
+                raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}, line {node.lineno}")
+            if "." in func_def_node.args.args[i].arg:
                 raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}, line {node.lineno}")
             asign_func_arg_commands.append(
                 Command(AOE2FUNC.up_modify_goal, [
@@ -669,6 +682,7 @@ class CompileTR(compilerTransformer):
 
     def visit_Assign(self, node, parent, in_field, in_node):
         #todo: Make nested asignments work with binOp ect
+        msg = None
         node.body = []
         assign_command = []
         self.generic_visit(node)
@@ -730,6 +744,7 @@ class CompileTR(compilerTransformer):
         
         elif type(node.value) is FuncModule:
             assign_command = self.make_set_returned_values_commands(node)
+            msg = "FUNC_returned"
 
         else:
             # todo: allow var[0] instead of just var.x (uses ast.Subscript)
@@ -739,7 +754,7 @@ class CompileTR(compilerTransformer):
             Command(AOE2FUNC.true, [], None),
             assign_command,
             node,
-            "FUNC_returned " + str(node.lineno),
+            '' if msg is None else msg + " " + str(node.lineno),
         )]
         return node
 
@@ -1044,7 +1059,10 @@ class ScopeAllVariables(compilerTransformer):
     def visit_Variable(self, node):
         self.generic_visit(node)
         if node.id not in reserved_function_names:
+            if "." in node.id:
+                raise Exception(f"already has a '.', {node.id}, line {node.lineno}")
             node.id = self.current_function + "." + node.id #make this a function that determins how variable names are made to be used elsewere
+        #!#! why is the assign doubling up the func name? 'resource_total.resource_total.total'
         return node
 
 

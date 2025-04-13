@@ -3778,7 +3778,7 @@ class AOE2VarType():
             return 0
         offset = cls.params_to_offet.get(abstracted_offset)
         if offset is None:
-            raise Exception(f"Offset {abstracted_offset} not found in {cls.params_to_offet}")
+            raise Exception(f"Offset {abstracted_offset} not found in {cls.__name__}:{cls.params_to_offet}")
         else:
             return offset
 

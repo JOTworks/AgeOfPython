@@ -67,11 +67,9 @@ class Variable(ast.Name): #! give Variable a good constructor for comiler classe
     def __init__(self, args):
         if "offset_index" in args:
             self.offset_index = args.pop("offset_index")
-        
+        else:
+            raise Exception("Variable needs an offset_index")
         super().__init__(**args)
-
-    pass
-
 
 class aoeOp(ast.BoolOp):
     """
