@@ -20,10 +20,16 @@ from scraper import (
     Constant,
 )
 
-pushing_deer = Constant(1)
-
-def rightous(word, tabletop) -> Integer:
-    return 13
-
-
-rightous(1,2)
+def resource_total(r: Resource) -> Integer:
+  up_full_reset_search()
+  up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
+  up_find_resource(r, 20)
+  up_get_search_state(search_state)
+  total = 0
+  temp = 0
+  for i in range(search_state.RemoteIndex):
+    up_set_target_object(SearchSource.search_remote, i)
+    up_get_object_data(ObjectData.object_data_carry, temp)
+    total += temp
+    up_chat_data_to_all("Total:%d", total)
+  return total

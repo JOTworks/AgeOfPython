@@ -21,7 +21,11 @@ class AOE2VarType():
     def get_offset(cls, abstracted_offset):
         if abstracted_offset is None:
             return 0
-        return cls.params_to_offet.get(abstracted_offset)
+        offset = cls.params_to_offet.get(abstracted_offset)
+        if offset is None:
+            raise Exception(f"Offset {abstracted_offset} not found in {cls.params_to_offet}")
+        else:
+            return offset
 
 class State(AOE2VarType):
     params_to_offet = {
