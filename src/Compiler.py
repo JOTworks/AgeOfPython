@@ -412,7 +412,7 @@ class CompileTR(compilerTransformer):
                 raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}, line {node.lineno}")
             asign_func_arg_commands.append(
                 Command(AOE2FUNC.up_modify_goal, [
-                    Variable({'id':func_def_node.args.args[i].arg,'offset_index':None}),
+                    Variable({'id':func_name + "." + func_def_node.args.args[i].arg,'offset_index':None}),
                     mathOp.eql, 
                     right_side,
                 ], node)
