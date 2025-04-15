@@ -6,7 +6,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import pickle
 import os
-from pprint import pprint
 from typing import Dict
 from itertools import chain
 import inspect
@@ -468,7 +467,7 @@ def make_parameter_class_lines(parameter_name, parameter_storage: ParameterStora
         parameter_options_dict, str
     ):  # TODO: this is janky but wnated to show what needs to be in or goal id instead of enum
         return [f"class {parameter_name}:", "    pass #" + parameter_options_dict]
-    lines.append(f"class {parameter_name}(Enum):")
+    lines.append(f"class {parameter_name}(Strenum):")
 
     if not parameter_options_dict:
         lines.append("    pass #empty options_dict")
@@ -506,7 +505,7 @@ def make_function_param_list(command_name, command_storage: CommandStorage, p_di
         line += '"' + arg + '",'
     line += '),'
     return [line]
-#!ClassId somehow just removed all ones with a * instead of removing the * and adding it to the list specificaly pray_animal_class
+
 def make_function_def_lines(command_name, command_storage: CommandStorage, p_dict):
     lines = []
     args = command_storage.args
@@ -543,13 +542,18 @@ def make_function_def_lines(command_name, command_storage: CommandStorage, p_dic
 
 # Generate files ----------------------------------------
 class UniqueParamGenerator:
+    #! add all of the missing numbers like 
+        #my_player_number = "my-player-number"
+        #my_unique_unit_line = -224 
+        #my_unique_unit_upgrade = 920
+        #my_unique_research = 924
+        #my_second_unique_research = 923
     unique_names = [
         "typeOp",
         "mathOp",
         "compareOp",
         "UnitId",
         "BuildingId",
-        "ClassId",
         "TechId",
         "SnId",
         "TypeId",  # object id
@@ -707,14 +711,6 @@ class UniqueParamGenerator:
     def get_SnId(self):
         return dict([(sn.name, sn.id) for sn in self.strategic_number_dict.values()])
 
-    def get_ClassId(self):
-        return dict(
-            [
-                (object_storage.obj_class, object_storage.obj_class_id)
-                for object_storage in self.object_dict.values()
-            ]
-        )
-
     def get_BuildingId(self):
         building_id_dict = {}
         for object_storage in self.object_dict.values():
@@ -765,7 +761,7 @@ def generate_aoe2scriptEnums():
     script_dir = os.path.dirname(__file__)
     file_path = os.path.join(script_dir, 'aoe2scriptEnums_header.py')
     with open(file_path, "r") as file:
-        lines = file.readlines
+        lines = file.readlines()
     lines = [line.rstrip('\n') for line in lines]
 
     unique_param_generator = UniqueParamGenerator()
@@ -860,3 +856,5 @@ def main(scrap_wesite = False, generate_files = True):
 
 if __name__ == "__main__":
     main(scrap_wesite = False, generate_files = True)
+
+ 

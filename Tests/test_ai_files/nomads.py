@@ -1,9 +1,7 @@
 #THINGS TO DO in compiler
-#todo: get heardable and deer and all that to the scraper!
-#todo: implement default values for functions
 #todo: make arrays
 #todo: make objects asign to each other nicely, including touple asignments
-
+#todo: implement default values for functions
 
 
 #THINGS TO CODE in this AI
@@ -276,9 +274,9 @@ if current_age() == Age.dark_age:
         #endregion
 
     #==========Exploring==========#
-    #region ___control heardables to explore and go to TC___
+    #region ___control livestock to explore and go to TC___
     up_full_reset_search()
-    up_find_local(ClassId.herdables, 20)
+    up_find_local(ClassId.livestock_class, 20)
     up_clean_search()#remove non-idle units
     up_target_point(tc_location, DUCAction.action_move, _, _)
     #scout around TC with them at some point
@@ -297,13 +295,13 @@ if current_age() == Age.dark_age:
        
     JOB_explore_terrain(magellan_malitia_id, Terrain.terrain_water, DA_MILITIA_LOS)
     if deer_within_20:#deer within 40 tiles of TC
-        deer_id = get_closest_unit_id(UnitId.deer, tc_location)
+        deer_id = get_closest_unit_id(ClassId.prey_animal_class, tc_location)
         JOB_push_deer(hunter_malitia_id, deer_id)
     elif Bore_within_40:
-       boar_id = get_closest_unit_id(UnitId.boar, tc_location)
+       boar_id = get_closest_unit_id(ClassId.predator_animal_class, tc_location)
        JOB_lure_bore(hunter_malitia_id, boar_id)
     elif deer_within_40:
-        deer_id = get_closest_unit_id(UnitId.deer, tc_location)
+        deer_id = get_closest_unit_id(ClassId.prey_animal_class, tc_location)
         JOB_push_deer(hunter_malitia_id, deer_id)
     #endregion
 

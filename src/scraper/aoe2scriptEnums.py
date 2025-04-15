@@ -6,38 +6,107 @@ from aenum import Enum
 class Strenum(Enum):
 
     @property
-    def val(self):
-        return self.value[0]
+    def value(self):
+        return self.values[0]
 
     @property
     def string(self):
         if type(self.value) is tuple and len(self.value) > 1 and type(self.value[1]) is str:
             return self.value[1]
         return self.name
+
+_ = "DEFAULT VALUE" # default value for all optional enums
+class AOE2VarType():
+    @classmethod
+    def get_offset(cls, abstracted_offset):
+        if abstracted_offset is None:
+            return 0
+        offset = cls.params_to_offet.get(abstracted_offset)
+        if offset is None:
+            raise Exception(f"Offset {abstracted_offset} not found in {cls.params_to_offet}")
+        else:
+            return offset
+
+class State(AOE2VarType):
+    params_to_offet = {
+        'LocalIndex':0,
+        0:0,
+        'LocalList':1,
+        1:1,
+        'RemoteIndex':2,
+        2:2,
+        'RemoteList':3,
+        3:3,
+    }
+    length = 4
+    def __init__(self):
+        self.LocalIndex = None
+        self.LocalList = None
+        self.RemoteIndex = None
+        self.RemoteList = None
+    
+class Point(AOE2VarType):
+    params_to_offet = {
+        'x':0,
+        0:0,
+        'y':1,
+        1:1,
+    }
+    length = 2
+    def __init__(self, x=None, y=None):
+        self.x = x
+        self.y = y
+
+class Constant(AOE2VarType):
+    params_to_offet = {
+        0:0,
+    }
+    length = 1
+    def __init__(self, value):
+        self.value = value
+    @classmethod
+    def get_offset(cls, abstracted_offset):
+        raise Exception(f"Constant do not have offsets or memory locations {abstracted_offset=}")
+
+class Integer(AOE2VarType):
+    params_to_offet = {
+        0:0,
+    }
+    length = 1
+    def __init__(self, value = None):
+        self.value = value
+class Boolean(AOE2VarType):
+    params_to_offet = {
+        0:0,
+    }
+    length = 1
+    def __init__(self, value = None):
+        self.value = value
+class FuncCall():
+    pass #added manually
 class compareOp(Strenum):
-    less_than = 18, '<'
-    not_equal = 23, '!='
-    less_or_equal = 19, '<='
-    greater_than = 20, '>'
-    greater_or_equal = 21, '>='
-    equal = 22, '=='
+    not_equal = 23
+    less_or_equal = 19
+    greater_than = 20
+    greater_or_equal = 21
+    equal = 22
 class mathOp(Strenum):
-    eql = 0, '='
-    add = 1, '+'
-    sub = 2, '-'
-    mul = 3, '*'
-    div_fl = 9, 'z/'
-    div_rd = 4, '/'
-    mod = 7, 'mod'
-    min = 5, 'min'
-    max = 6, 'max'
-    neg = 8, 'neg'
-    per = 11, '%*'
-    per_of = 10, '%/'
+    eql = 0
+    add = 1
+    sub = 2
+    mul = 3
+    div_fl = 9
+    div_rd = 4
+    mod = 7
+    min = 5
+    max = 6
+    neg = 8
+    per = 11
+    per_of = 10
 class typeOp(Strenum):
-    constant = 6, 'c:'
-    goal = 13, 'g:'
-    strategic_number = 20, 's:'
+    constant = 6
+    goal = 13
+    strategic_number = 20
 class ActionId(Strenum):
     _1 = -1
     actionid_attack = 600
@@ -218,30 +287,47 @@ class Civ(Strenum):
     athenians = 47
     spartans = 48
 class ClassId(Strenum):
+    all_units_class = -1
     archery_class = 900
-    cavalry_archer_class = 936
-    archery_cannon_class = 944
-    villager_class = 904
-    infantry_class = 906
-    packed_trebuchet_class = 951
-    petard_class = 935
-    cavalry_class = 912
-    scorpion_class = 955
-    cavalry_cannon_class = 923
-    siege_weapon_class = 913
-    fishing_ship_class = 921
+    monument_class = 901
     trade_cog_class = 902
-    transport_ship_class = 920
-    warship_class = 922
-    trade_cart_class = 919
-    monastery_class = 918
-    scout_cavalry_class = 947
     building_class = 903
-    farm_class = 949
-    wall_class = 927
-    tower_class = 952
-    gate_class = 939
+    villager_class = 904
+    ocean_fish_class = 905
+    infantry_class = 906
+    forage_class = 907
+    stone_mine_class = 908
+    prey_animal_class = 909
+    predator_animal_class = 910
     miscellaneous_class = 911
+    cavalry_class = 912
+    siege_weapon_class = 913
+    terrain_class = 914
+    tree_class = 915
+    monastery_class = 918
+    trade_cart_class = 919
+    transport_ship_class = 920
+    fishing_ship_class = 921
+    warship_class = 922
+    cavalry_cannon_class = 923
+    wall_class = 927
+    flag_class = 930
+    gold_mine_class = 932
+    shore_fish_class = 933
+    petard_class = 935
+    cavalry_archer_class = 936
+    gate_class = 939
+    relic_class = 942
+    monk_with_relic_class = 943
+    archery_cannon_class = 944
+    scout_cavalry_class = 947
+    farm_class = 949
+    packed_trebuchet_class = 951
+    tower_class = 952
+    unpacked_trebuchet_class = 954
+    scorpion_class = 955
+    livestock_class = 958
+    king_class = 959
 class CmdId(Strenum):
     cmdid_flag = 0
     cmdid_livestock_gaia = 1
@@ -664,6 +750,9 @@ class ItemId(Strenum):
     gate_vertical_open = 673
     gate_vertical = 673
     flare = 274
+    my_unique_unit_upgrade = 920
+    my_unique_research = 924
+    my_second_unique_research = 923
     ri_crossbow = 100
     ri_elite_skirmisher = 98
     ri_arbalest = 237
@@ -906,8 +995,7 @@ class ItemId(Strenum):
 class LanguageId:
     pass #unImplemented
 class LineId(Strenum):
-    my_unique_unit_line = -224 #todo: dont hard code this
-    stone_wall_line = -399 
+    stone_wall_line = -399
     watch_tower_line = -398
     archer_line = -299
     cavalry_archer_line = -298
@@ -1528,7 +1616,6 @@ class PlacementType(Strenum):
     place_control = 2
     place_point = 3
 class PlayerNumber(Strenum):
-    my_player_number = "my-player-number"
     this_any_ally = 101
     this_any_computer = 102
     this_any_computer_ally = 103
@@ -1545,7 +1632,8 @@ class PlayerStance(Strenum):
     neutral = 1
     any = 2
     enemy = 3
-
+class Point:
+    pass #Point
 class PositionType(Strenum):
     position_center = 0
     position_opposite = 1
@@ -3663,179 +3751,111 @@ class AOE2FUNC(Strenum):
     wood_amount = 365
     xs_script_call = 366
 class AOE2OBJ(Strenum):
-    ActionId = 0
-    Age = 1
-    AttackStance = 2
-    AttrId = 3
-    BuildingId = 4
-    Civ = 5
-    ClassId = 6
-    CmdId = 7
-    ColorId = 8
-    Commodity = 9
-    DUCAction = 10
-    Defconst = 11
-    DiffParameterId = 12
-    Difficulty = 13
-    EffectId = 14
-    Enum = 15
-    EscrowGoalId = 16
-    EventId = 17
-    EventType = 18
-    ExploredState = 19
-    FactId = 20
-    FactParameter = 21
-    FindPlayerMethod = 22
-    Flag = 23
-    Formation = 24
-    FuncCall = 25
-    GameType = 26
-    GoalId = 27
-    GroupId = 28
-    GroupType = 29
-    GuardFlag = 30
-    Id = 31
-    IdleType = 32
-    Index = 33
-    ItemId = 34
-    LanguageId = 35
-    LineId = 36
-    LocalIndex = 37
-    LocalList = 38
-    MapSize = 39
-    MapType = 40
-    MaxDistance = 41
-    MaxGarrison = 42
-    MinDistance = 43
-    MinGarrison = 44
-    ObjectData = 45
-    ObjectId = 46
-    ObjectList = 47
-    ObjectStatus = 48
-    OnMainland = 49
-    Option = 50
-    OptionGoalId = 51
-    OrderId = 52
-    OutputGoalId = 53
-    Percent = 54
-    Perimeter = 55
-    PlacementType = 56
-    PlayerNumber = 57
-    PlayerStance = 58
-    Point = 59
-    PositionType = 60
-    PriorityType = 61
-    ProgressType = 62
-    ProjectileType = 63
-    RemoteIndex = 64
-    RemoteList = 65
-    ResearchState = 66
-    Resource = 67
-    ResourceType = 68
-    RuleDelta = 69
-    RuleId = 70
-    SN = 71
-    ScoutMethod = 72
-    SearchOrder = 73
-    SearchSource = 74
-    SetId = 75
-    SharedGoalId = 76
-    SignalId = 77
-    SnId = 78
-    StartingResources = 79
-    State = 80
-    String = 81
-    SubGameType = 82
-    TauntId = 83
-    TechId = 84
-    Terrain = 85
-    ThreatPlayer = 86
-    ThreatSource = 87
-    ThreatTarget = 88
-    ThreatTime = 89
-    TimerId = 90
-    TimerState = 91
-    TypeId = 92
-    UnitId = 93
-    Value = 94
-    VictoryCondition = 95
-    VictoryPlayer = 96
-    VictoryTime = 97
-    VictoryType = 98
-    WallId = 99
-    compareOp = 100
-    mathOp = 101
-    typeOp = 102
-    Constant = 800
-    Boolean = 801
-    Integer = 803
-
-_ = "DEFAULT VALUE" # default value for all optional enums
-class AOE2VarType():
-    @classmethod
-    def get_offset(cls, abstracted_offset):
-        if abstracted_offset is None:
-            return 0
-        offset = cls.params_to_offet.get(abstracted_offset)
-        if offset is None:
-            raise Exception(f"Offset {abstracted_offset} not found in {cls.__name__}:{cls.params_to_offet}")
-        else:
-            return offset
-
-class State(AOE2VarType):
-    params_to_offet = {
-        'LocalIndex':0,
-        0:0,
-        'LocalList':1,
-        1:1,
-        'RemoteIndex':2,
-        2:2,
-        'RemoteList':3,
-        3:3,
-    }
-    length = 4
-    def __init__(self):
-        self.LocalIndex = None
-        self.LocalList = None
-        self.RemoteIndex = None
-        self.RemoteList = None
-    
-class Point(AOE2VarType):
-    params_to_offet = {
-        'x':0,
-        0:0,
-        'y':1,
-        1:1,
-    }
-    length = 2
-    def __init__(self, x=None, y=None):
-        self.x = x
-        self.y = y
-
-class Constant(AOE2VarType):
-    params_to_offet = {
-        0:0,
-    }
-    length = 1
-    def __init__(self, value):
-        self.value = value
-    @classmethod
-    def get_offset(cls, abstracted_offset):
-        raise Exception(f"Constant do not have offsets or memory locations {abstracted_offset=}")
-
-class Integer(AOE2VarType):
-    params_to_offet = {
-        0:0,
-    }
-    length = 1
-    def __init__(self, value = None):
-        self.value = value
-class Boolean(AOE2VarType):
-    params_to_offet = {
-        0:0,
-    }
-    length = 1
-    def __init__(self, value = None):
-        self.value = value
-class FuncCall():
-    pass #added manually
+    AOE2VarType = 0
+    ActionId = 1
+    Age = 2
+    AttackStance = 3
+    AttrId = 4
+    Boolean = 5
+    BuildingId = 6
+    Civ = 7
+    ClassId = 8
+    CmdId = 9
+    ColorId = 10
+    Commodity = 11
+    Constant = 12
+    DUCAction = 13
+    Defconst = 14
+    DiffParameterId = 15
+    Difficulty = 16
+    EffectId = 17
+    Enum = 18
+    EscrowGoalId = 19
+    EventId = 20
+    EventType = 21
+    ExploredState = 22
+    FactId = 23
+    FactParameter = 24
+    FindPlayerMethod = 25
+    Flag = 26
+    Formation = 27
+    FuncCall = 28
+    GameType = 29
+    GoalId = 30
+    GroupId = 31
+    GroupType = 32
+    GuardFlag = 33
+    Id = 34
+    IdleType = 35
+    Index = 36
+    Integer = 37
+    ItemId = 38
+    LanguageId = 39
+    LineId = 40
+    LocalIndex = 41
+    LocalList = 42
+    MapSize = 43
+    MapType = 44
+    MaxDistance = 45
+    MaxGarrison = 46
+    MinDistance = 47
+    MinGarrison = 48
+    ObjectData = 49
+    ObjectId = 50
+    ObjectList = 51
+    ObjectStatus = 52
+    OnMainland = 53
+    Option = 54
+    OptionGoalId = 55
+    OrderId = 56
+    OutputGoalId = 57
+    Percent = 58
+    Perimeter = 59
+    PlacementType = 60
+    PlayerNumber = 61
+    PlayerStance = 62
+    Point = 63
+    PositionType = 64
+    PriorityType = 65
+    ProgressType = 66
+    ProjectileType = 67
+    RemoteIndex = 68
+    RemoteList = 69
+    ResearchState = 70
+    Resource = 71
+    ResourceType = 72
+    RuleDelta = 73
+    RuleId = 74
+    SN = 75
+    ScoutMethod = 76
+    SearchOrder = 77
+    SearchSource = 78
+    SetId = 79
+    SharedGoalId = 80
+    SignalId = 81
+    SnId = 82
+    StartingResources = 83
+    State = 84
+    Strenum = 85
+    String = 86
+    SubGameType = 87
+    TauntId = 88
+    TechId = 89
+    Terrain = 90
+    ThreatPlayer = 91
+    ThreatSource = 92
+    ThreatTarget = 93
+    ThreatTime = 94
+    TimerId = 95
+    TimerState = 96
+    TypeId = 97
+    UnitId = 98
+    Value = 99
+    VictoryCondition = 100
+    VictoryPlayer = 101
+    VictoryTime = 102
+    VictoryType = 103
+    WallId = 104
+    compareOp = 105
+    mathOp = 106
+    typeOp = 107

@@ -19,7 +19,6 @@ from scraper import (
     Integer,
     Constant,
 )
-
 if 0:
     chat_to_all("one")
 elif 0:
