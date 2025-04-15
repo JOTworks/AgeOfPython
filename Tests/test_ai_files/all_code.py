@@ -20,17 +20,16 @@ from scraper import (
     Constant,
 )
 
-def resource_total(r: Resource) -> Integer:
-  search_state = State()
-  up_full_reset_search()
-  up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
-  up_find_resource(r, 20)
-  up_get_search_state(search_state)
-  total = 0
-  temp = 0
-  up_set_target_object(SearchSource.search_remote, i)
-  up_get_object_data(ObjectData.object_data_carry, temp)
-  temp += temp
-  total += temp
-  up_chat_data_to_all("Total:%d", total)
-  return total
+if 0:
+    chat_to_all("one")
+elif 0:
+    chat_to_all("two")
+#else:
+#    chat_to_all("three")
+
+#if (
+#    test,
+#    body = [stuff]
+#    orelse = [IF object]
+#)
+#    eventualy there is an orelse = [] that is like a body

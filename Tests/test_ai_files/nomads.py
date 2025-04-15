@@ -1,11 +1,8 @@
 #THINGS TO DO in compiler
-#todo: print number of rules and memeory used vs free.
-#todo: implement elif
 #todo: get heardable and deer and all that to the scraper!
 #todo: implement default values for functions
 #todo: make arrays
 #todo: make objects asign to each other nicely, including touple asignments
-
 
 
 

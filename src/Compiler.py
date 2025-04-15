@@ -569,11 +569,21 @@ class CompileTR(compilerTransformer):
             node_copy_with_short_offset(node, 2),
             comment="IF skip " + str(node.lineno),
         )
+        skip_orelses_if_true = DefRule(
+            Command(AOE2FUNC.true, [], None),
+            [new_jump(JumpType.last_rule_after_node)],
+            node_copy_with_short_offset(node, 2),
+            comment="IF skip_orelses_if_true " + str(node.lineno),
+        )
 
         node.body = [
             test,
             skip,
         ] + node.body
+        print(type(node.orelse))
+        if node.orelse != []: 
+            node.body.append(skip_orelses_if_true)
+
         node.test = (
             None  # remove to keep printer from printing it from test and from the body
         )
@@ -672,8 +682,13 @@ class CompileTR(compilerTransformer):
 
     def visit_test(self, test):
         # returns a command or a tree of commands
-        if isinstance(test, ast.Constant) and test.value == True:
-            return Command(AOE2FUNC.true, [], test)
+        if isinstance(test, ast.Constant):
+            if test.value == True:
+                return Command(AOE2FUNC.true, [], test)
+            elif test.value == False:
+                return Command(AOE2FUNC.false, [], test)
+            else:
+                raise Exception(f"test cant be a constant unless its 1 or 0 {test.value}, line {test.lineno}")
         self.generic_visit(test)
         return test
 

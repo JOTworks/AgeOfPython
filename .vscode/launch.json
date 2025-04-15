@@ -2,12 +2,6 @@
   "version": "0.2.0",
   "configurations": [
 
-
-
-
-
-
-
     {
       "name": "Python: main",
       "type": "debugpy",
@@ -18,8 +12,8 @@
       "args": [
         //"block_code", "-v",
         //"-f","compare_boolOp_binOp", "-v", //"compare_boolOp_binOp.py${cwd}"
-        //"-f","all_code", "-vv",
-        "-f","TuskenRail", "-r",
+        "-f","all_code", "-vv",
+        //"-f","TuskenRail", "-r",
         //"-f","QuickElectrum", "-v", "-t"
         //"-f","sheep_deer_test", "-v", "-t"
       ]
