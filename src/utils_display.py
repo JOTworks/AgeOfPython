@@ -1,6 +1,24 @@
 from colorama import Fore, Back, Style
 from math import ceil, floor
 
+def print_completion_bar(percentage, bar_length=30):
+    """
+    Prints a static completion bar with the given percentage filled.
+
+    :param percentage: The percentage to fill the bar (0 to 100).
+    :param bar_length: The total length of the bar in characters.
+    """
+    filled_length = int(bar_length * (percentage))
+    empty_length = bar_length - filled_length
+    bar = "\u2588" * filled_length + "-" * empty_length  # \u2588 is a solid block
+    print(f"[{bar}] {percentage:.2f}%")
+
+def print_stats(defrule_num, free_memory_count, used_memory_count):
+    print_bordered("code stats")
+    print(f"{defrule_num}/10,000 DefRules Used")
+    print_completion_bar(defrule_num/10000)
+    print(f"{used_memory_count}/{used_memory_count+free_memory_count} Memory Used")
+    print_completion_bar(used_memory_count/(used_memory_count+free_memory_count))
 
 def display_scanner(myScanner):
     print_bordered("Scanner Results")

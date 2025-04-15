@@ -1195,8 +1195,8 @@ class Compiler:
         if vv:
             print_bordered("Memory after all alocations")
             memory.print_memory()
-
-        return combined_tree
+        
+        return combined_tree, memory
 
 
 def node_copy_with_short_offset(node, offset):

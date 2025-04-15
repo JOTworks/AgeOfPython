@@ -7,16 +7,20 @@ from colorama import Fore, Back, Style
 import re
 from MyLogging import logger
 from utils import get_enum_classes
-
+from time import time
+from pprint import pprint
 
 class DefRulePrintVisitor(ast.NodeVisitor):
-    def __init__(self, final_string, const_tree = [], NO_FILE=False, TEST=True):
+    def __init__(self, final_list, const_tree = [], NO_FILE=False, TEST=True):
         super().__init__()
-        self.final_string = final_string
+        self.final_list = final_list
         self.NO_FILE = NO_FILE
         self.enum_classes = get_enum_classes()
         self.TEST = TEST
         self.def_const_list = set()
+        self.time_tracker = {"visit_DefRule": 0, "visit_defconst": 0, "visit_FunctionDef": 0, "visit_aoeOp": 0, "visit_Command": 0, "add_def_consts": 0, "evaluate_enum": 0}
+        self.call_tracker = {"visit_DefRule": 0, "visit_defconst": 0, "visit_FunctionDef": 0, "visit_aoeOp": 0, "visit_Command": 0, "add_def_consts": 0, "evaluate_enum": 0,
+                             "visit_if": 0, "visit_Return": 0, "visit_Assign": 0}
         try:
             for node in const_tree.body:
                 name = node.targets[0].id
@@ -27,6 +31,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         
 
     def visit_if(self, node):
+        self.call_tracker["visit_if"] += 1
         """
         so we dont print the test and other metadata in visit
         """
@@ -34,23 +39,29 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             self.visit(item)
 
     def visit_Return(self, node):
+        self.call_tracker["visit_Return"] += 1
         for item in node.body:
             self.visit(item)
-        self.generic_visit(node)
+        self.generic_visit(node) #!sus should we be going through twice?
 
     def visit_Assign(self, node): #todo: when refactored i will need to print temp math first, function calls, then asigns
-        self.generic_visit(node)
+        self.call_tracker["visit_Assign"] += 1
+        self.generic_visit(node) #!sus should we be going through twice?
         for item in node.body: #currently this should be return value And assigns
             self.visit(item)
 
 
     def visit_FunctionDef(self, node):
-        self.final_string += yellow(f";--- DEF {node.name} ---;\n")
+        start = time()
+        self.final_list.append( yellow(f";--- DEF {node.name} ---;\n"))
+        self.time_tracker["visit_FunctionDef"] += (time() - start)*2
+        self.call_tracker["visit_FunctionDef"] += 1
         self.generic_visit(node)
-        self.final_string += yellow(f";--- END {node.name} ---;\n")
+        self.final_list.append( yellow(f";--- END {node.name} ---;\n"))
 
     def visit_DefRule(self, node):  # adds (defrule _______  => ______)
-        self.final_string += (
+        start = time()
+        self.final_list.append( (
             green("(defrule")
             + green(";")
             + green(str(node.defrule_num))
@@ -58,7 +69,9 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             + yellow(node.comment)
             + comment(node, self.NO_FILE)
             + "\n"
-        )
+        ) )
+        self.time_tracker["visit_DefRule"] += time() - start
+        self.call_tracker["visit_DefRule"] += 1
         if isinstance(node.test, Command):
             self.visit_Command(node.test)
         elif isinstance(node.test, aoeOp):
@@ -67,23 +80,27 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             if type(node.test) is ast.Name and node.test.id == "true":
                 raise Exception(f"on line {node.test.lineno}, you need to use True or true() not true")
             raise Exception(f"{type(node.test)} not implemented in defRulePrintVisiter")
-        self.final_string += green("=>\n")
+        self.final_list.append( green("=>\n") )
         for body_node in node.body:
             if isinstance(body_node, Command):
                 self.visit_Command(body_node)
             elif isinstance(body_node, ast.expr):
                 self.visit_Expr(body_node)
-        self.final_string += green(")\n")
+        self.final_list.append( green(")\n") )
 
     def visit_aoeOp(self, node):
+        start = time()
         # ADD (op THEN commands THEN )
-        self.final_string += (
+        self.final_list.append( (
             red("(") + red(node.op.__doc__.lower()) + red("\n")
-        )  # todo: check if __doc__ can cause errors.
+        ) ) # todo: check if __doc__ can cause errors.
+        self.time_tracker["visit_aoeOp"] += time() - start
+        self.call_tracker["visit_aoeOp"] += 1
         self.generic_visit(node)
-        self.final_string += red(")")
+        self.final_list.append( red(")") )
 
     def evaluate_enum(self, expr, next_expr, human_readable = True):
+        start = time()
         value_str = ''
         if type(expr) in [mathOp, compareOp]: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
             if next_expr is None:
@@ -108,16 +125,21 @@ class DefRulePrintVisitor(ast.NodeVisitor):
 
         if type(expr) is SN:
             return 'sn-' + expr.string.replace("_", "-")
-
+        self.time_tracker["evaluate_enum"] += time() - start
+        self.call_tracker["evaluate_enum"] += 1
         return expr.string.replace("_", "-")
     
     def add_def_consts(self):
+        start = time()
         def_const_string = ''
-        def_const_string += '\n'.join([f"(defconst {def_const})" for def_const in self.def_const_list])
-        self.final_string = '\n' + def_const_string + '\n' + self.final_string + '\n'
+        def_const_string = '\n'.join([f"(defconst {def_const})" for def_const in self.def_const_list])
+        self.final_list.insert(0, def_const_string + "\n")
+        self.time_tracker["add_def_consts"] += time() - start
+        self.call_tracker["add_def_consts"] += 1
 
     def visit_Command(self, node):  # adds (command arg1 arg2)
-        self.final_string += blue("  (") + blue(node.func.id.name.replace("_", "-"))
+        start = time()
+        self.final_list.append( blue("  (") + blue(node.func.id.name.replace("_", "-")) )
         
         for itr, expr in enumerate(node.args):
             if type(expr) in list(self.enum_classes.values()):
@@ -140,8 +162,10 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 raise Exception(f"visit_command has not implemeted {type(expr)}")
             
             
-            self.final_string += " " + blue(expr_str)
-        self.final_string += blue(")") + comment(node, self.NO_FILE) + "\n"
+            self.final_list.append( " " + blue(expr_str) )
+        self.final_list.append( blue(")") + comment(node, self.NO_FILE) + "\n" )
+        self.time_tracker["visit_Command"] += time() - start
+        self.call_tracker["visit_Command"] += 1
         self.generic_visit(node)
 
 
@@ -149,7 +173,7 @@ class Printer:
     def __init__(self, const_tree, combined_tree):
         self.const_tree = const_tree
         self.tree = combined_tree
-        self.final_string = ""
+        self.final_string = ['']
         self.def_const_list = set()
 
     @property
@@ -178,8 +202,11 @@ class Printer:
         visitor.visit(self.tree)
         visitor.add_def_consts()
         
-        self.final_string = visitor.final_string
-        return visitor.final_string
+        self.final_string = ('').join(visitor.final_list)
+        print(self.non_readable_final_string)
+        pprint(visitor.time_tracker)
+        pprint(visitor.call_tracker)
+        return self.final_string
 
 
 def comment(node, NO_FILE):

@@ -11,11 +11,14 @@ from math import ceil, floor
 import ast
 from collections import namedtuple
 from scraper import *
-from utils_display import print_bright, print_bordered
+from utils_display import print_bright, print_bordered, print_stats
 import argparse
+from time import time
 
 
 def main(file_name, arguments):
+    first_time = time()
+    last_time = time()
     ai_folder = get_ai_folder()
 
     # *----PARSING----*#
@@ -29,7 +32,8 @@ def main(file_name, arguments):
         print_bordered("Parsed Const tree")
         print(ast.dump(trees.const_tree, indent=4))
         print("_________")
-
+        print(f"Parsing completed in {time() - last_time:.2f} seconds")
+        last_time = time()
     # ast_json = parse_and_convert_to_json(trees['main_tree'])
     # with open('ast.json', 'w') as f:
     #    f.write(ast_json)
@@ -43,12 +47,13 @@ def main(file_name, arguments):
     # *----COMPILING----*#
     compiler = Compiler()
     verbose_compiler = True if "vv" in arguments or "cv" in arguments else False
-    combined_tree = compiler.compile(trees, verbose_compiler)
+    combined_tree, memory = compiler.compile(trees, verbose_compiler)
 
     if "c" in arguments or "v" in arguments:
         print_bordered("Combined Tree")
         print(ast.dump((combined_tree), indent=4))
-
+        print(f"Compiling completed in {time() - last_time:.2f} seconds")
+        last_time = time()
     # *----PRINTING----*#
     myPrinter = Printer(trees.const_tree, combined_tree)
     if "t" in arguments:
@@ -68,8 +73,17 @@ def main(file_name, arguments):
         nonTestPrinter = Printer(trees.const_tree, combined_tree)
         nonTestPrinter.print_all(TEST=False)
         print(nonTestPrinter.non_readable_final_string)
+    print(f"Printing completed in {time() - last_time:.2f} seconds")
+    last_time = time()
 
-    return myPrinter.non_readable_final_string
+
+    # *----stats on code----*#
+    print_stats(
+        combined_tree.body[-1].defrule_num,
+        memory.free_memory_count, 
+        memory.used_memory_count, 
+    )
+    print(f"Program runtime {time() - first_time:.2f} seconds")
 
 def get_ai_folder():
     ai_folder = Path(__file__).parent.resolve()

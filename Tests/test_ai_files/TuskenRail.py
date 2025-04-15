@@ -496,6 +496,7 @@ if True:
   disable_self()
 
 def resource_total(r: Resource) -> Integer:
+  search_state = State()
   up_full_reset_search()
   up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
   up_find_resource(r, 20)
