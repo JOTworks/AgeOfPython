@@ -1,6 +1,6 @@
 #all_code
 from scraper import *
-from scraper import Integer as int, Boolean as bool
+from scraper import Integer, Boolean, Point, State, Constant, Array
 from scraper import (
     can_build,
     build,
@@ -19,16 +19,10 @@ from scraper import (
     Integer,
     Constant,
 )
-if 0:
-    chat_to_all("one")
-elif 0:
-    chat_to_all("two")
-#else:
-#    chat_to_all("three")
 
-#if (
-#    test,
-#    body = [stuff]
-#    orelse = [IF object]
-#)
-#    eventualy there is an orelse = [] that is like a body
+explorer_id = Array(100)
+table = 3
+up_chat_data_to_all("hello! %d", explorer_id[table])  
+
+chat_to_all("Hello World")
+intelegence = 0

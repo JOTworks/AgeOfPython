@@ -2,7 +2,7 @@ import ast
 import inspect
 from itertools import chain
 from scraper import *
-from scraper import AOE2FUNC, Integer, Constant
+from scraper import AOE2FUNC, Integer, Constant, Array
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
 from Memory import Memory
@@ -80,8 +80,8 @@ class AstToCustomTR(compilerTransformer):
         return node
 
     def visit_Subscript(self, node):
-        raise Exception("subscript not supported, need to figure out how to pass int to make_variable() as offset_index")
-        return self.make_variable(node, node.slice.value, node.value.id)
+        self.generic_visit(node)
+        return self.make_variable(node, str(node.slice.value), node.value.id)
 
     def visit_Attribute(self, node):
         self.generic_visit(node)
@@ -320,7 +320,10 @@ class AlocateAllMemory(compilerTransformer):
                 logger.warning(f"{node.targets[0].id} is already in memory! {location} dont try to re Construct it, line {node.lineno}")
             else:
                 var_type = node.value.func.id
-                self.memory.malloc(node.targets[0].id, var_type)
+                if var_type is AOE2OBJ.Array:
+                    self.memory.malloc(node.targets[0].id, var_type, length = node.value.args[0].value)
+                else:
+                    self.memory.malloc(node.targets[0].id, var_type)
         node = super().visit_Return(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
         return node
 
@@ -751,7 +754,7 @@ class CompileTR(compilerTransformer):
                 node,
             ))
         elif type(node.value) is Constructor:
-            if len(node.value.args) > 0:
+            if len(node.value.args) > 0 and (type(node.value.func) is not Array and len(node.value.args) > 1):
                 raise Exception(
                     f"we dont curently support constructors with args {[arg.value if hasattr(arg, 'value') else arg for arg in node.value.args]}, line {node.lineno}"
                 )

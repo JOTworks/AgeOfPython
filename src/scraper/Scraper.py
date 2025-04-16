@@ -543,11 +543,11 @@ def make_function_def_lines(command_name, command_storage: CommandStorage, p_dic
 # Generate files ----------------------------------------
 class UniqueParamGenerator:
     #! add all of the missing numbers like 
-        #my_player_number = "my-player-number"
-        #my_unique_unit_line = -224 
-        #my_unique_unit_upgrade = 920
-        #my_unique_research = 924
-        #my_second_unique_research = 923
+    #my_player_number = "my-player-number"
+    #my_unique_unit_line = -224 
+    #my_unique_unit_upgrade = 920
+    #my_unique_research = 924
+    #my_second_unique_research = 923
     unique_names = [
         "typeOp",
         "mathOp",
@@ -646,7 +646,7 @@ class UniqueParamGenerator:
 
     def get_compareOp(self):
         return {
-            "not-equal": 18,
+            "less_than": 18,
             "less-or-equal": 19,
             "greater-than": 20,
             "greater-or-equal": 21,

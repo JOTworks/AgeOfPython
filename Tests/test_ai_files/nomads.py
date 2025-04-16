@@ -14,7 +14,7 @@
 from scraper import *
 from scraper import (
   #OBJECT TYPES
-  Point, Constant, State, Integer, _,
+  Point, Constant, State, Integer, Array, _,
   #ENUMS
   ObjectId, ObjectData, ObjectStatus, ObjectList,
   ClassId, UnitId, BuildingId, Resource, Terrain,
@@ -114,18 +114,13 @@ def JOB_explore_object(explorer_id, thing:ObjectId, tiles_away, explore_duration
   #pass in exploorer_id as -1 to make it just run the exploration.
   #pass in actual id to set a new explorer of an object.
   #eplorer will cirle around a group of touching objects staying tiles_away in its circle.
-  explorer1_id = Integer()
-  explorer1_timer = Constant(1)
-  explorer1_thing = Integer()
-  explorer1_tiles_away = Integer()
-  explorer2_id = Integer()
-  explorer2_timer = Constant(2)
-  explorer2_thing = Integer()
-  explorer2_tiles_away = Integer()
-  explorer3_id = Integer()
-  explorer3_timer = Constant(3)
-  explorer3_thing = Integer()
-  explorer3_tiles_away = Integer()
+  explorer_ids = Array(10)
+  explorer_timers = Array(10)
+  explorer_things = Array(10)
+  explorer_tiles_away = Array(10)
+  explorer_timers[0] = 1
+  explorer_timers[1] = 2
+  explorer_timers[2] = 3
 
   #the math
   #get the perpendicular line to the closest resource and tiles_away from the resoruce in the direction of the villager. 
@@ -134,51 +129,30 @@ def JOB_explore_object(explorer_id, thing:ObjectId, tiles_away, explore_duration
 
   #find the gold point and villager point, 
   if explorer_id == -1: #run explore code
-    if explorer1_id != -1:
-      pass#do the math to explore
-      if timer_triggered(explorer1_timer):
-        explorer1_id = -1
-        explorer1_thing = -1
-        explorer1_tiles_away = -1
-        disable_timer(explorer1_timer)
-    if explorer2_id != -1:
-      pass#do the math to explore
-      if timer_triggered(explorer2_timer):
-        explorer2_id = -1
-        explorer2_thing = -1
-        explorer2_tiles_away = -1
-        disable_timer(explorer2_timer)
-    if explorer3_id != -1:
-      pass#do the math to explore
-      if timer_triggered(explorer3_timer):
-        explorer3_id = -1
-        explorer3_thing = -1
-        explorer3_tiles_away = -1
-        disable_timer(explorer3_timer)
+    for i in range(10):
+        if explorer_id[i] != -1:
+            pass#do the math to explore
+        if timer_triggered(explorer_timers[i]):
+            explorer_id[i] = -1
+            explorer_things[i] = -1
+            explorer_tiles_away[i] = -1
+            disable_timer(explorer_timers[i])
 
   else: 
-    if explorer_id != explorer1_id and explorer_id != explorer2_id and explorer_id != explorer3_id:
-      up_chat_data_to_all("%d is already an explorer", explorer_id)
-      return
+    for i in range(10): #this loop can be replaced by being able to get the Job of the unit
+        if explorer_id[i] == explorer_id:
+            up_chat_data_to_all("%d is already an explorer", explorer_id)
+            return 0 #unemployed
     
-    if explorer1_id == -1:
-      explorer1_id = explorer_id
-      explorer1_thing = thing
-      explorer1_tiles_away = tiles_away
-      enable_timer(explorer1_timer, explore_duration)
-    elif explorer2_id == -1:
-      explorer2_id = explorer_id
-      explorer2_thing = thing
-      explorer2_tiles_away = tiles_away
-      enable_timer(explorer2_timer, explore_duration)
-    elif explorer3_id == -1:
-      explorer3_id = explorer_id
-      explorer3_thing = thing
-      explorer3_tiles_away = tiles_away
-      enable_timer(explorer3_timer, explore_duration)
-    else:
-      up_chat_data_to_all("%d cannot be set, already max exploring items", explorer_id)
-      return
+    for i in range(10):
+        if explorer_id[i] == -1:
+            explorer_id[i] = explorer_id
+            explorer_things[i] = thing
+            explorer_tiles_away[i] = tiles_away
+            enable_timer(explorer_timers[i], explore_duration)
+            up_chat_data_to_all("%d is now exploring %d", explorer_id, thing)
+            return 1 #Employed
+    return 0 #unemployed
 
 def JOB_push_deer(hunter_id, deer_id) -> Integer:
     return #return 0 if job full

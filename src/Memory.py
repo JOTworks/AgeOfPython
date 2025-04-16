@@ -1,4 +1,4 @@
-from scraper import AOE2OBJ, Point, State, Integer, Boolean, AOE2VarType, aoe2scriptEnums
+from scraper import AOE2OBJ, Point, State, Integer, Boolean, AOE2VarType, aoe2scriptEnums, Array
 from sortedcontainers import SortedDict
 from utils_display import print_bright, print_dim
 from pprint import pprint
@@ -79,7 +79,13 @@ class Memory:
             var_type = Point
         if var_type is AOE2OBJ.State:
             var_type = State
-        if length and type(var_type) not in [list, AOE2OBJ.FuncCall]:
+        if var_type is AOE2OBJ.Integer:
+            var_type = Integer
+        if var_type is AOE2OBJ.Boolean:
+            var_type = Boolean
+        if var_type is AOE2OBJ.Array:
+            var_type = Array
+        if length and var_type is not Array:
             raise Exception("Length can only be specified for list types")
         if not length:
             length = self.class_constructer_default_size[var_type]
@@ -131,8 +137,8 @@ class Memory:
         except KeyError:
             return None
         
-        offset = stored_memory.var_type.get_offset(abstracted_offset)
-
+            
+        offset = stored_memory.var_type.get_offset(abstracted_offset, stored_memory.length)
         if offset >= stored_memory.length:
             raise Exception(f"Out of index error {offset}>{var_name} len")
         return stored_memory.start + offset
@@ -145,4 +151,5 @@ class Memory:
         for start, end in temp_open_memory.items():
             if end - start >= length:
                 return start
-        raise Exception("Out of memory")
+        self.print_memory()
+        raise Exception(f"Out of memory trying to allocate {length} registers")

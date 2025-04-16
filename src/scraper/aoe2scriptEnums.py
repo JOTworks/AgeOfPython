@@ -1,12 +1,11 @@
 # --- Removed parameters --- #
 # all of the parameter types from the website with their IDs.
-# mathops and comparison ops are handdled by the intepreter.
 #
 from aenum import Enum
 class Strenum(Enum):
 
     @property
-    def value(self):
+    def val(self):
         return self.values[0]
 
     @property
@@ -18,7 +17,7 @@ class Strenum(Enum):
 _ = "DEFAULT VALUE" # default value for all optional enums
 class AOE2VarType():
     @classmethod
-    def get_offset(cls, abstracted_offset):
+    def get_offset(cls, abstracted_offset, length):
         if abstracted_offset is None:
             return 0
         offset = cls.params_to_offet.get(abstracted_offset)
@@ -26,6 +25,30 @@ class AOE2VarType():
             raise Exception(f"Offset {abstracted_offset} not found in {cls.params_to_offet}")
         else:
             return offset
+
+class Array(AOE2VarType):
+
+    @property
+    def length(self):
+        return self.length
+    
+    def __init__(self, length):
+        if type(length) is not int and length < 0:
+            raise Exception(f"Array length {length} is not valid")
+        self.length = length
+    
+    @classmethod
+    def get_offset(cls, abstracted_offset, length):
+        if abstracted_offset is None:
+            return 0
+        if type(abstracted_offset) not in [int, str]:
+            raise Exception(f"Offset {abstracted_offset} is not a valid type {type(abstracted_offset)}")
+        
+        offset = int(abstracted_offset)
+        if offset < 0 or offset >= length:
+            raise Exception(f"Offset {offset} out of range {length}")
+        return offset
+
 
 class State(AOE2VarType):
     params_to_offet = {
@@ -65,7 +88,7 @@ class Constant(AOE2VarType):
     def __init__(self, value):
         self.value = value
     @classmethod
-    def get_offset(cls, abstracted_offset):
+    def get_offset(cls, abstracted_offset, length):
         raise Exception(f"Constant do not have offsets or memory locations {abstracted_offset=}")
 
 class Integer(AOE2VarType):
@@ -3859,3 +3882,4 @@ class AOE2OBJ(Strenum):
     compareOp = 105
     mathOp = 106
     typeOp = 107
+    Array = 108
