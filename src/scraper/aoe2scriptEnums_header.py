@@ -7,7 +7,7 @@ class Strenum(Enum):
 
     @property
     def val(self):
-        return self.values[0]
+        return self.value[0]
 
     @property
     def string(self):

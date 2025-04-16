@@ -22,7 +22,4 @@ from scraper import (
 
 explorer_id = Array(100)
 table = 3
-up_chat_data_to_all("hello! %d", explorer_id[table])  
-
-chat_to_all("Hello World")
-intelegence = 0
+id_needed = explorer_id[table]

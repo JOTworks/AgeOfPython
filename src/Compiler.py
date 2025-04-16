@@ -12,6 +12,7 @@ from utils_display import print_bordered
 from MyLogging import logger
 
 FUNC_DEPTH_COUNT = "func_depth_count"
+ARRAY_RETURN_REG = "array_return_register"
 FUNC_RET_REG = 15800 #janky but up_set_indirect_goal needs an integer to store into, so either i need to sepreatly parce it out later, or start it as an integer here
 reserved_function_names = [
     'range',
@@ -58,7 +59,7 @@ class AstToCustomTR(compilerTransformer):
 
     def make_variable(self, node, offset_index, id_n):
         is_variable = False
-        if not(offset_index is None or type(offset_index) is str):
+        if not(offset_index is None or type(offset_index) is str or type(offset_index) is Variable):
             raise Exception(f"offset_index needs to be a str, not {type(offset_index)}, line {node.lineno}")
         if (
             id_n not in get_enum_classes()
@@ -81,6 +82,8 @@ class AstToCustomTR(compilerTransformer):
 
     def visit_Subscript(self, node):
         self.generic_visit(node)
+        if type(node.slice) is Variable:
+            return self.make_variable(node, node.slice, node.value.id)
         return self.make_variable(node, str(node.slice.value), node.value.id)
 
     def visit_Attribute(self, node):
@@ -714,6 +717,7 @@ class CompileTR(compilerTransformer):
             raise Exception(
                 f"target needs to be Variable or SN not {type(target)}, line {node.lineno}"
             )  # todo: add this to the asserter not the compiler
+        
         if type(node.value) is ast.BinOp:
             if type(node.value.left) is Variable and type(node.value.right) in [
                 ast.Constant,
@@ -735,11 +739,39 @@ class CompileTR(compilerTransformer):
 
         elif type(node.value) is Variable:
             # todo: this will only work on ints, needs to be delt with in Memory management to exstend this command to each index of the variable
-            assign_command.append( Command(
-                modify_function,
-                [target, mathOp.eql, node.value],
-                node,
-            ))
+            #!#! this is where arrays are coming in
+            if type(node.value.offset_index) is Variable:
+                # 1. store Array[0] -> ARRAY_RETURN_REG
+                # 2. add Variable offset -> ARRAY_RETURN_REG
+                # 3. store reg value ARRAY_RETURN_REG points too to -> ARRAY_RETURN_REG
+                # 4. do the normal assign but using ARRAY_RETURN_REG
+                assign_command.append( Command(
+                    AOE2FUNC.up_modify_goal,
+                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.eql, node.value],
+                    node,
+                ))
+                assign_command.append( Command(
+                    AOE2FUNC.up_modify_goal,
+                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.add, node.value.offset_index],
+                    node,
+                ))
+                assign_command.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal
+                    AOE2FUNC.up_get_indirect_goal,
+                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
+                    node,
+                ))
+                assign_command.append( Command(
+                    modify_function,
+                    [target, mathOp.eql, Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
+                    node,
+                ))
+
+            else:
+                assign_command.append( Command(
+                    modify_function,
+                    [target, mathOp.eql, node.value],
+                    node,
+                ))
 
         elif type(node.value) is ast.Constant:
             assign_command.append( Command(
@@ -1080,7 +1112,6 @@ class ScopeAllVariables(compilerTransformer):
             if "." in node.id:
                 raise Exception(f"already has a '.', {node.id}, line {node.lineno}")
             node.id = self.current_function + "." + node.id #make this a function that determins how variable names are made to be used elsewere
-        #!#! why is the assign doubling up the func name? 'resource_total.resource_total.total'
         return node
 
 

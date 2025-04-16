@@ -6,7 +6,7 @@ class Strenum(Enum):
 
     @property
     def val(self):
-        return self.values[0]
+        return self.value[0]
 
     @property
     def string(self):
@@ -41,6 +41,11 @@ class Array(AOE2VarType):
     def get_offset(cls, abstracted_offset, length):
         if abstracted_offset is None:
             return 0
+        
+        #needs to come through as 0, and later we will use  command to add the offest dynamicly
+        if type(abstracted_offset).__name__ == "Variable": 
+            return 0
+        
         if type(abstracted_offset) not in [int, str]:
             raise Exception(f"Offset {abstracted_offset} is not a valid type {type(abstracted_offset)}")
         
@@ -108,28 +113,29 @@ class Boolean(AOE2VarType):
 class FuncCall():
     pass #added manually
 class compareOp(Strenum):
-    not_equal = 23
-    less_or_equal = 19
-    greater_than = 20
-    greater_or_equal = 21
-    equal = 22
+    less_than = 18, '<'
+    not_equal = 23, '!='
+    less_or_equal = 19, '<='
+    greater_than = 20, '>'
+    greater_or_equal = 21, '>='
+    equal = 22, '=='
 class mathOp(Strenum):
-    eql = 0
-    add = 1
-    sub = 2
-    mul = 3
-    div_fl = 9
-    div_rd = 4
-    mod = 7
-    min = 5
-    max = 6
-    neg = 8
-    per = 11
-    per_of = 10
+    eql = 0, '='
+    add = 1, '+'
+    sub = 2, '-'
+    mul = 3, '*'
+    div_fl = 9, 'z/'
+    div_rd = 4, '/'
+    mod = 7, 'mod'
+    min = 5, 'min'
+    max = 6, 'max'
+    neg = 8, 'neg'
+    per = 11, '%*'
+    per_of = 10, '%/'
 class typeOp(Strenum):
-    constant = 6
-    goal = 13
-    strategic_number = 20
+    constant = 6, 'c:'
+    goal = 13, 'g:'
+    strategic_number = 20, 's:'
 class ActionId(Strenum):
     _1 = -1
     actionid_attack = 600
