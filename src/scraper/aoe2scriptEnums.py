@@ -96,6 +96,12 @@ class Constant(AOE2VarType):
     def get_offset(cls, abstracted_offset, length):
         raise Exception(f"Constant do not have offsets or memory locations {abstracted_offset=}")
 
+class Timer(AOE2VarType):
+    params_to_offet = {
+        0:0,
+    }
+    length = 1
+    
 class Integer(AOE2VarType):
     params_to_offet = {
         0:0,
@@ -3889,3 +3895,4 @@ class AOE2OBJ(Strenum):
     mathOp = 106
     typeOp = 107
     Array = 108
+    Timer = 109

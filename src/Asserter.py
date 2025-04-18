@@ -3,7 +3,23 @@ import colorama
 from colorama import Fore, Style
 
 colorama.init(autoreset=True)
-
+'''
+Rules: 10,000
+Elements per rule: 16 in UP, 32 in DE
+Goals: 1 to 512 (bigger now)
+Strategic Numbers: 0 to 511
+Timers: 1 to 50
+Defconst values: -32768 to 32767 or a text string
+Goal and SN values: -2,147,483,648 to 2,147,483,647
+Flag values: powers of 2 from 1 to 2,147,483,648
+DUC Local Search list length: 240
+DUC Remote Search list length: 40
+Taunts: 255
+Characters per line: 255
+Nested File Load Commands: 10 files deep
+Nested #load-if Commands: 50 (might be lower, somewhere in the 30s)
+Doctrine: 1
+'''
 #todo: no variables names are function names
 #todo: all functions have the correct parameters, unless the compareOp special grammer
 #todo: do not allow use of reserved words like range (may already be taken care of in the ast.parcer)

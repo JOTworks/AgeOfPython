@@ -330,14 +330,6 @@ class AlocateAllMemory(compilerTransformer):
         node = super().visit_Return(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
         return node
 
-    def visit_FunctionDef(self, node):
-        self.generic_visit(node)
-        assert isinstance(self.memory, Memory)
-        self.memory.malloc_func_call(
-            node.name, node.args.args
-        )
-        return node
-
     def visit_Variable(self, node):
         if not (location := self.memory.get(node.id,node.offset_index)):
             logger.error(f"we are doing strict typing. you need to initialize {node.id}")
@@ -421,7 +413,7 @@ class CompileTR(compilerTransformer):
         asign_func_arg_commands = []
         for i, arg in enumerate(node.args):
             if type(arg) is Variable:
-                right_side = Variable({'id':arg.id})
+                right_side = Variable({'id':arg.id, 'offset_index':arg.offset_index})
             elif type(arg) in [ast.Constant, EnumNode]:
                 right_side = arg
                 

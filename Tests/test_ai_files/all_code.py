@@ -1,6 +1,6 @@
 #all_code
 from scraper import *
-from scraper import Integer, Boolean, Point, State, Constant, Array
+from scraper import Integer, Boolean, Point, State, Constant, Array, Timer
 from scraper import (
     can_build,
     build,
@@ -20,6 +20,9 @@ from scraper import (
     Constant,
 )
 
-explorer_id = Array(100)
-table = 3
-id_needed = explorer_id[table]
+
+JOB_TIMER_1 = Timer()
+TIMER_2 = Timer()
+up_timer_status(JOB_TIMER_1) == 0
+TIMER_2 = Timer()
+TIMER_2 = 1

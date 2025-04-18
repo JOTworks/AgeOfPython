@@ -1,8 +1,11 @@
 #THINGS TO DO in compiler
-#todo: make arrays
+#todo: make arrays work with items of lenght > 1
+#todo: implement struct object types
 #todo: make objects asign to each other nicely, including touple asignments
-#todo: implement default values for functions
 
+#not really needed
+#todo: implement default values for functions
+#todo: get boolians working (currrently using the coments)
 
 #THINGS TO CODE in this AI
 #todo: make a system of units having jobs and prios exec.
@@ -27,7 +30,8 @@ from scraper import (
   up_get_point_terrain, timer_triggered, enable_timer, disable_timer,
   up_chat_data_to_all, up_point_distance, resource_found, disable_self,
   up_build, current_age, up_can_train, up_train, up_can_research, up_research,
-  build, housing_headroom, population_headroom, building_type_count
+  build, housing_headroom, population_headroom, building_type_count,
+  up_lerp_tiles,
 )
 '''
 #______-Dark Age_________-#
@@ -102,71 +106,144 @@ DA_MILITIA_LOS = Constant(6)
 STARTING_VILL_COUNT = Constant(3)
 CLOCKWIZE = Constant(0)
 COUNTER_CLOCKWIZE = Constant(1)
+INTERNAL_PRIORITY = Constant(1)
+EXPLORE_JOB_PRIORITY = Constant(1)
+FALSE = Constant(0)
+TRUE = Constant(1)
+#region Round Counters
+if True:
+    round_counter = 0
+    disable_self()
+every_2 = FALSE
+every_4 = FALSE
+every_8 = FALSE
+every_16 = FALSE
+every_32 = FALSE
+every_64 = FALSE
+every_128 = FALSE
+every_256 = FALSE
+reset_every = FALSE
+round_counter += 1 #round_counter goes from 1 - 256
+if round_counter % 2 == 0:
+    every_2 = TRUE
+if round_counter % 4 == 0:
+    every_4 = TRUE
+if round_counter % 8 == 0:
+    every_8 = TRUE
+if round_counter % 16 == 0:
+    every_16 = TRUE
+if round_counter % 32 == 0:
+    every_32 = TRUE
+if round_counter % 64 == 0:
+    every_64 = TRUE
+if round_counter % 128 == 0:
+    every_128 = TRUE
+if round_counter % 256 == 0:
+    every_256 = TRUE
+if round_counter >= 256:
+    round_counter = 0
+#endregion
+#===========================#
+#|   JOB MANAGER CLASS     |#
+#===========================#
+#job arrays for each type of job used
+#all functions dealing with jobs will be in this class
+#only functions in this class should access these veriables
+#have an asign job function, a remove job function, and a do job function
 
-def JOB_explore_terrain(explorer_id, terrain:Terrain, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
-  INTERNAL_PRIORITY = Constant(1)
-  EXPLORE_JOB_PRIORITY = Constant(1)
-  terrain_type_at_point = Integer()
-  terrain_id_at_point = Integer()
-  up_get_point_terrain(starting_point, terrain_type_at_point, terrain_id_at_point)
+#__________explore_terrain__________#
+def J_explore_terrain(explorer_id, terrain:Terrain, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
+    terrain_type_at_point = Integer()
+    terrain_id_at_point = Integer()
+    up_get_point_terrain(terrain_type_at_point, terrain_id_at_point)
+#__________explore_object__________#
+J_explore_object_ids = Array(10)
+J_explore_object_things = Array(10)
+J_explore_object_timers = Array(10)
+J_explore_object_tiles_away = Array(10)
+J_explore_object_timers[0] = 1
+J_explore_object_timers[1] = 2
+J_explore_object_timers[2] = 3
+def J_explore_object(explorer_id, thing:ObjectId, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
+    #pass in exploorer_id as -1 to make it just run the exploration.
+    #pass in actual id to set a new explorer of an object.
+    #eplorer will cirle around a group of touching objects staying tiles_away in its circle.
 
-def JOB_explore_object(explorer_id, thing:ObjectId, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
-  #pass in exploorer_id as -1 to make it just run the exploration.
-  #pass in actual id to set a new explorer of an object.
-  #eplorer will cirle around a group of touching objects staying tiles_away in its circle.
-  explorer_ids = Array(10)
-  explorer_timers = Array(10)
-  explorer_things = Array(10)
-  explorer_tiles_away = Array(10)
-  explorer_timers[0] = 1
-  explorer_timers[1] = 2
-  explorer_timers[2] = 3
+    #the math 
+    #todo: fix this to use specific points, i think how it is, it wont work only using tile integeres
+    #get the perpendicular line to the closest resource and tiles_away from the resoruce in the direction of the villager. 
+    #move 1 tiles away farther down that tangent line (or farther if you check that is full)
+    #recalculate each time its called
+    explorer_point = Point()
+    resource_point = Point()
+    dest_point = Point()
+    dest_point.x = resource_point.x
+    dest_point.y = resource_point.y
+    up_lerp_tiles(dest_point, explorer_point, tiles_away)
 
-  #the math
-  #get the perpendicular line to the closest resource and tiles_away from the resoruce in the direction of the villager. 
-  #move 1 tiles away farther down that tangent line (or farther if you check that is full)
-  #recalculate each time its called
+    normalized_point = Point()
+    #normalized_point.x = -(dest_point.y - resource_point.y)/tiles_away
+    normalized_point.x = dest_point.y 
+    normalized_point.x -= resource_point.y 
+    normalized_point.x *= -1
+    normalized_point.x /= tiles_away
+    #normalized_point.y = (dest_point.x - resource_point.x)/tiles_away
+    normalized_point.y = dest_point.x
+    normalized_point.y -= resource_point.x
+    normalized_point.y /= tiles_away
 
-  #find the gold point and villager point, 
-  if explorer_id == -1: #run explore code
-    for i in range(10):
-        if explorer_id[i] != -1:
-            pass#do the math to explore
-        if timer_triggered(explorer_timers[i]):
-            explorer_id[i] = -1
-            explorer_things[i] = -1
-            explorer_tiles_away[i] = -1
-            disable_timer(explorer_timers[i])
+    #find the gold point and villager point, 
+    if explorer_id == -1: #run explore code
+        for i in range(10):
+            if explorer_id[i] != -1:
+                pass#do the math to explore
+            if timer_triggered(explorer_timers[i]):
+                explorer_id[i] = -1
+                explorer_things[i] = -1
+                explorer_tiles_away[i] = -1
+                disable_timer(explorer_timers[i])
 
-  else: 
-    for i in range(10): #this loop can be replaced by being able to get the Job of the unit
-        if explorer_id[i] == explorer_id:
-            up_chat_data_to_all("%d is already an explorer", explorer_id)
-            return 0 #unemployed
-    
-    for i in range(10):
-        if explorer_id[i] == -1:
-            explorer_id[i] = explorer_id
-            explorer_things[i] = thing
-            explorer_tiles_away[i] = tiles_away
-            enable_timer(explorer_timers[i], explore_duration)
-            up_chat_data_to_all("%d is now exploring %d", explorer_id, thing)
-            return 1 #Employed
-    return 0 #unemployed
-
-def JOB_push_deer(hunter_id, deer_id) -> Integer:
-    return #return 0 if job full
-
-def JOB_lure_bore(hunter_id, bore_id) -> Integer:
-    return #return 0 if job full
-
-def JOB_collect_headables(hearder_id, distance = 10) -> Integer:
+    else: 
+        for i in range(10): #this loop can be replaced by being able to get the J of the unit
+            if explorer_id[i] == explorer_id:
+                up_chat_data_to_all("%d is already an explorer", explorer_id)
+                return 0 #unemployed
+        
+        for i in range(10):
+            if explorer_id[i] == -1:
+                explorer_id[i] = explorer_id
+                explorer_things[i] = thing
+                explorer_tiles_away[i] = tiles_away
+                enable_timer(explorer_timers[i], explore_duration)
+                up_chat_data_to_all("%d is now exploring %d", explorer_id, thing)
+                return 1 #Employed
+        return 0 #unemployed
+#__________push_deer__________#
+J_deer_push_hunter = Array(3)
+J_deer_push_pray = Array(3)
+def J_push_deer(hunter_id, deer_id) -> Integer:
+    return #return 0 if J full
+def J_HIRE_push_deer(hunter_id, deer_id) -> Integer:
+    pass
+def J_FIRE_push_deer(hunter_id) -> Integer:
+    pass
+#__________lure_boar__________#
+def J_lure_boar(hunter_id, bore_id) -> Integer:
+    return #return 0 if J full
+#__________collect_heardables__________#
+def J_collect_headables(hearder_id, distance = 10) -> Integer:
     #find heardables within distance of hearder_id
     #move to the closest one
     #if there is none:
         return UNEMPLOYED
     #if there is one:
         return EMPLOYED_AS_HEARDABLE_COLLECTOR
+
+
+
+
+
+
 
 def get_closest_unit_id(unit_type:UnitId, point:Point, count = 0) -> Integer:
   #will return unit id of closest unit, but will still set the active list with count you want
@@ -208,10 +285,10 @@ def try_research(tech_id:TechId):
     if up_can_research(tech_id):
         up_research(tech_id)
 
-
 #===========================#
 #|        Dark Age         |#
 #===========================#
+
 if current_age() == Age.dark_age:
     #=========find TC Location=========#
     if building_type_count_total(BuildingId.town_center) == 0:
@@ -234,7 +311,7 @@ if current_age() == Age.dark_age:
                 if up_point_distance(villager_point, closest_gold_point) <= VILLAGER_LOS:
                     villager_id = -1
                     up_get_object_target_data(ObjectData.object_data_id, villager_id)
-                    JOB_explore_object(villager_id, Resource.gold, VILLAGER_LOS, closest_gold_point)
+                    J_explore_object(villager_id, Resource.gold, VILLAGER_LOS, closest_gold_point)
         #endregion
         #region ___after 5 seconds place a TC___
         tc_location = Point()
@@ -265,18 +342,18 @@ if current_age() == Age.dark_age:
     hunter_malitia_id = Integer()
     #set the 2 malitia to specific ID varialbes
     
-    JOB_collect_headables(magellan_malitia_id, 8)
+    J_collect_headables(magellan_malitia_id, 8)
        
-    JOB_explore_terrain(magellan_malitia_id, Terrain.terrain_water, DA_MILITIA_LOS)
+    J_explore_terrain(magellan_malitia_id, Terrain.terrain_water, DA_MILITIA_LOS)
     if deer_within_20:#deer within 40 tiles of TC
         deer_id = get_closest_unit_id(ClassId.prey_animal_class, tc_location)
-        JOB_push_deer(hunter_malitia_id, deer_id)
+        J_push_deer(hunter_malitia_id, deer_id)
     elif Bore_within_40:
        boar_id = get_closest_unit_id(ClassId.predator_animal_class, tc_location)
-       JOB_lure_bore(hunter_malitia_id, boar_id)
+       J_lure_bore(hunter_malitia_id, boar_id)
     elif deer_within_40:
         deer_id = get_closest_unit_id(ClassId.prey_animal_class, tc_location)
-        JOB_push_deer(hunter_malitia_id, deer_id)
+        J_push_deer(hunter_malitia_id, deer_id)
     #endregion
 
     #==========Economy==========#

@@ -1,4 +1,5 @@
-from scraper import AOE2OBJ, Point, State, Integer, Boolean, AOE2VarType, aoe2scriptEnums, Array
+from scraper import (AOE2OBJ, Point, State, Integer, Boolean, 
+AOE2VarType, aoe2scriptEnums, Array, Constant, Timer)
 from sortedcontainers import SortedDict
 from utils_display import print_bright, print_dim
 from pprint import pprint
@@ -33,8 +34,9 @@ class Memory:
         # self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
         self._func_stack = ["main"]
         self._used_memory = {"main":SortedDict({})}  # {scope: SortedDict({varname: StoreddMemory})}
-        self._func_blocks = SortedDict({})  # {start: StoredFuncCall}
         self._open_memory = SortedDict({self._FIRST_REGISTER: self._LAST_REGISTER})  # {start: end}
+
+        self._timer_memory = [] # list of varnames, should never go above 40
 
         classes = [cls for name, cls in inspect.getmembers(aoe2scriptEnums, inspect.isclass) if issubclass(cls, AOE2VarType) and cls is not AOE2VarType]
         self.class_constructer_default_size = {cls:cls.length for cls in classes if cls.length}
@@ -44,8 +46,6 @@ class Memory:
         pprint(self._open_memory)
         print(f"{self.used_memory_count=}")
         pprint(self._used_memory)
-        print(f"_func_blocks")
-        pprint(self._func_blocks)
 
     @property
     def free_memory_count(self):
@@ -59,47 +59,42 @@ class Memory:
         if scope == -1:
             scope = self._func_stack[-1]
         return self._used_memory[scope]
-    
-    def malloc_func_call(self, func, arguments):
-        #todo: coppied code from malloc, find out if i should consolidate
-        length = 3 + len(arguments)
-        free_space_start = self.find_open_space(length)
-        free_space_end = self._open_memory.pop(free_space_start)
-        self._open_memory[free_space_start + length] = free_space_end
 
-        self._func_blocks[func] = StoredFuncCall(
-            func, length, free_space_start, arguments
-        )
-        if self.verbose_memory:
-            print_bright(f"MALF: {func} {arguments} {free_space_start}")
-            self.print_memory()
-
-    def malloc(self, var_name, var_type, length=None, front=True):
-        if var_type is AOE2OBJ.Point:
+    def malloc(self, var_name, var_type_n, length=None, front=True):
+        if var_type_n in [AOE2OBJ.Point, Point]:
             var_type = Point
-        if var_type is AOE2OBJ.State:
+        if var_type_n in [AOE2OBJ.State, State]:
             var_type = State
-        if var_type is AOE2OBJ.Integer:
+        if var_type_n in [AOE2OBJ.Integer, Integer]:
             var_type = Integer
-        if var_type is AOE2OBJ.Boolean:
+        if var_type_n in [AOE2OBJ.Boolean, Boolean]:
             var_type = Boolean
-        if var_type is AOE2OBJ.Array:
+        if var_type_n in [AOE2OBJ.Array, Array]:
             var_type = Array
+        if var_type_n in [AOE2OBJ.Constant, Constant]:
+            var_type = Constant
+        if var_type_n in [AOE2OBJ.Timer, Timer]:
+            var_type = Timer
         if length and var_type is not Array:
             raise Exception("Length can only be specified for list types")
         if not length:
             length = self.class_constructer_default_size[var_type]
-        free_space_start = self.find_open_space(length, front)
 
-        free_space_end = self._open_memory.pop(free_space_start)
-        self._open_memory[free_space_start + length] = free_space_end
+        if var_type is Timer:
+            if len(self._timer_memory) >= 40:
+                raise Exception(f"Out of memory trying to allocate Timer registers for {var_name}")
+            self._timer_memory.append(var_name)
+        else:
+            free_space_start = self.find_open_space(length, front)
+            free_space_end = self._open_memory.pop(free_space_start)
+            self._open_memory[free_space_start + length] = free_space_end
 
-        self.used_memory_in_scope()[var_name] = StoredMemory(
-            var_name, var_type, length, free_space_start
-        )
-        if self.verbose_memory:
-            print_bright(f"MALO: {var_name} {var_type} {length} {free_space_start}")
-            self.print_memory()
+            self.used_memory_in_scope()[var_name] = StoredMemory(
+                var_name, var_type, length, free_space_start
+            )
+            if self.verbose_memory:
+                print_bright(f"MALO: {var_name} {var_type} {length} {free_space_start}")
+                self.print_memory()
 
     def free(self, var_name, scope = -1, front=True):
         var = self.used_memory_in_scope.pop(var_name, scope)
@@ -124,6 +119,8 @@ class Memory:
             self.print_memory()
 
     def get_name_at_location(self, reg_number):
+        if reg_number <= 40:
+            return self._timer_memory[reg_number - 1]
         for scope, memory_dict in self._used_memory.items():
             for start, stored_memory in memory_dict.items():
                 if stored_memory.start <= reg_number <= stored_memory.start + stored_memory.length - 1:
@@ -135,6 +132,8 @@ class Memory:
         try:
             stored_memory = self.used_memory_in_scope()[var_name]
         except KeyError:
+            if var_name in self._timer_memory:
+                return self._timer_memory.index(var_name) + 1 #AOE2Script timer is 1 indexed
             return None
         
             

@@ -49,7 +49,12 @@ class Array(AOE2VarType):
         if offset < 0 or offset >= length:
             raise Exception(f"Offset {offset} out of range {length}")
 
-
+class Timer(AOE2VarType):
+    params_to_offet = {
+        0:0,
+    }
+    length = 1
+    
 class State(AOE2VarType):
     params_to_offet = {
         'LocalIndex':0,
