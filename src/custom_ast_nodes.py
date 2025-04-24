@@ -2,6 +2,7 @@ import ast
 from utils import get_enum_classes, get_function_list_typeOp
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from scraper import typeOp
+from Memory import ARRAY_RETURN_REG
 from enum import Enum
 from scraper import AOE2FUNC
 from MyLogging import logger
@@ -28,6 +29,8 @@ class FuncModule(ast.Module):
         self.body = []
         self.type_ignores = []
         self.file_path = None
+    def var_name(self):
+        return ARRAY_RETURN_REG
 
 class Constructor(ast.Call):
     def __init__(self, object_name: str, args: list = [], lineno="."):
@@ -64,12 +67,29 @@ class Variable(ast.Name): #! give Variable a good constructor for comiler classe
     need memory alocation so Memory has an esier time finding them in the walk.
     """
 
-    def __init__(self, args):
+    def __init__(self, args, as_const = False):
+        self.as_const = as_const
         if "offset_index" in args:
             self.offset_index = args.pop("offset_index")
         else:
             raise Exception("Variable needs an offset_index")
         super().__init__(**args)
+
+    def var_name(self):
+        return self.id
+    
+
+def constant_var_name(self):
+    return self.value
+ast.Constant.var_name = constant_var_name
+
+def binop_var_name(self):
+    return self.temp_var_name
+ast.BinOp.var_name = binop_var_name
+
+def arg_var_name(self):
+    return self.arg
+ast.arg.var_name = arg_var_name
 
 class aoeOp(ast.BoolOp):
     """

@@ -17,7 +17,7 @@ class Strenum(Enum):
 _ = "DEFAULT VALUE" # default value for all optional enums
 class AOE2VarType():
     @classmethod
-    def get_offset(cls, abstracted_offset, length):
+    def get_offset(cls, abstracted_offset, lenth):
         if abstracted_offset is None:
             return 0
         offset = cls.params_to_offet.get(abstracted_offset)
@@ -32,10 +32,13 @@ class Array(AOE2VarType):
     def length(self):
         return self.length
     
-    def __init__(self, length):
+    def __init__(self, type, length):
         if type(length) is not int and length < 0:
             raise Exception(f"Array length {length} is not valid")
+        if not isinstance(type, AOE2VarType):
+            raise Exception(f"Array type {type} is not valid")
         self.length = length
+        self.type = type
     
     @classmethod
     def get_offset(cls, abstracted_offset, length):
@@ -54,7 +57,11 @@ class Array(AOE2VarType):
             raise Exception(f"Offset {offset} out of range {length}")
         return offset
 
-
+class Register(AOE2VarType):
+    params_to_offet = {
+        0:0,
+    }
+    length = 1
 class State(AOE2VarType):
     params_to_offet = {
         'LocalIndex':0,
@@ -67,11 +74,11 @@ class State(AOE2VarType):
         3:3,
     }
     length = 4
-    def __init__(self):
-        self.LocalIndex = None
-        self.LocalList = None
-        self.RemoteIndex = None
-        self.RemoteList = None
+    def __init__(self, local_index, local_list, remote_index, remote_list):
+        self.LocalIndex = local_index
+        self.LocalList = local_list
+        self.RemoteIndex = remote_index
+        self.RemoteList = remote_list
     
 class Point(AOE2VarType):
     params_to_offet = {
@@ -81,7 +88,7 @@ class Point(AOE2VarType):
         1:1,
     }
     length = 2
-    def __init__(self, x=None, y=None):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
 
@@ -107,14 +114,14 @@ class Integer(AOE2VarType):
         0:0,
     }
     length = 1
-    def __init__(self, value = None):
+    def __init__(self, value):
         self.value = value
 class Boolean(AOE2VarType):
     params_to_offet = {
         0:0,
     }
     length = 1
-    def __init__(self, value = None):
+    def __init__(self, value):
         self.value = value
 class FuncCall():
     pass #added manually
@@ -1667,8 +1674,6 @@ class PlayerStance(Strenum):
     neutral = 1
     any = 2
     enemy = 3
-class Point:
-    pass #Point
 class PositionType(Strenum):
     position_center = 0
     position_opposite = 1
@@ -3896,3 +3901,4 @@ class AOE2OBJ(Strenum):
     typeOp = 107
     Array = 108
     Timer = 109
+    Register = 110

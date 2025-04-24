@@ -73,7 +73,7 @@ class State(AOE2VarType):
         self.RemoteIndex = None
         self.RemoteList = None
     
-class Point(AOE2VarType):
+class Point(AOE2VarType): #todo: this colides with Point parmater, fix that someitme
     params_to_offet = {
         'x':0,
         0:0,

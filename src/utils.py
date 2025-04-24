@@ -121,16 +121,21 @@ def get_aoe2_var_types():
     return aoe2_var_types
 
 def get_list_from_return(value_returns):
-    if value_returns is None:
-        return_values = []
-    elif type(value_returns) is ast.Tuple:
-        return_values = value_returns.elts
-    elif type(value_returns) in [ast.List, list]:
-        return_values = value_returns
+    tp_return = value_returns
+    if type(tp_return) in [ast.List, list]:
+        if len(tp_return) == 1:
+            tp_return = tp_return[0]
+        else:
+            raise Exception("return values should all be list lenght 1 i exspected")
+    if tp_return is None:
+        tp_return = []
+    elif type(tp_return) is ast.Tuple:
+        tp_return = tp_return.elts
+    
     else: #todo: maybe make throw error if not a type that is part of the scraper import
-        return_values = [value_returns]
+        tp_return = [tp_return]
         logger.error(f"Unknown return type {type(value_returns)}")
-    return return_values
+    return tp_return
 
 def get_enum_classes():
     enum_classes = {}

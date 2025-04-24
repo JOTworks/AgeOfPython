@@ -16,7 +16,7 @@
         "-f","all_code", "-vv",
         //"-f","TuskenRail", "-r",
         //"-f","QuickElectrum", "-v", "-t"
-        //"-f","sheep_deer_test", "-v", "-t"
+        //"-f","nomads", "-v", "-t"
       ]
     }
   ]

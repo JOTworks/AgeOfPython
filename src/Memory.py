@@ -1,10 +1,14 @@
 from scraper import (AOE2OBJ, Point, State, Integer, Boolean, 
-AOE2VarType, aoe2scriptEnums, Array, Constant, Timer)
+AOE2VarType, aoe2scriptEnums, Array, Constant, Timer, Register)
 from sortedcontainers import SortedDict
 from utils_display import print_bright, print_dim
 from pprint import pprint
 import ast
 import inspect
+
+FUNC_DEPTH_COUNT = "func_depth_count"
+ARRAY_RETURN_REG = "array_return_register"
+FUNC_RET_REG = 15800 #janky but up_set_indirect_goal needs an integer to store into, so either i need to sepreatly parce it out later, or start it as an integer here
 
 class StoredMemory:
     def __init__(self, name, var_type, length, start):
@@ -30,7 +34,7 @@ class Memory:
     def __init__(self):
         self.verbose_memory = False #todo: make this an option
         self._FIRST_REGISTER = 41
-        self._LAST_REGISTER = 15799 #15900 - 15999 is for the function stack, 15800 - 15899 is for function returns
+        self._LAST_REGISTER = 15899 #15900 - 15999 is for the function stack
         # self.openMemory = [] #list of open goals, they get deleted when in use and added when freed
         self._func_stack = ["main"]
         self._used_memory = {"main":SortedDict({})}  # {scope: SortedDict({varname: StoreddMemory})}
@@ -40,6 +44,9 @@ class Memory:
 
         classes = [cls for name, cls in inspect.getmembers(aoe2scriptEnums, inspect.isclass) if issubclass(cls, AOE2VarType) and cls is not AOE2VarType]
         self.class_constructer_default_size = {cls:cls.length for cls in classes if cls.length}
+        
+        self.malloc(FUNC_DEPTH_COUNT, AOE2OBJ.Integer)
+        self.malloc(ARRAY_RETURN_REG, AOE2OBJ.Array, 100, front=False)
 
     def print_memory(self):
         print(f"{self.free_memory_count=}")
@@ -75,6 +82,8 @@ class Memory:
             var_type = Constant
         if var_type_n in [AOE2OBJ.Timer, Timer]:
             var_type = Timer
+        if var_type_n in [AOE2OBJ.Register, Register]:
+            var_type = Register
         if length and var_type is not Array:
             raise Exception("Length can only be specified for list types")
         if not length:
@@ -136,17 +145,15 @@ class Memory:
                 return self._timer_memory.index(var_name) + 1 #AOE2Script timer is 1 indexed
             return None
         
-            
         offset = stored_memory.var_type.get_offset(abstracted_offset, stored_memory.length)
         if offset >= stored_memory.length:
             raise Exception(f"Out of index error {offset}>{var_name} len")
         return stored_memory.start + offset
 
     def find_open_space(self, length, front=True):
-        if front:
-            temp_open_memory = self._open_memory
-        else:
-            temp_open_memory = reversed(self._open_memory)
+        temp_open_memory = self._open_memory
+        if not front:
+            reversed(temp_open_memory)
         for start, end in temp_open_memory.items():
             if end - start >= length:
                 return start

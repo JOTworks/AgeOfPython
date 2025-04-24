@@ -2,18 +2,15 @@ import ast
 import inspect
 from itertools import chain
 from scraper import *
-from scraper import AOE2FUNC, Integer, Constant, Array
+from scraper import AOE2FUNC, Integer, Constant, Array, Register
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
-from Memory import Memory
+from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT
 from copy import copy, deepcopy
 from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return
 from utils_display import print_bordered
 from MyLogging import logger
 
-FUNC_DEPTH_COUNT = "func_depth_count"
-ARRAY_RETURN_REG = "array_return_register"
-FUNC_RET_REG = 15800 #janky but up_set_indirect_goal needs an integer to store into, so either i need to sepreatly parce it out later, or start it as an integer here
 reserved_function_names = [
     'range',
 ] + list(get_enum_classes().keys()) + list(get_aoe2_var_types().keys())
@@ -45,6 +42,16 @@ class compilerTransformer(ast.NodeTransformer):
         self.generic_visit(node)
         if hasattr(node, 'body'):
             for item in node.body:
+                item = self.visit(item)
+        return node
+    
+    def visit_BinOp(self, node):
+        self.generic_visit(node)
+        if hasattr(node, 'body_post_left'):
+            for item in node.body_post_left:
+                item = self.visit(item)
+        if hasattr(node, 'body_post_right'):
+            for item in node.body_post_right:
                 item = self.visit(item)
         return node
 
@@ -152,6 +159,8 @@ class AstToCustomTR(compilerTransformer):
             return Constructor(getattr(AOE2OBJ, node.func.id), node.args, node)
         return node
 
+    #def visit_FunctionDef(self, node):
+        
 
 class ReduceTR(compilerTransformer):
     """
@@ -275,7 +284,20 @@ class ReduceTR(compilerTransformer):
             file_path=node.file_path,
         )
         return in_op
-
+    
+    def visit_BinOp(self, node):
+        node = super().visit_BinOp(node)
+        if type(node.left) is ast.Constant and type(node.right) is ast.Constant:
+            new_constant = copy(node.left)
+            new_constant.end_lineno, new_constant.end_col_offset = (
+                node.right.end_lineno,
+                node.right.end_col_offset,
+            )
+            new_constant.value = evaluate_expression(
+                node.left.value, node.op, node.right.value
+            )
+            node = new_constant
+        return node
 
 class WrapInDefRules(compilerTransformer):
     def __init__(self):
@@ -308,9 +330,13 @@ class AlocateAllMemory(compilerTransformer):
     no globals!
     """
 
-    def __init__(self, memory):
+    def __init__(self, memory, const_dict, temp_variable_type_dict):
         super().__init__()
+        assert isinstance(memory, Memory)
         self.memory = memory
+        self.const_dict = const_dict
+        for var_name, type in temp_variable_type_dict.items():
+            self.memory.malloc(var_name, type)
 
     def visit_Assign(self, node):
         assert isinstance(self.memory, Memory)
@@ -324,7 +350,11 @@ class AlocateAllMemory(compilerTransformer):
             else:
                 var_type = node.value.func.id
                 if var_type is AOE2OBJ.Array:
-                    self.memory.malloc(node.targets[0].id, var_type, length = node.value.args[0].value)
+                    if type(node.value.args[0]) is Variable:
+                        length = self.const_dict[node.value.args[0].id]
+                    else:
+                        length = node.value.args[0].value
+                    self.memory.malloc(node.targets[0].id, var_type, length)
                 else:
                     self.memory.malloc(node.targets[0].id, var_type)
         node = super().visit_Return(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
@@ -342,18 +372,25 @@ class AlocateAllMemory(compilerTransformer):
 
 
 class CompileTR(compilerTransformer):
-    def __init__(self, command_names, func_def_dict):
+    def __init__(self, command_names, func_def_dict, temp_var_prefix, variable_type_dict = {}):
         super().__init__()
+        self.temp_var_prefix = "0" + str(temp_var_prefix) + "temp"
         self.command_names = command_names
         self.parent_map = {}
+        self.variable_types = variable_type_dict
         self.temp_var_counter = 0
         self.func_def_dict = func_def_dict
         self.current_func_def = None
         self.aoe2_var_types = get_aoe2_var_types()
 
+    
+    def get_temp_variable_type_dict(self):
+        return self.variable_types #todo: only add function def args, as they are not using constructors. but have type still
+        #return {k:v for k, v in self.variable_types.items() if k.startswith(self.temp_var_prefix)}
+    
     def get_next_temp_var(self):
         self.temp_var_counter += 1
-        return f"0t{self.temp_var_counter}"
+        return f"{self.temp_var_prefix}_{self.temp_var_counter}"
 
     def visit(self, node, parent=None, in_field=[], in_node=[]):
         parent = self.parent_map.get(node)
@@ -379,7 +416,7 @@ class CompileTR(compilerTransformer):
 
     def visit_Call(self, node, parent, in_field, in_node):
         self.generic_visit(node)
-        func_name = node.func.id
+        func_name = node.func.id.split(".")[-1] #todo: check if we want to keep nested function names with the full set, or only the last one
         if func_name in reserved_function_names:
             return node
         func_def_node = self.func_def_dict[func_name]
@@ -412,27 +449,17 @@ class CompileTR(compilerTransformer):
 
         asign_func_arg_commands = []
         for i, arg in enumerate(node.args):
-            if type(arg) is Variable:
-                right_side = Variable({'id':arg.id, 'offset_index':arg.offset_index})
-            elif type(arg) in [ast.Constant, EnumNode]:
-                right_side = arg
-                
-            else:
-                raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}, line {node.lineno}")
-            if "." in func_def_node.args.args[i].arg:
-                raise Exception(f"func args need to be either a Variable or Constant, not {type(arg)}, line {node.lineno}")
-            asign_func_arg_commands.append(
-                Command(AOE2FUNC.up_modify_goal, [
-                    Variable({'id':func_name + "." + func_def_node.args.args[i].arg,'offset_index':None}),
-                    mathOp.eql, 
-                    right_side,
-                ], node)
+            asign_func_arg_commands += self.create_modify_commands(
+                func_def_node.args.args[i],
+                ast.Eq,
+                arg,
                 )
         asign_func_args = DefRule(
                 Command(AOE2FUNC.true, [], None),
                 asign_func_arg_commands,
                 node,
         )
+
         jump_to_func = DefRule(
             Command(AOE2FUNC.true, [], None),
             [Command(AOE2FUNC.up_jump_direct, [JumpType.jump_to_func], node)],
@@ -632,19 +659,151 @@ class CompileTR(compilerTransformer):
             )
         return compare_comand
 
+    def check_type_compatible(list_vars_1, list_vars_2, lineno = "unknown"):
+        if len(list_vars_1) != len(list_vars_2):
+            raise Exception(
+                f"var lists are not the same length {len(list_vars_1)} and {len(list_vars_2)}, line {lineno}"
+            )
+        for var_1, var_2 in zip(list_vars_1, list_vars_2):
+            var_1_name, var_1_size = var_1
+            var_2_name, var_2_size = var_2
+            if var_1_size is not var_2_size:
+                raise Exception(
+                    f"var types are not compatible {var_1_size} and {var_2_size}, line {lineno}"
+                )
+
+    def get_aoe2_modify_function(self, node):
+        if type(node) in [Variable, ast.arg]:
+            return AOE2FUNC.up_modify_goal
+        if type(node) in [SN, SnId]:
+            return AOE2FUNC.up_modify_sn
+        if type(node) is ast.Constant:
+            raise Exception(
+                f"you cannot modify a constant {node.value}, line {node.lineno}"
+            )
+        else:
+            raise Exception(
+                f"you cannot modify a {type(node)}, line {node.lineno}"
+            )
+
+    def create_modify_commands(self, node_1, op, node_2):
+        # x = y, x += y, SN.this = 12, array[0] = 12, 12 = array[n], 
+        modify_commands = [] #! not here but somewhere else the array should have added its 4 commands
+
+        if type(node_1) is Variable and node_1.offset_index is not None:
+            node_1_length = 1
+        else:
+            node_1_length = self.get_var_type(node_1).length
+
+        if type(node_2) is Variable and node_2.offset_index is not None:
+            node_2_length = 1
+        elif type(node_2) is FuncModule:
+            return_types = self.get_function_return_types(node_2.name)
+            if len(return_types) != 1:
+                raise Exception(
+                    f"function {node_2.name} has more than 1 return type, line {node_2.lineno}"
+                )
+            node_2_length = return_types[0].length
+            
+        else:
+            node_2_length = self.get_var_type(node_2).length
+
+
+        if node_1_length and node_2_length and node_1_length != node_2_length:
+            raise Exception(
+                f"var types are not compatible {node_1_length} and {node_2_length}, line UNKONWN"
+            )
+        else:
+            length = node_1_length if node_1_length else node_2_length
+
+        modify_func = self.get_aoe2_modify_function(node_1)
+        
+        for i in range(length):
+            # here for if we are asigning part of the middle of a veriable
+            left_offset_index = i
+            right_offset_index = i
+            if type(node_1) is Variable and node_1.offset_index is not None:
+                left_offset_index = node_1.offset_index
+            if type(node_2) is Variable and node_2.offset_index is not None:
+                right_offset_index = node_2.offset_index
+                
+            left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index})
+            if type(node_2) is ast.Constant:
+                right = node_2
+            else:
+                right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index})
+            modify_commands.append( Command(
+                        modify_func,
+                        [left, ast_to_aoe(op), right],
+                         None,
+                    ))
+        return modify_commands
+    
+    def set_var_type(self, var_name, var_type):
+        cleaned_var_type = None
+        if var_name in self.variable_types:
+            raise Exception(f"var {var_name} already has a type {self.variable_types[var_name]}, line unknown")
+        elif aoe2_vartype := self.aoe2_var_types.get(var_type, None):
+             cleaned_var_type = aoe2_vartype
+        elif aoe2_vartype := self.aoe2_var_types.get(var_type.__name__, None):
+             cleaned_var_type = aoe2_vartype
+        
+        if cleaned_var_type:
+            self.variable_types[var_name] = cleaned_var_type
+        else:
+            raise Exception("booooooo!")
+
+    def get_var_type(self, node):
+        if type(node) is ast.Constant:
+            if type(node.value) is int:
+                return Integer
+            #elif type(node.value) is bool:
+            #    return Boolean
+            #elif type(node.value) is str:
+            #    return String
+            else:
+                raise Exception(f"Constant of type {type(node.value)} not supported, line {node.lineno}")
+
+        var_name = node.var_name()
+        
+        if hasattr(node, 'offset_index') and node.offset_index is not None: #all subsection are currently single regesters
+            return Register
+
+        if var_name in self.variable_types:
+            return self.variable_types[var_name]
+        
+        raise Exception(f"var {var_name} not found in variable_types, line unknown")
+
     def visit_BinOp(self, node, parent, in_field, in_node):
         # will be 2CT and needs to be up-goal-modify # ALWAYS use temperary vars for this
-        self.generic_visit(node)
-        if type(node.left) is ast.Constant and type(node.right) is ast.Constant:
-            new_constant = copy(node.left)
-            new_constant.end_lineno, new_constant.end_col_offset = (
-                node.right.end_lineno,
-                node.right.end_col_offset,
-            )
-            new_constant.value = evaluate_expression(
-                node.left.value, node.op, node.right.value
-            )
-            node = new_constant
+        #BINOP: #tempVar-1 size(1)
+        node = super().visit_BinOp(node)
+        node.temp_var_name = self.get_next_temp_var()
+        
+        if self.get_var_type(node.left) == self.get_var_type(node.right):
+            self.set_var_type(node.temp_var_name, self.get_var_type(node.left))
+        else:
+            raise Exception(f"binop left [{self.get_var_type(node.left)}] and right [{self.get_var_type(node.right)}] size are not the same, line {node.lineno}")
+        
+        node.body_post_left = [DefRule(
+            Command(AOE2FUNC.true, [], None),
+            self.create_modify_commands(
+                Variable({'id':node.var_name(),'offset_index':None}), #var_name()
+                ast.Eq(),
+                node.left
+            ),
+            node
+        )]
+        
+        node.body_post_right = [DefRule(
+                Command(AOE2FUNC.true, [], None),
+                self.create_modify_commands(
+                Variable({'id':node.var_name(),'offset_index':None}), #var_name()
+                node.op,
+                node.right
+            ),
+            node,
+        )]
         return node
 
     def visit_BoolOp(self, node, parent, in_field, in_node):  # and, or
@@ -694,6 +853,110 @@ class CompileTR(compilerTransformer):
         raise Exception("AugAssign should all be parced out by ReduceTR")
 
     def visit_Assign(self, node, parent, in_field, in_node):
+        '''
+        #function returns ALWAYS need to return all of their returns
+        #function returning array, assume it the right size. only check size on returns
+
+        array[0] =
+        array[n] =
+        
+        x, y = (1, 2)
+
+        point = 
+        point.x =
+
+        = array[0]
+        = array[n]
+        = returns_multiple(param1, param2))
+        = returns_none() #this should throw an error
+        
+        x = 4+14+23
+        x = returns_one() + 15 + 12
+
+        Varabile(x) = BinOP( CALL() + BinOP( CONST(15) + CONST(12)))
+
+        point = returns_two() + point
+
+        array = array
+        array = returns_array() 
+
+        point = (x, y)
+        point = point
+
+        #these all are treated like the test section of an if. will eval to a bool Op
+        = aoe2function
+        is_true = tirents > 12
+        is_true = (lumber(count) > 12 AND excedrin OR potatoes)
+
+        
+        deaths = deathcount(myplayernum) + deathcount(yourplayernum)
+
+        funct: ARRAY_RETURN_REG
+
+        
+
+        point = 15
+        point = (15, 23) # tuple returns multiple things like a funtion does
+        point = point
+
+        a, b = function()
+
+        array, is_color = function()
+
+        point = function()
+        array[n] = 1
+
+        for i in 12:
+            a = items[i][0]
+            b = items[i][1]
+        
+        
+
+        ###########################################
+        all visits return list of [length and var name]. and store their stuff
+        iterate trhough the list of both sidea and do asignments.
+        CALL #ARRAY_RETURN_REG  size
+        setup func vars #! asign based on size
+        jump
+        setup return stuff (Return Registers) #! asign based on size
+
+        BINOP #tempVar-1 size(1)
+        tempVar-1 = 15 #! asign based on size
+        tempVar-1 += 12 #! asign based on size
+
+        BINOP #tempVar-2 size(1)
+        tempVar-2 = ARRAY_RETURN_REG #! asign based on size
+        tempVar-2 += tempVar-1 #! asign based on size
+
+        ASSIGN #x size(1)
+        x = tempVar-2 #! asign based on size
+        ###########################################
+        
+        '''
+        self.generic_visit(node)
+
+        node.body = []
+        target = node.targets[0]
+
+        if type(node.value) is Constructor: #! fix later, we want constroctors to all be initialized
+            self.set_var_type(target.var_name(), node.value.func.id.name)
+            if len(node.value.args) > 0 and (type(node.value.func) is not Array and len(node.value.args) > 1):
+                raise Exception(
+                    f"we dont curently support constructors with args {[arg.value if hasattr(arg, 'value') else arg for arg in node.value.args]}, line {node.lineno}"
+                )
+            return node
+
+        assign_commands = self.create_modify_commands(node.targets[0], ast.Eq(), node.value)
+        msg = None
+        node.body = [DefRule(
+            Command(AOE2FUNC.true, [], None),
+            assign_commands,
+            node,
+            '' if msg is None else msg + " " + str(node.lineno),
+        )]
+        return node
+
+        #! redo this whole function it is all terrrrible
         #todo: Make nested asignments work with binOp ect
         msg = None
         node.body = []
@@ -701,9 +964,38 @@ class CompileTR(compilerTransformer):
         self.generic_visit(node)
         target = node.targets[0]
         if type(target) is Variable:
+            if type(target.offset_index) is Variable:
+                # 1. store Array[0] -> ARRAY_RETURN_REG
+                # 2. add Variable offset -> ARRAY_RETURN_REG
+                # 3. store reg value ARRAY_RETURN_REG points too to -> ARRAY_RETURN_REG
+                # 4. do the normal assign but using ARRAY_RETURN_REG
+                assign_command.append( Command(
+                    AOE2FUNC.up_modify_goal,
+                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.eql, Variable(
+                        {'id':target.id,'offset_index':None,}, as_const = True
+                    )],
+                    node,
+                ))
+                assign_command.append( Command(
+                    AOE2FUNC.up_modify_goal,
+                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.add, target.offset_index],
+                    node,
+                ))
+                assign_command.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal
+                    AOE2FUNC.up_get_indirect_goal,
+                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
+                    node,
+                ))
+                assign_command.append( Command(
+                    AOE2FUNC.up_get_indirect_goal,
+                    [target, mathOp.eql, Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
+                    node,
+                ))
             modify_function = AOE2FUNC.up_modify_goal
         elif type(target) is EnumNode and type(target.enum) is SN:
             modify_function = AOE2FUNC.up_modify_sn
+        elif type(target) is ast.Tuple:
+            pass
         else:
             #todo: refactor this when i do binops and everything
             raise Exception(
@@ -739,7 +1031,9 @@ class CompileTR(compilerTransformer):
                 # 4. do the normal assign but using ARRAY_RETURN_REG
                 assign_command.append( Command(
                     AOE2FUNC.up_modify_goal,
-                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.eql, node.value],
+                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.eql, Variable(
+                        {'id':node.value.id,'offset_index':None,}, as_const = True
+                    )],
                     node,
                 ))
                 assign_command.append( Command(
@@ -777,17 +1071,10 @@ class CompileTR(compilerTransformer):
                 [target, mathOp.eql, node.value.enum],
                 node,
             ))
-        elif type(node.value) is Constructor:
-            if len(node.value.args) > 0 and (type(node.value.func) is not Array and len(node.value.args) > 1):
-                raise Exception(
-                    f"we dont curently support constructors with args {[arg.value if hasattr(arg, 'value') else arg for arg in node.value.args]}, line {node.lineno}"
-                )
-            return node
         
         elif type(node.value) is FuncModule:
             assign_command = self.make_set_returned_values_commands(node)
             msg = "FUNC_returned"
-
         else:
             # todo: allow var[0] instead of just var.x (uses ast.Subscript)
             raise Exception(f"{type(node.value)} not suported in asignments")
@@ -815,77 +1102,48 @@ class CompileTR(compilerTransformer):
         )
         return [set_jump_back, jump_back_to_after_call]
 
+    def get_function_return_types(self, function_name):
+        args = get_list_from_return(self.func_def_dict[function_name].returns)
+        arg_types = []
+        for arg in args:
+            if arg.id in self.aoe2_var_types:
+                arg_types.append(self.aoe2_var_types[arg.id])
+            else:
+                raise Exception(f"function {function_name} has a return type of {arg.id} that is not in the aoe2_var_types, line {self.lineno}")
+        return arg_types
+
     def make_set_returned_values_commands(self, node): #todo: merge with make_set_return_pointers_commands at some point
-        #instead of (set-goal 15800 1)
-        #it will be (up-set-goal-indirect return_Val_name G! 15800)]
         return_values = get_list_from_return(node.targets)
-        funct_returns_values = get_list_from_return(self.func_def_dict[node.value.name].returns)
+        funct_returns_values = self.get_function_return_types(node.value.name)
         if len(return_values) != len(funct_returns_values):
             if len(return_values) == 0:
-                return []
-            raise Exception(f"function {self.current_func_def.name} has {len(funct_returns_values)} returns, not {len(return_values)}, line {node.lineno}")
+                raise Exception(f"function {node.value.name} has no returns, not {len(return_values)}, line {node.lineno}")
+            raise Exception(f"function {node.value.name} has {len(funct_returns_values)} returns, not {len(return_values)}, line {node.lineno}")
 
-        set_returned_values_commands = []
-        return_register_count = 0
-        for i, funct_ret_val in enumerate(funct_returns_values):
-            length = self.aoe2_var_types[funct_ret_val.id].length
-            for j in range(length):
-                
-                set_returned_values_commands.append(Command(
-                    AOE2FUNC.up_set_indirect_goal,
-                    [
-                        Variable({'id':return_values[i].id,'offset_index':j}),
-                        ast.Constant(FUNC_RET_REG+return_register_count),
-                    ],
-                    node,))
-                return_register_count += 1
+        set_ret_commands = []
+        for ret_val in return_values:
+            set_ret_commands += self.create_modify_commands(ret_val, ast.Eq, ret_val) #!figure out why it works for one and not other, need to get retern_reg in one side
 
-        return set_returned_values_commands
+        return set_ret_commands
     
-    def make_set_return_pointers_commands(self, node):
+    def make_set_return_reg_commands(self, node):
         return_values = get_list_from_return(node.value)
         funct_returns_values = get_list_from_return(self.current_func_def.returns)
         if len(return_values) != len(funct_returns_values):
-            if len(return_values) == 0:
-                return []
             raise Exception(f"function {self.current_func_def.name} has {len(funct_returns_values)} returns, not {len(return_values)}, line {node.lineno}")
-        set_return_pointers_commands = []
-        return_register_count = 0
-        for i, funct_ret_val in enumerate(funct_returns_values):
-            length = self.aoe2_var_types[funct_ret_val.id].length
-            for j in range(length):
-                if type(return_values[i]) is ast.Tuple:
-                    return_value = return_values[i].elts[j]
-                else:
-                    return_value = return_values[i]
-                    if length > 1:
-                        raise Exception(f"return value {return_values[i]} is a constant but has length {length}, line {node.lineno}")
-                    
-                if type(return_value) is ast.Constant:
-                    set_return_pointers_commands.append(Command(
-                        AOE2FUNC.set_goal,
-                        [ast.Constant(FUNC_RET_REG+return_register_count),
-                         ast.Constant(return_values[i].value),
-                        ],node,))
-                    
-                if type(return_value) is Variable:
-                    set_return_pointers_commands.append(Command(
-                        AOE2FUNC.up_set_indirect_goal,
-                        [
-                            Variable({'id':return_values[i].id,'offset_index':j}),
-                            ast.Constant(FUNC_RET_REG+return_register_count),
-                        ],
-                        node,
-                    ))   
-                return_register_count += 1
+        
+        set_ret_commands = []
+        for ret_val in return_values:
+            set_ret_commands += self.create_modify_commands(ret_val, ast.Eq, ret_val) #!figure out why it works for one and not other,  need to get retern_reg in one side
 
-        return set_return_pointers_commands
+
+        return set_ret_commands
 
     def visit_Return(self, node):
         self.generic_visit(node)
         jump_back_rules = self.make_jump_back_rules(node.lineno)
             
-        set_return_pointers_commands = self.make_set_return_pointers_commands(node)
+        set_return_pointers_commands = self.make_set_return_reg_commands(node)
         set_return_pointers_rule = [DefRule(
             Command(AOE2FUNC.true, [], None),
             set_return_pointers_commands,
@@ -898,6 +1156,11 @@ class CompileTR(compilerTransformer):
 
     def visit_FunctionDef(self, node):
         self.current_func_def = self.func_def_dict[node.name]
+        self.get_function_return_types
+        for arg in node.args.args:
+            if not hasattr(arg, 'annotation'):
+                raise Exception(f"function {node.name} arg {arg.arg} has no annotation, line {node.lineno}")
+            self.set_var_type(arg.arg,arg.annotation.id)
         self.generic_visit(node)
         jump_back_rules = self.make_jump_back_rules(node.lineno)
         node.body = node.body + jump_back_rules
@@ -1094,6 +1357,10 @@ class ScopeAllVariables(compilerTransformer):
                 f"current_function is {self.current_function}, you cannot define {node.name if node else 'a function'} in a function"
             )
         self.current_function = node.name
+        for arg in node.args.args:
+            if "." in arg.arg:
+                raise Exception(f"arg {arg.arg.id} already has a '.', line {node.lineno}")
+            arg.arg = self.current_function + "." + arg.arg
         self.generic_visit(node)
         self.current_function = None
         return node
@@ -1168,6 +1435,14 @@ class Compiler:
             func_def_dict[func_def.name] = func_def
         return func_def_dict
     
+    def get_dict_from_const_tree(self, const_tree):
+        const_dict = {}
+        for const in const_tree.body:
+            if not isinstance(const, ast.Assign):
+                raise Exception(f"func_def {const} is not a ast.Assign, its a {type(const)}")
+            const_dict[const.targets[0].id] = const.value.args[0].value
+        return const_dict
+
     def compile(self, trees, vv=False):
         
 
@@ -1189,8 +1464,13 @@ class Compiler:
 
         trees.func_tree = ScopeAllVariables().p_visit(trees.func_tree, "func_tree", vv)
         func_def_dict = self.get_func_def_dict(trees.func_tree)
-        trees.main_tree = CompileTR(self.command_names, func_def_dict).p_visit(trees.main_tree, "main_tree", vv)
-        trees.func_tree = CompileTR(self.command_names, func_def_dict).p_visit(trees.func_tree, "func_tree", vv)
+        
+        func_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="F")
+        trees.func_tree = func_compiler.p_visit(trees.func_tree, "func_tree", vv)
+        main_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="T", variable_type_dict = func_compiler.get_temp_variable_type_dict())
+        trees.main_tree = main_compiler.p_visit(trees.main_tree, "main_tree", vv)
+        temp_variable_type_dict = main_compiler.get_temp_variable_type_dict()
+        
         trees.main_tree = WrapInDefRules().p_visit(trees.main_tree, "main_tree", vv)  # optimize commands together into defrules
         trees.func_tree = WrapInDefRules().p_visit(trees.func_tree, "func_tree", vv)
         
@@ -1226,13 +1506,17 @@ class Compiler:
         combined_tree = ReplaceAllJumpStatementsTransformer(func_def_dict, rule_count).p_visit(combined_tree, "combined_tree", vv)
 
         memory = Memory()
-
-        trees.main_tree = AlocateAllMemory(memory).p_visit(
-            trees.main_tree, "main_tree", vv
-        )  # find out last place vars are used, and automaticaly call free on them; walk through and keep a list of node and variable pairing, then add tag
-        trees.func_tree = AlocateAllMemory(memory).p_visit(
-            trees.func_tree, "func_tree", vv
+        const_dict = self.get_dict_from_const_tree(trees.const_tree)
+        combined_tree = AlocateAllMemory(memory, const_dict, temp_variable_type_dict).p_visit(
+            combined_tree, "combined_tree", vv
         )
+
+        #trees.main_tree = AlocateAllMemory(memory, const_dict, ).p_visit(
+        #    trees.main_tree, "main_tree", vv
+        #)  # find out last place vars are used, and automaticaly call free on them; walk through and keep a list of node and variable pairing, then add tag
+        #trees.func_tree = AlocateAllMemory(memory, const_dict, ).p_visit(
+        #    trees.func_tree, "func_tree", vv
+        #)
         if vv:
             print_bordered("Memory after all alocations")
             memory.print_memory()

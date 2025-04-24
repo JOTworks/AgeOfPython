@@ -43,6 +43,14 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         for item in node.body:
             self.visit(item)
         self.generic_visit(node) #!sus should we be going through twice?
+    
+    def visit_BinOp(self, node):
+        self.visit(node.left)
+        for item in node.body_post_left:
+            self.visit(item) 
+        self.visit(node.right)
+        for item in node.body_post_right:
+            self.visit(item)
 
     def visit_Assign(self, node): #todo: when refactored i will need to print temp math first, function calls, then asigns
         self.call_tracker["visit_Assign"] += 1
@@ -106,7 +114,10 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             if next_expr is None:
                 raise Exception(f"next_expr is None, but it should be a Variable or Constant or SnI, line {expr.lineno}")
             if type(next_expr) is Variable:
-                prefix = typeOp.goal
+                if next_expr.as_const:
+                    prefix = typeOp.constant
+                else:
+                    prefix = typeOp.goal
                 value_str = str(int(expr.val) + 12)
             elif type(next_expr) is ast.Constant:
                 prefix = typeOp.constant
@@ -189,7 +200,8 @@ class Printer:
         no_whitespace = no_comments.replace("\n", "")
         no_whitespace = re.sub(r" +", " ", no_whitespace)
         no_whitespace = re.sub(r" *=> *", "=>", no_whitespace)
-        no_whitespace = re.sub(r"\) +\)", "))", no_whitespace)
+        no_whitespace = re.sub(r" *\( *", "(", no_whitespace)
+        no_whitespace = re.sub(r" *\) *", ")", no_whitespace)
         return no_whitespace
 
     def print_for_string_testing(self):
