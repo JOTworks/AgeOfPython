@@ -673,7 +673,7 @@ class CompileTR(compilerTransformer):
                 )
 
     def get_aoe2_modify_function(self, node):
-        if type(node) in [Variable, ast.arg]:
+        if type(node) in [Variable, ast.arg, ast.Return]:
             return AOE2FUNC.up_modify_goal
         if type(node) in [SN, SnId]:
             return AOE2FUNC.up_modify_sn
@@ -690,11 +690,7 @@ class CompileTR(compilerTransformer):
         # x = y, x += y, SN.this = 12, array[0] = 12, 12 = array[n], 
         modify_commands = [] #! not here but somewhere else the array should have added its 4 commands
 
-        if type(node_1) is Variable and node_1.offset_index is not None:
-            node_1_length = 1
-        else:
-            node_1_length = self.get_var_type(node_1).length
-
+        #right side of assign
         if type(node_2) is Variable and node_2.offset_index is not None:
             node_2_length = 1
         elif type(node_2) is FuncModule:
@@ -704,9 +700,21 @@ class CompileTR(compilerTransformer):
                     f"function {node_2.name} has more than 1 return type, line {node_2.lineno}"
                 )
             node_2_length = return_types[0].length
-            
         else:
             node_2_length = self.get_var_type(node_2).length
+
+        #left side of assign
+        if self.get_var_type(node_1) is None:
+            self.set_var_type(node_1.var_name(), self.get_var_type(node_2))
+
+        if type(node_1) is Variable and node_1.offset_index is not None:
+            node_1_length = 1
+        elif type(node_1) is ast.Return: 
+            node_1_length = node_2_length #assuming bad returns are caught in Asserter
+        else:
+            node_1_length = self.get_var_type(node_1).length
+        
+        
 
 
         if node_1_length and node_2_length and node_1_length != node_2_length:
@@ -772,7 +780,7 @@ class CompileTR(compilerTransformer):
         if var_name in self.variable_types:
             return self.variable_types[var_name]
         
-        raise Exception(f"var {var_name} not found in variable_types, line unknown")
+        return # not in dictionary
 
     def visit_BinOp(self, node, parent, in_field, in_node):
         # will be 2CT and needs to be up-goal-modify # ALWAYS use temperary vars for this
@@ -780,9 +788,7 @@ class CompileTR(compilerTransformer):
         node = super().visit_BinOp(node)
         node.temp_var_name = self.get_next_temp_var()
         
-        if self.get_var_type(node.left) == self.get_var_type(node.right):
-            self.set_var_type(node.temp_var_name, self.get_var_type(node.left))
-        else:
+        if not self.get_var_type(node.left) == self.get_var_type(node.right):
             raise Exception(f"binop left [{self.get_var_type(node.left)}] and right [{self.get_var_type(node.right)}] size are not the same, line {node.lineno}")
         
         node.body_post_left = [DefRule(
@@ -1111,20 +1117,6 @@ class CompileTR(compilerTransformer):
             else:
                 raise Exception(f"function {function_name} has a return type of {arg.id} that is not in the aoe2_var_types, line {self.lineno}")
         return arg_types
-
-    def make_set_returned_values_commands(self, node): #todo: merge with make_set_return_pointers_commands at some point
-        return_values = get_list_from_return(node.targets)
-        funct_returns_values = self.get_function_return_types(node.value.name)
-        if len(return_values) != len(funct_returns_values):
-            if len(return_values) == 0:
-                raise Exception(f"function {node.value.name} has no returns, not {len(return_values)}, line {node.lineno}")
-            raise Exception(f"function {node.value.name} has {len(funct_returns_values)} returns, not {len(return_values)}, line {node.lineno}")
-
-        set_ret_commands = []
-        for ret_val in return_values:
-            set_ret_commands += self.create_modify_commands(ret_val, ast.Eq, ret_val) #!figure out why it works for one and not other, need to get retern_reg in one side
-
-        return set_ret_commands
     
     def make_set_return_reg_commands(self, node):
         return_values = get_list_from_return(node.value)
@@ -1134,7 +1126,7 @@ class CompileTR(compilerTransformer):
         
         set_ret_commands = []
         for ret_val in return_values:
-            set_ret_commands += self.create_modify_commands(ret_val, ast.Eq, ret_val) #!figure out why it works for one and not other,  need to get retern_reg in one side
+            set_ret_commands += self.create_modify_commands(node, ast.Eq, ret_val) #!figure out why it works for one and not other,  need to get retern_reg in one side
 
 
         return set_ret_commands

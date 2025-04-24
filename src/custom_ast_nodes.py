@@ -91,6 +91,10 @@ def arg_var_name(self):
     return self.arg
 ast.arg.var_name = arg_var_name
 
+def return_var_name(self):
+    return ARRAY_RETURN_REG
+ast.Return.var_name = return_var_name
+
 class aoeOp(ast.BoolOp):
     """
     this is a wrapper for a BoolOp BUT ALSO includes the UniOp Not()

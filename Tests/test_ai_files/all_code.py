@@ -28,8 +28,7 @@ def add_points(p1:Point, p2:Point) -> Point:
     return p1
 
 loc = Point()
-tc_l = Point()
-new_p = Point()
+tc_l = loc
 new_p = add_points(loc, tc_l)
 
 
