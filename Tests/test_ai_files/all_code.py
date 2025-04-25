@@ -23,13 +23,39 @@ from scraper import (
 #test = Integer()
 #final = Integer()
 #test = final*final + 12
-def add_points(p1:Point, p2:Point) -> Point:
-    p1 = p1+p2
-    return p1
+def add_points(p1:Point) -> (Point, Point):
+    p3 = Point()
+    return p1, p3
 
 loc = Point()
-tc_l = loc
-new_p = add_points(loc, tc_l)
+new_p = Point()
+new_p, loc = add_points(loc)
+new_p, loc = ((1,1),(2,2))
+
+
+#def one_ret() -> Point:
+#    myPoint = Point()
+#    return myPoint
+#
+#loc = Point()
+#loc = one_ret()
+##lengths are the same
+#new_p = loc
+#new_p = (0,1)
+#x = 0
+#y = 1
+#x,y = x+4,y
+#
+###right side 1
+##    #left side 1
+##new_p += (x,(x,y))
+##
+##    #left side length of right side
+##x,y,z = loc
+#
+##dont allow this
+#x = y = 0
+
 
 
 #final = myArray[test] + 3 + 4 + final

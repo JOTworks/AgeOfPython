@@ -5,7 +5,7 @@ from scraper import *
 from scraper import AOE2FUNC, Integer, Constant, Array, Register
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
-from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT
+from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT, ARRAY_RETURN_LENGTH
 from copy import copy, deepcopy
 from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return
 from utils_display import print_bordered
@@ -256,7 +256,7 @@ class ReduceTR(compilerTransformer):
         self.generic_visit(node)
         if type(node.target) is not Variable:
             raise Exception(f"AugAssign only supports Variables, not {type(node.target)}, line {node.lineno}")
-        node_target_copy = Variable({ #! copy() would be better but cannot get it to work
+        node_target_copy = Variable({ #todo: copy() would be better but cannot get it to work
             "id": node.target.id,
             "ctx": node.target.ctx,
             "offset_index": node.target.offset_index,
@@ -336,7 +336,8 @@ class AlocateAllMemory(compilerTransformer):
         self.memory = memory
         self.const_dict = const_dict
         for var_name, type in temp_variable_type_dict.items():
-            self.memory.malloc(var_name, type)
+            if not self.memory.get(var_name):
+                self.memory.malloc(var_name, type)
 
     def visit_Assign(self, node):
         assert isinstance(self.memory, Memory)
@@ -361,6 +362,12 @@ class AlocateAllMemory(compilerTransformer):
         return node
 
     def visit_Variable(self, node):
+
+        if node.var_name() == FUNC_RET_REG:
+            #node.memory_location = 
+            #node.memory_name = 
+            print("helllo kent")
+
         if not (location := self.memory.get(node.id,node.offset_index)):
             logger.error(f"we are doing strict typing. you need to initialize {node.id}")
             self.memory.malloc(node.id, Integer)
@@ -382,6 +389,7 @@ class CompileTR(compilerTransformer):
         self.func_def_dict = func_def_dict
         self.current_func_def = None
         self.aoe2_var_types = get_aoe2_var_types()
+        self.array_return_offset = 0
 
     
     def get_temp_variable_type_dict(self):
@@ -672,6 +680,26 @@ class CompileTR(compilerTransformer):
                     f"var types are not compatible {var_1_size} and {var_2_size}, line {lineno}"
                 )
 
+
+    def tupleify(self, node):
+        if type(node) is ast.Tuple:
+            return node
+        elif type(node) in [Variable, ast.BinOp]:
+            if node.var_name() == ARRAY_RETURN_REG:
+                length = ARRAY_RETURN_LENGTH
+            else:
+                length = self.get_length(node)
+            elts = [Variable({'id':node.var_name(),'offset_index':i}) for i in range(length)]
+        elif type(node) is FuncModule:
+            return_types = self.get_function_return_types(node.name)
+            elts = [
+                Variable({'id':ARRAY_RETURN_REG,'offset_index':None})
+                for _ in return_types
+            ]
+        else:
+            raise Exception(f"cannot tupleify {type(node)}, line {node.lineno}")
+        
+        return ast.Tuple(elts=elts)
     def get_aoe2_modify_function(self, node):
         if type(node) in [Variable, ast.arg, ast.Return]:
             return AOE2FUNC.up_modify_goal
@@ -686,65 +714,92 @@ class CompileTR(compilerTransformer):
                 f"you cannot modify a {type(node)}, line {node.lineno}"
             )
 
-    def create_modify_commands(self, node_1, op, node_2):
-        # x = y, x += y, SN.this = 12, array[0] = 12, 12 = array[n], 
-        modify_commands = [] #! not here but somewhere else the array should have added its 4 commands
+    def create_modify_commands(self, node_1, op, node_2, reset_array_offset=True):
+        #! NEED TO FINIISH ASIGNMENTS
+        #todo: implment arrays
+        #todo: implment tuples/multiple Asign values
+        #todo: implment multiple return values to not repeate ARRAY_RETURN_REG begining arrays
+        #todo: implemet constructors taking args, in visit_Assign (make it a one time asign with disable_rule()
+        if reset_array_offset:
+            self.array_return_offset = 0
 
-        #right side of assign
+        modify_commands = [] 
+        
+        #Right side set length
         if type(node_2) is Variable and node_2.offset_index is not None:
             node_2_length = 1
+        elif type(node_2) is ast.Tuple:
+            node_2_length = len(node_2.elts)
         elif type(node_2) is FuncModule:
             return_types = self.get_function_return_types(node_2.name)
-            if len(return_types) != 1:
-                raise Exception(
-                    f"function {node_2.name} has more than 1 return type, line {node_2.lineno}"
-                )
-            node_2_length = return_types[0].length
+            if len(return_types) == 1:
+                node_2_length = self.get_length(return_types[0])
+            else:
+                node_2_length = len(return_types)
         else:
-            node_2_length = self.get_var_type(node_2).length
+            node_2_length = self.get_length(node_2)
 
-        #left side of assign
-        if self.get_var_type(node_1) is None:
+        #Left side set length
+        if type(node_1) is not ast.Tuple and self.get_var_type(node_1) is None:
             self.set_var_type(node_1.var_name(), self.get_var_type(node_2))
 
         if type(node_1) is Variable and node_1.offset_index is not None:
             node_1_length = 1
+        elif type(node_1) is ast.Tuple:
+            node_1_length = len(node_1.elts)
         elif type(node_1) is ast.Return: 
             node_1_length = node_2_length #assuming bad returns are caught in Asserter
         else:
-            node_1_length = self.get_var_type(node_1).length
+            node_1_length = self.get_length(node_1)
         
-        
-
-
-        if node_1_length and node_2_length and node_1_length != node_2_length:
+        #check lengths
+        if (node_1_length and node_2_length 
+            and node_1_length != node_2_length
+            and node_2.var_name() != ARRAY_RETURN_REG):
             raise Exception(
                 f"var types are not compatible {node_1_length} and {node_2_length}, line UNKONWN"
             )
         else:
             length = node_1_length if node_1_length else node_2_length
 
-        modify_func = self.get_aoe2_modify_function(node_1)
         
-        for i in range(length):
-            # here for if we are asigning part of the middle of a veriable
-            left_offset_index = i
-            right_offset_index = i
-            if type(node_1) is Variable and node_1.offset_index is not None:
-                left_offset_index = node_1.offset_index
-            if type(node_2) is Variable and node_2.offset_index is not None:
-                right_offset_index = node_2.offset_index
-                
-            left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index})
-            if type(node_2) is ast.Constant:
-                right = node_2
-            else:
+        #recursion shortcut
+        if type(node_2) is FuncModule and len(return_types) == 1:
+            modify_commands += self.create_modify_commands(node_1, op, Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), reset_array_offset=False)
+        #recursion   
+        elif (type(node_1) is ast.Tuple 
+        or type(node_2) is ast.Tuple
+        or type(node_2) is FuncModule and len(return_types) > 1
+        ):
+            tupled_node_1 = self.tupleify(node_1)
+            tupled_node_2 = self.tupleify(node_2)
+            for i in range(length):
+                modify_commands += self.create_modify_commands(tupled_node_1.elts[i], op, tupled_node_2.elts[i], reset_array_offset=False)
+        #base case
+        else:
+            modify_func = self.get_aoe2_modify_function(node_1)
+            for i in range(length):
+                # here for if we are asigning part of the middle of a veriable
+                left_offset_index = i
+                right_offset_index = i
+                if type(node_1) is Variable and node_1.offset_index is not None:
+                    left_offset_index = node_1.offset_index
+                if type(node_2) is Variable and node_2.offset_index is not None:
+                    right_offset_index = node_2.offset_index
+                if node_1.var_name() == ARRAY_RETURN_REG:
+                    left_offset_index = self.array_return_offset
+                    self.array_return_offset += 1
+                if node_2.var_name() == ARRAY_RETURN_REG:
+                    right_offset_index = self.array_return_offset
+                    self.array_return_offset += 1
+
+                left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index})
                 right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index})
-            modify_commands.append( Command(
-                        modify_func,
-                        [left, ast_to_aoe(op), right],
-                         None,
-                    ))
+                if type(node_2) is ast.Constant:
+                    right = node_2
+                    
+                modify_commands.append( Command(modify_func,[left, ast_to_aoe(op), right],None,))
+        
         return modify_commands
     
     def set_var_type(self, var_name, var_type):
@@ -782,13 +837,21 @@ class CompileTR(compilerTransformer):
         
         return # not in dictionary
 
+    def get_length(self, node):
+        if type(node) is ast.Tuple:
+            return len(node.elts)
+        if hasattr(node, 'length'):
+            return node.length
+        else:
+            return self.get_var_type(node).length
+
     def visit_BinOp(self, node, parent, in_field, in_node):
         # will be 2CT and needs to be up-goal-modify # ALWAYS use temperary vars for this
         #BINOP: #tempVar-1 size(1)
         node = super().visit_BinOp(node)
         node.temp_var_name = self.get_next_temp_var()
         
-        if not self.get_var_type(node.left) == self.get_var_type(node.right):
+        if not self.get_length(node.left) == self.get_length(node.right):
             raise Exception(f"binop left [{self.get_var_type(node.left)}] and right [{self.get_var_type(node.right)}] size are not the same, line {node.lineno}")
         
         node.body_post_left = [DefRule(
@@ -859,239 +922,40 @@ class CompileTR(compilerTransformer):
         raise Exception("AugAssign should all be parced out by ReduceTR")
 
     def visit_Assign(self, node, parent, in_field, in_node):
-        '''
-        #function returns ALWAYS need to return all of their returns
-        #function returning array, assume it the right size. only check size on returns
+        #! clean up this function from all the leftover code
 
-        array[0] =
-        array[n] =
-        
-        x, y = (1, 2)
-
-        point = 
-        point.x =
-
-        = array[0]
-        = array[n]
-        = returns_multiple(param1, param2))
-        = returns_none() #this should throw an error
-        
-        x = 4+14+23
-        x = returns_one() + 15 + 12
-
-        Varabile(x) = BinOP( CALL() + BinOP( CONST(15) + CONST(12)))
-
-        point = returns_two() + point
-
-        array = array
-        array = returns_array() 
-
-        point = (x, y)
-        point = point
-
-        #these all are treated like the test section of an if. will eval to a bool Op
-        = aoe2function
-        is_true = tirents > 12
-        is_true = (lumber(count) > 12 AND excedrin OR potatoes)
-
-        
-        deaths = deathcount(myplayernum) + deathcount(yourplayernum)
-
-        funct: ARRAY_RETURN_REG
-
-        
-
-        point = 15
-        point = (15, 23) # tuple returns multiple things like a funtion does
-        point = point
-
-        a, b = function()
-
-        array, is_color = function()
-
-        point = function()
-        array[n] = 1
-
-        for i in 12:
-            a = items[i][0]
-            b = items[i][1]
-        
-        
-
-        ###########################################
-        all visits return list of [length and var name]. and store their stuff
-        iterate trhough the list of both sidea and do asignments.
-        CALL #ARRAY_RETURN_REG  size
-        setup func vars #! asign based on size
-        jump
-        setup return stuff (Return Registers) #! asign based on size
-
-        BINOP #tempVar-1 size(1)
-        tempVar-1 = 15 #! asign based on size
-        tempVar-1 += 12 #! asign based on size
-
-        BINOP #tempVar-2 size(1)
-        tempVar-2 = ARRAY_RETURN_REG #! asign based on size
-        tempVar-2 += tempVar-1 #! asign based on size
-
-        ASSIGN #x size(1)
-        x = tempVar-2 #! asign based on size
-        ###########################################
-        
-        '''
         self.generic_visit(node)
 
+        msg = None
         node.body = []
+        assign_commands = []
         target = node.targets[0]
 
-        if type(node.value) is Constructor: #! fix later, we want constroctors to all be initialized
+        #constructor
+        if type(node.value) is Constructor:
             self.set_var_type(target.var_name(), node.value.func.id.name)
             if len(node.value.args) > 0 and (type(node.value.func) is not Array and len(node.value.args) > 1):
                 raise Exception(
                     f"we dont curently support constructors with args {[arg.value if hasattr(arg, 'value') else arg for arg in node.value.args]}, line {node.lineno}"
                 )
-            return node
-
-        assign_commands = self.create_modify_commands(node.targets[0], ast.Eq(), node.value)
-        msg = None
+        #not constructor
+        else:
+            assign_commands = self.create_modify_commands(node.targets[0], ast.Eq(), node.value)
+            
+        # multiple targets (ei x = y = 12)
+        if len(node.targets) > 1:
+            for i in range(1, len(node.targets)):
+                assign_commands += self.create_modify_commands(node.targets[i], ast.Eq(), node.targets[0])
+        
+        #Return it all
         node.body = [DefRule(
-            Command(AOE2FUNC.true, [], None),
-            assign_commands,
-            node,
-            '' if msg is None else msg + " " + str(node.lineno),
-        )]
+                Command(AOE2FUNC.true, [], None),
+                assign_commands,
+                node,
+                '' if msg is None else msg + " " + str(node.lineno),
+            )]
         return node
 
-        #! redo this whole function it is all terrrrible
-        #todo: Make nested asignments work with binOp ect
-        msg = None
-        node.body = []
-        assign_command = []
-        self.generic_visit(node)
-        target = node.targets[0]
-        if type(target) is Variable:
-            if type(target.offset_index) is Variable:
-                # 1. store Array[0] -> ARRAY_RETURN_REG
-                # 2. add Variable offset -> ARRAY_RETURN_REG
-                # 3. store reg value ARRAY_RETURN_REG points too to -> ARRAY_RETURN_REG
-                # 4. do the normal assign but using ARRAY_RETURN_REG
-                assign_command.append( Command(
-                    AOE2FUNC.up_modify_goal,
-                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.eql, Variable(
-                        {'id':target.id,'offset_index':None,}, as_const = True
-                    )],
-                    node,
-                ))
-                assign_command.append( Command(
-                    AOE2FUNC.up_modify_goal,
-                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.add, target.offset_index],
-                    node,
-                ))
-                assign_command.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal
-                    AOE2FUNC.up_get_indirect_goal,
-                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
-                    node,
-                ))
-                assign_command.append( Command(
-                    AOE2FUNC.up_get_indirect_goal,
-                    [target, mathOp.eql, Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
-                    node,
-                ))
-            modify_function = AOE2FUNC.up_modify_goal
-        elif type(target) is EnumNode and type(target.enum) is SN:
-            modify_function = AOE2FUNC.up_modify_sn
-        elif type(target) is ast.Tuple:
-            pass
-        else:
-            #todo: refactor this when i do binops and everything
-            raise Exception(
-                f"target needs to be Variable or SN not {type(target)}, line {node.lineno}"
-            )  # todo: add this to the asserter not the compiler
-        
-        if type(node.value) is ast.BinOp:
-            if type(node.value.left) is Variable and type(node.value.right) in [
-                ast.Constant,
-                Variable,
-            ]:
-                if node.value.left.id != target.id:
-                    raise Exception(
-                        f"we only have 2c not 3c {ast.dump(node.value)}, and {node.value.left}!={target} line {node.lineno}"
-                    )
-                assign_command.append( Command(
-                    modify_function,
-                    [target, ast_to_aoe(type(node.value.op)), node.value.right],
-                    node,
-                ))
-            else:
-                raise Exception(
-                    f"only simple BinOp asignments are suported {ast.dump(node.value)}"
-                )
-
-        elif type(node.value) is Variable:
-            # todo: this will only work on ints, needs to be delt with in Memory management to exstend this command to each index of the variable
-            #!#! this is where arrays are coming in
-            if type(node.value.offset_index) is Variable:
-                # 1. store Array[0] -> ARRAY_RETURN_REG
-                # 2. add Variable offset -> ARRAY_RETURN_REG
-                # 3. store reg value ARRAY_RETURN_REG points too to -> ARRAY_RETURN_REG
-                # 4. do the normal assign but using ARRAY_RETURN_REG
-                assign_command.append( Command(
-                    AOE2FUNC.up_modify_goal,
-                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.eql, Variable(
-                        {'id':node.value.id,'offset_index':None,}, as_const = True
-                    )],
-                    node,
-                ))
-                assign_command.append( Command(
-                    AOE2FUNC.up_modify_goal,
-                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), mathOp.add, node.value.offset_index],
-                    node,
-                ))
-                assign_command.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal
-                    AOE2FUNC.up_get_indirect_goal,
-                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
-                    node,
-                ))
-                assign_command.append( Command(
-                    modify_function,
-                    [target, mathOp.eql, Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
-                    node,
-                ))
-
-            else:
-                assign_command.append( Command(
-                    modify_function,
-                    [target, mathOp.eql, node.value],
-                    node,
-                ))
-
-        elif type(node.value) is ast.Constant:
-            assign_command.append( Command(
-                modify_function,
-                [target, mathOp.eql, node.value],
-                node,
-            ))
-        elif type(node.value) is EnumNode:
-            assign_command.append( Command(
-                modify_function,
-                [target, mathOp.eql, node.value.enum],
-                node,
-            ))
-        
-        elif type(node.value) is FuncModule:
-            assign_command = self.make_set_returned_values_commands(node)
-            msg = "FUNC_returned"
-        else:
-            # todo: allow var[0] instead of just var.x (uses ast.Subscript)
-            raise Exception(f"{type(node.value)} not suported in asignments")
-        
-        node.body = [DefRule(
-            Command(AOE2FUNC.true, [], None),
-            assign_command,
-            node,
-            '' if msg is None else msg + " " + str(node.lineno),
-        )]
-        return node
 
     def make_jump_back_rules(self, lineno):
         set_jump_back = DefRule(
@@ -1125,8 +989,9 @@ class CompileTR(compilerTransformer):
             raise Exception(f"function {self.current_func_def.name} has {len(funct_returns_values)} returns, not {len(return_values)}, line {node.lineno}")
         
         set_ret_commands = []
+        self.array_return_offset = 0
         for ret_val in return_values:
-            set_ret_commands += self.create_modify_commands(node, ast.Eq, ret_val) #!figure out why it works for one and not other,  need to get retern_reg in one side
+            set_ret_commands += self.create_modify_commands(node, ast.Eq, ret_val, reset_array_offset=False)
 
 
         return set_ret_commands

@@ -107,15 +107,14 @@ class Parser:
                             node.name = alias_asnames[node.name]
                         module.body.append(node)
                     elif isinstance(node, ast.Assign):
-                        if len(node.targets) != 1:
-                            raise Exception("Only one target allowed in assignment")
-                        if isinstance(node.targets[0], ast.Name) and (
-                            node.targets[0].id in alias_names or import_all
-                        ):
-                            if not import_all:
-                                alias_names.remove(node.targets[0].id)
-                                node.targets[0].id = alias_asnames[node.targets[0].id]
-                            module.body.append(node)
+                        for target in node.targets:
+                            if isinstance(target, ast.Name) and (
+                                target.id in alias_names or import_all
+                            ):
+                                if not import_all:
+                                    alias_names.remove(target.id)
+                                    target.id = alias_asnames[target.id]
+                                module.body.append(node)
                     elif isinstance(node, ast.ImportFrom):
                         if not (
                             "aoe2scriptEnums" in node.module

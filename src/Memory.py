@@ -8,6 +8,7 @@ import inspect
 
 FUNC_DEPTH_COUNT = "func_depth_count"
 ARRAY_RETURN_REG = "array_return_register"
+ARRAY_RETURN_LENGTH = 100
 FUNC_RET_REG = 15800 #janky but up_set_indirect_goal needs an integer to store into, so either i need to sepreatly parce it out later, or start it as an integer here
 
 class StoredMemory:
@@ -46,7 +47,7 @@ class Memory:
         self.class_constructer_default_size = {cls:cls.length for cls in classes if cls.length}
         
         self.malloc(FUNC_DEPTH_COUNT, AOE2OBJ.Integer)
-        self.malloc(ARRAY_RETURN_REG, AOE2OBJ.Array, 100, front=False)
+        self.malloc(ARRAY_RETURN_REG, AOE2OBJ.Array, ARRAY_RETURN_LENGTH, front=False)
 
     def print_memory(self):
         print(f"{self.free_memory_count=}")
@@ -68,6 +69,10 @@ class Memory:
         return self._used_memory[scope]
 
     def malloc(self, var_name, var_type_n, length=None, front=True):
+        
+        if self.get(var_name) is not None:
+            raise Exception(f"Variable {var_name} already exists in memory")
+
         if var_type_n in [AOE2OBJ.Point, Point]:
             var_type = Point
         if var_type_n in [AOE2OBJ.State, State]:
