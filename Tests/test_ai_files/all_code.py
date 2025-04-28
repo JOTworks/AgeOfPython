@@ -23,41 +23,17 @@ from scraper import (
 #test = Integer()
 #final = Integer()
 #test = final*final + 12
-def add_points(p1:Point) -> (Point, Point):
-    p3 = Point()
-    return p1, p3
+J_EXPLORE_OBJECT_ARRAY_SIZE = Constant(3)
+J_explore_object_ids = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE)
+EMPLOYED = Constant(1)
+UNEMPLOYED = Constant(0)
 
-loc = Point()
-new_p = Point()
-new_p, loc = add_points(loc)
-new_p, loc = ((1,1),(2,2))
-
-
-#def one_ret() -> Point:
-#    myPoint = Point()
-#    return myPoint
-#
-#loc = Point()
-#loc = one_ret()
-##lengths are the same
-#new_p = loc
-#new_p = (0,1)
-#x = 0
-#y = 1
-#x,y = x+4,y
-#
-###right side 1
-##    #left side 1
-##new_p += (x,(x,y))
-##
-##    #left side length of right side
-##x,y,z = loc
-#
-##dont allow this
-#x = y = 0
-
-
-
-#final = myArray[test] + 3 + 4 + final
-#final = myArray[test] #first asigment should be forced to a c:=, and 3rd and 4th may be able to be combined
-#myArray[test] = final #find out where this happens because it just does one goal and that not helpful. Try to combine them, so everytime and array is found it can use the fake array register!
+def J_get_employment_status(id:Integer) -> Integer:
+    global J_explore_object_ids
+    global J_EXPLORE_OBJECT_ARRAY_SIZE
+    i = Integer(0)
+    for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
+        array_explorer_id = J_explore_object_ids[i]
+        if array_explorer_id == id:
+            return EMPLOYED
+    return UNEMPLOYED

@@ -5,11 +5,20 @@ from utils_display import print_bright, print_dim
 from pprint import pprint
 import ast
 import inspect
+#!#!#!#!#!#! find out where the return pts for functions is and is the 15900 still hardcoded
 
-FUNC_DEPTH_COUNT = "func_depth_count"
-ARRAY_RETURN_REG = "array_return_register"
+#function return memory
+FUNC_DEPTH_COUNT = "func_depth_count" #offset for knowing what function return pointer to use
+FUNC_RETURN_ARRAY = ast.Constant(15900)#15900-15999 is unofficial array for storing function return pointers
+FUNC_RET_REG = "func_return_register" #array to store return values of functions before asignment
+FUNC_RETURN_LENGTH = 100
+
+
+#array menipulation memory
+ARRAY_RETURN_PTR = "array_return_pointer" #pointer mem location of array element
+ARRAY_RETURN_REG = "array_return_register" #array to store array element being used
 ARRAY_RETURN_LENGTH = 100
-FUNC_RET_REG = 15800 #janky but up_set_indirect_goal needs an integer to store into, so either i need to sepreatly parce it out later, or start it as an integer here
+
 
 class StoredMemory:
     def __init__(self, name, var_type, length, start):
@@ -47,7 +56,9 @@ class Memory:
         self.class_constructer_default_size = {cls:cls.length for cls in classes if cls.length}
         
         self.malloc(FUNC_DEPTH_COUNT, AOE2OBJ.Integer)
+        self.malloc(ARRAY_RETURN_PTR, AOE2OBJ.Integer)
         self.malloc(ARRAY_RETURN_REG, AOE2OBJ.Array, ARRAY_RETURN_LENGTH, front=False)
+        self.malloc(FUNC_RET_REG, AOE2OBJ.Array, FUNC_RETURN_LENGTH, front=False)
 
     def print_memory(self):
         print(f"{self.free_memory_count=}")

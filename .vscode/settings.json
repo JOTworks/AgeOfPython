@@ -16,4 +16,5 @@
     "python.testing.cwd": "${workspaceFolder}/tests",
     "python.testing.pytestPath": "${workspaceFolder}/.venv/bin/pytest",
     "python.testing.autoTestDiscoverOnSaveEnabled": true,
+    "python.REPL.enableREPLSmartSend": false,
 }

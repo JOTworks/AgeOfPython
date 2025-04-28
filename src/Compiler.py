@@ -5,7 +5,7 @@ from scraper import *
 from scraper import AOE2FUNC, Integer, Constant, Array, Register
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
-from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT, ARRAY_RETURN_LENGTH
+from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT, FUNC_RETURN_LENGTH, ARRAY_RETURN_PTR, FUNC_RETURN_ARRAY
 from copy import copy, deepcopy
 from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return
 from utils_display import print_bordered
@@ -337,7 +337,8 @@ class AlocateAllMemory(compilerTransformer):
         self.const_dict = const_dict
         for var_name, type in temp_variable_type_dict.items():
             if not self.memory.get(var_name):
-                self.memory.malloc(var_name, type)
+                if type is not Array: #todo: fix this later so arrays dont have to be an excpetion
+                    self.memory.malloc(var_name, type)
 
     def visit_Assign(self, node):
         assert isinstance(self.memory, Memory)
@@ -685,15 +686,15 @@ class CompileTR(compilerTransformer):
         if type(node) is ast.Tuple:
             return node
         elif type(node) in [Variable, ast.BinOp]:
-            if node.var_name() == ARRAY_RETURN_REG:
-                length = ARRAY_RETURN_LENGTH
+            if node.var_name() == FUNC_RET_REG:
+                length = FUNC_RETURN_LENGTH
             else:
                 length = self.get_length(node)
             elts = [Variable({'id':node.var_name(),'offset_index':i}) for i in range(length)]
         elif type(node) is FuncModule:
             return_types = self.get_function_return_types(node.name)
             elts = [
-                Variable({'id':ARRAY_RETURN_REG,'offset_index':None})
+                Variable({'id':FUNC_RET_REG,'offset_index':None})
                 for _ in return_types
             ]
         else:
@@ -716,9 +717,7 @@ class CompileTR(compilerTransformer):
 
     def create_modify_commands(self, node_1, op, node_2, reset_array_offset=True):
         #! NEED TO FINIISH ASIGNMENTS
-        #todo: implment arrays
-        #todo: implment tuples/multiple Asign values
-        #todo: implment multiple return values to not repeate ARRAY_RETURN_REG begining arrays
+        #!#!#!#!#!#!#!# todo: implment array variables like myArray[i] as an example
         #todo: implemet constructors taking args, in visit_Assign (make it a one time asign with disable_rule()
         if reset_array_offset:
             self.array_return_offset = 0
@@ -755,7 +754,7 @@ class CompileTR(compilerTransformer):
         #check lengths
         if (node_1_length and node_2_length 
             and node_1_length != node_2_length
-            and node_2.var_name() != ARRAY_RETURN_REG):
+            and node_2.var_name() != FUNC_RET_REG):
             raise Exception(
                 f"var types are not compatible {node_1_length} and {node_2_length}, line UNKONWN"
             )
@@ -765,7 +764,7 @@ class CompileTR(compilerTransformer):
         
         #recursion shortcut
         if type(node_2) is FuncModule and len(return_types) == 1:
-            modify_commands += self.create_modify_commands(node_1, op, Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), reset_array_offset=False)
+            modify_commands += self.create_modify_commands(node_1, op, Variable({'id':FUNC_RET_REG,'offset_index':None}), reset_array_offset=False)
         #recursion   
         elif (type(node_1) is ast.Tuple 
         or type(node_2) is ast.Tuple
@@ -777,31 +776,79 @@ class CompileTR(compilerTransformer):
                 modify_commands += self.create_modify_commands(tupled_node_1.elts[i], op, tupled_node_2.elts[i], reset_array_offset=False)
         #base case
         else:
-            modify_func = self.get_aoe2_modify_function(node_1)
-            for i in range(length):
-                # here for if we are asigning part of the middle of a veriable
-                left_offset_index = i
-                right_offset_index = i
-                if type(node_1) is Variable and node_1.offset_index is not None:
-                    left_offset_index = node_1.offset_index
-                if type(node_2) is Variable and node_2.offset_index is not None:
-                    right_offset_index = node_2.offset_index
-                if node_1.var_name() == ARRAY_RETURN_REG:
-                    left_offset_index = self.array_return_offset
-                    self.array_return_offset += 1
-                if node_2.var_name() == ARRAY_RETURN_REG:
-                    right_offset_index = self.array_return_offset
-                    self.array_return_offset += 1
-
-                left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index})
-                right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index})
-                if type(node_2) is ast.Constant:
-                    right = node_2
-                    
-                modify_commands.append( Command(modify_func,[left, ast_to_aoe(op), right],None,))
-        
+            modify_commands += self.create_single_modify_commands(node_1, op, node_2, length)
         return modify_commands
     
+    def create_single_modify_commands(self, node_1, op, node_2, length):
+        modify_commands = []
+        modify_func = self.get_aoe2_modify_function(node_1)
+        for i in range(length):
+            # here for if we are asigning part of the middle of a veriable
+            left_offset_index = i
+            right_offset_index = i
+            if type(node_1) is Variable and node_1.offset_index is not None:
+                left_offset_index = node_1.offset_index
+            if type(node_2) is Variable and node_2.offset_index is not None:
+                right_offset_index = node_2.offset_index
+            if node_1.var_name() == FUNC_RET_REG:
+                left_offset_index = self.array_return_offset
+                self.array_return_offset += 1
+            if node_2.var_name() == FUNC_RET_REG:
+                right_offset_index = self.array_return_offset
+                self.array_return_offset += 1
+
+            left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index})
+            right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index})
+            if type(node_2) is ast.Constant:
+                right = node_2
+            
+            #ARRAYS #todo: optimization, add for i in array: and make it just add element_size each time when accessing
+            if hasattr(node_2, 'offset_index') and type(node_2.offset_index) is Variable: #getting array element
+                modify_commands.append(self.create_set_array_ptr_commands(node_2))
+                modify_commands.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal
+                    AOE2FUNC.up_get_indirect_goal,
+                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), Variable({'id':ARRAY_RETURN_PTR,'offset_index':None})],
+                    node_2,
+                ))
+                right = Variable({'id':ARRAY_RETURN_REG,'offset_index':None})
+
+            if hasattr(node_1, 'offset_index') and type(node_1.offset_index) is Variable: #setting array element
+                if op is not mathOp.eql:
+                    raise Exception(f"cannot use {op} on Array asignments, line {node_1.lineno}")
+                modify_commands.append(self.create_set_array_ptr_commands(node_1))
+                modify_func = AOE2FUNC.up_set_indirect_goal
+                left = Variable({'id':ARRAY_RETURN_PTR,'offset_index':None})
+
+            if modify_func in [AOE2FUNC.up_set_indirect_goal, AOE2FUNC.up_get_indirect_goal]:
+                args = [left, right]
+            else: 
+                args = [left, ast_to_aoe(op), right]
+            modify_commands.append(Command(modify_func, args, None))
+
+        return modify_commands
+
+    def create_set_array_ptr_commands(self, node):
+        if node.offset_index and self.get_var_type(node.offset_index) not in [Integer, Register]:
+            raise Exception(f"array [] must be [Integer, Register] not {self.get_var_type(node.offset_index)}, line {node.lineno}")
+        modify_commands = []
+        modify_commands.append( Command(
+            AOE2FUNC.up_modify_goal,
+            [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.eql, node],
+            None,
+        ))
+        for i in range(self.get_array_element_size(node)):
+            modify_commands.append( Command(
+                AOE2FUNC.up_modify_goal,
+                [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.add, node.offset_index],
+                node,
+            ))
+        return modify_commands
+
+    def get_array_element_size(self, node):
+        if not self.is_array(node):
+            raise Exception(f"get_array_element_size only works on arrays, not {self.get_var_type(node)}, line {node.lineno}")
+        return 1
+
     def set_var_type(self, var_name, var_type):
         cleaned_var_type = None
         if var_name in self.variable_types:
@@ -815,6 +862,14 @@ class CompileTR(compilerTransformer):
             self.variable_types[var_name] = cleaned_var_type
         else:
             raise Exception("booooooo!")
+
+    def is_array(self, node):
+        var_name = node.var_name()
+        if var_name in self.variable_types:
+            var_type = self.variable_types[var_name]
+        if var_type is Array:
+            return True
+        return False
 
     def get_var_type(self, node):
         if type(node) is ast.Constant:
@@ -934,13 +989,13 @@ class CompileTR(compilerTransformer):
         #constructor
         if type(node.value) is Constructor:
             self.set_var_type(target.var_name(), node.value.func.id.name)
-            if len(node.value.args) > 0 and (type(node.value.func) is not Array and len(node.value.args) > 1):
-                raise Exception(
-                    f"we dont curently support constructors with args {[arg.value if hasattr(arg, 'value') else arg for arg in node.value.args]}, line {node.lineno}"
-                )
-        #not constructor
+            if type(node.value.func) is Array:
+                pass #todo:fix array initilization
+            right = ast.Tuple(elts=node.value.args)
+            assign_commands += self.create_modify_commands(node.targets[0], ast.Eq(), right)
+            assign_commands.append(Command(AOE2FUNC.disable_self, [], node))
         else:
-            assign_commands = self.create_modify_commands(node.targets[0], ast.Eq(), node.value)
+            assign_commands += self.create_modify_commands(node.targets[0], ast.Eq(), node.value)
             
         # multiple targets (ei x = y = 12)
         if len(node.targets) > 1:
@@ -960,7 +1015,7 @@ class CompileTR(compilerTransformer):
     def make_jump_back_rules(self, lineno):
         set_jump_back = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [Command(AOE2FUNC.up_get_indirect_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), ast.Constant(15900)], None)],
+            [Command(AOE2FUNC.up_get_indirect_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), FUNC_RETURN_ARRAY], None)],
                 None,
                 comment="FUNC_set_jump " + str(lineno),
         ) 
@@ -1015,7 +1070,7 @@ class CompileTR(compilerTransformer):
         self.current_func_def = self.func_def_dict[node.name]
         self.get_function_return_types
         for arg in node.args.args:
-            if not hasattr(arg, 'annotation'):
+            if not hasattr(arg, 'annotation') or arg.annotation is None:
                 raise Exception(f"function {node.name} arg {arg.arg} has no annotation, line {node.lineno}")
             self.set_var_type(arg.arg,arg.annotation.id)
         self.generic_visit(node)
@@ -1138,7 +1193,7 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
                 command.set_arg(i, ast.Constant(node.last_defrule)) #because currently the last rule is the one that decrements and wee need to not make that part of another defrule
 
             elif jump is JumpType.jump_back_to_after_call:
-                command.set_arg(i, ast.Constant(15900))
+                command.set_arg(i, FUNC_RETURN_ARRAY)
 
             elif jump is JumpType.jump_to_else:
                 if type(node) is not ast.If:
@@ -1222,7 +1277,10 @@ class ScopeAllVariables(compilerTransformer):
         self.current_function = None
         return node
 
+
     def visit_Variable(self, node):
+        if hasattr(node, 'offset_index') and type(node.offset_index) is Variable:
+            node.offset_index = self.visit_Variable(node.offset_index)
         self.generic_visit(node)
         if node.id not in reserved_function_names:
             if "." in node.id:
@@ -1321,7 +1379,8 @@ class Compiler:
 
         trees.func_tree = ScopeAllVariables().p_visit(trees.func_tree, "func_tree", vv)
         func_def_dict = self.get_func_def_dict(trees.func_tree)
-        
+        print(ast.dump(trees.func_tree, indent=4))
+
         func_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="F")
         trees.func_tree = func_compiler.p_visit(trees.func_tree, "func_tree", vv)
         main_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="T", variable_type_dict = func_compiler.get_temp_variable_type_dict())
@@ -1339,7 +1398,7 @@ class Compiler:
                 DefRule(
                     Command(AOE2FUNC.true, [], None),
                     [
-                        Command(AOE2FUNC.set_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), ast.Constant(15900)], None), #todo: get rid of magic number 15900, and use actualy memory allocation
+                        Command(AOE2FUNC.set_goal, [Variable({'id':FUNC_DEPTH_COUNT,'offset_index':None}), FUNC_RETURN_ARRAY], None), #todo: get rid of magic number 15900, and use actualy memory allocation
                         Command(AOE2FUNC.disable_self, [], None),
                     ], None)]
             +

@@ -2,7 +2,7 @@ import ast
 from utils import get_enum_classes, get_function_list_typeOp
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from scraper import typeOp
-from Memory import ARRAY_RETURN_REG
+from Memory import FUNC_RET_REG
 from enum import Enum
 from scraper import AOE2FUNC
 from MyLogging import logger
@@ -30,7 +30,7 @@ class FuncModule(ast.Module):
         self.type_ignores = []
         self.file_path = None
     def var_name(self):
-        return ARRAY_RETURN_REG
+        return FUNC_RET_REG
 
 class Constructor(ast.Call):
     def __init__(self, object_name: str, args: list = [], lineno="."):
@@ -92,7 +92,7 @@ def arg_var_name(self):
 ast.arg.var_name = arg_var_name
 
 def return_var_name(self):
-    return ARRAY_RETURN_REG
+    return FUNC_RET_REG
 ast.Return.var_name = return_var_name
 
 def tuple_var_name(self):
@@ -124,7 +124,7 @@ class Command(ast.Call):
             self.end_lineno = node.end_lineno
             self.col_offset = node.col_offset
             self.end_col_offset = node.end_col_offset
-            self.file_path = node.file_path
+            self.file_path = node.file_path if hasattr(node, "file_path") else "no file"
         
         del node
 

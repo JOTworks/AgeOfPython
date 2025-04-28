@@ -127,6 +127,8 @@ FALSE = Constant(0)
 TRUE = Constant(1)
 EMPLOYED = Constant(1)
 UNEMPLOYED = Constant(0)
+
+i = Integer()
 ##region Round Counters
 #if True:
 #    round_counter = 0
@@ -168,14 +170,7 @@ UNEMPLOYED = Constant(0)
 #all functions dealing with jobs will be in this class
 #only functions in this class should access these veriables
 #have an asign job function, a remove job function, and a do job function
-
-def J_get_employment_status(id) -> Integer:
-    for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
-        array_explorer_id = J_explore_object_ids[i]
-        if array_explorer_id == id:
-            return EMPLOYED
-    return UNEMPLOYED
-
+#!#!implement GLOBAL variables so i dont have to pass them around all the time
 #__________explore_object__________#
 J_EXPLORE_OBJECT_ARRAY_SIZE = Constant(10)
 J_explore_object_ids = Array(J_EXPLORE_OBJECT_ARRAY_SIZE)
@@ -187,11 +182,19 @@ J_explore_object_timers[0] = 1
 J_explore_object_timers[1] = 2
 J_explore_object_timers[2] = 3
 
+def J_get_employment_status(id:Integer) -> Integer:
+    global J_explore_object_ids
+    for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
+        array_explorer_id = J_explore_object_ids[i]
+        if array_explorer_id == id:
+            return EMPLOYED
+    return UNEMPLOYED
+
 def J_explore_object():
-    explorer_point = Point()
-    resource_point = Point()
-    dest_point = Point()
-    normalized_point = Point()
+    explorer_point = Point(0,0)
+    resource_point = Point(0,0)
+    dest_point = Point(0,0)
+    normalized_point = Point(0,0)
 
     for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
 
@@ -204,7 +207,7 @@ def J_explore_object():
         #the math #todo: fix this to use specific points, i think how it is, it wont work only using tile integeres
         up_full_reset_search()
         up_set_target_by_id(explorer_id)
-        explorer_point.x, explorer_point.y  = up_get_object_point()
+        explorer_point.x, explorer_point.y  = up_get_object_Point(0,0)
         resource_point.x, resource_point.y = get_closest_resource_point(thing, dest_point)
         
         dest_point.x = resource_point.x
@@ -229,7 +232,7 @@ def J_explore_object():
         if timer_triggered(explorer_timer):
             J_FIRE_explore_object(explorer_id)
 
-def J_HIRE_explore_object(explorer_id, thing:ObjectId, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> Integer:
+def J_HIRE_explore_object(explorer_id:Integer, thing:ObjectId, tiles_away:Integer, explore_duration:Integer = 50, explore_direction:Integer = CLOCKWIZE) -> Integer:
     for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
         array_explorer_id = J_explore_object_ids[i]
         if array_explorer_id == -1:
@@ -243,7 +246,7 @@ def J_HIRE_explore_object(explorer_id, thing:ObjectId, tiles_away, explore_durat
         up_chat_data_to_all("%d did not have explorer job open", explorer_id)
         return UNEMPLOYED
 
-def J_FIRE_explore_object(explorer_id) -> Integer:
+def J_FIRE_explore_object(explorer_id:Integer) -> Integer:
     for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
         array_explorer_id = J_explore_object_ids[i]
         if array_explorer_id == explorer_id:
@@ -285,7 +288,7 @@ def J_FIRE_explore_object(explorer_id) -> Integer:
 
 
 
-def get_closest_unit_id(unit_type:UnitId, point:Point, count = 0) -> Integer:
+def get_closest_unit_id(unit_type:UnitId, point:Point, count:Integer = 0) -> Integer:
   #will return unit id of closest unit, but will still set the active list with count you want
   temp_int = Integer()
   temp_state = State()
@@ -298,7 +301,7 @@ def get_closest_unit_id(unit_type:UnitId, point:Point, count = 0) -> Integer:
   return temp_int
 
 def get_closest_resource_point(resource:Resource, point:Point) -> (Integer, Integer):
-  temp_point = Point()
+  temp_point = Point(0,0)
   temp_state = State()
   up_full_reset_search()
   up_set_target_point(point)
@@ -312,8 +315,8 @@ def get_closest_resource_point(resource:Resource, point:Point) -> (Integer, Inte
 def get_best_nomad_tc_location() -> Point:
   return
 
-def up_get_object_point() -> (Integer, Integer):
-    temp_point = Point()
+def up_get_object_Point() -> (Integer, Integer):
+    temp_point = Point(0,0)
     up_get_object_data(ObjectData.object_data_point_x, temp_point.x)
     up_get_object_data(ObjectData.object_data_point_y, temp_point.y)
     return temp_point.x, temp_point.y
@@ -328,7 +331,7 @@ def try_research(tech_id:TechId):
 
 #SETTERS
 if True:
-    map_center_point = Point()
+    map_center_point = Point(0,0)
     up_get_point(PositionType.position_center, map_center_point)
     disable_self()
 
@@ -357,15 +360,15 @@ if current_age() == Age.dark_age:
                 up_get_object_target_data(ObjectData.object_data_id, villager_id)
                 is_employed = J_get_employment_status(villager_id)
                 if is_employed == UNEMPLOYED:
-                    villager_point = Point()
-                    closest_gold_point = Point()
-                    villager_point.x, villager_point.y  = up_get_object_point()
+                    villager_point = Point(0,0)
+                    closest_gold_point = Point(0,0)
+                    villager_point.x, villager_point.y  = up_get_object_Point(0,0)
                     closest_gold_point.x, closest_gold_point.y = get_closest_resource_point(Resource.gold, villager_point)
                     if up_point_distance(villager_point, closest_gold_point) <= VILLAGER_LOS:
                         J_HIRE_explore_object(villager_id, Resource.gold, VILLAGER_LOS, 50, CLOCKWIZE)
         #endregion
         ##region ___after 5 seconds place a TC___
-        #tc_location = Point()
+        #tc_location = Point(0,0)
         #tc_location = get_best_nomad_tc_location()
         #up_set_target_point(tc_location)
         #
