@@ -378,7 +378,6 @@ class AlocateAllMemory(compilerTransformer):
         node.memory_name = self.memory.get_name_at_location(location)
         return node
 
-
 class CompileTR(compilerTransformer):
     def __init__(self, command_names, func_def_dict, temp_var_prefix, variable_type_dict = {}):
         super().__init__()
@@ -551,7 +550,7 @@ class CompileTR(compilerTransformer):
         )
         init = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [Command(AOE2FUNC.set_goal, [node.target, start], node)],
+            [self.create_modify_commands(node.target, mathOp.eql, start)],
             None,
             comment="FOR init " + str(node.lineno),
         )
@@ -681,7 +680,6 @@ class CompileTR(compilerTransformer):
                     f"var types are not compatible {var_1_size} and {var_2_size}, line {lineno}"
                 )
 
-
     def tupleify(self, node):
         if type(node) is ast.Tuple:
             return node
@@ -701,6 +699,7 @@ class CompileTR(compilerTransformer):
             raise Exception(f"cannot tupleify {type(node)}, line {node.lineno}")
         
         return ast.Tuple(elts=elts)
+    
     def get_aoe2_modify_function(self, node):
         if type(node) in [Variable, ast.arg, ast.Return]:
             return AOE2FUNC.up_modify_goal
@@ -867,6 +866,8 @@ class CompileTR(compilerTransformer):
         var_name = node.var_name()
         if var_name in self.variable_types:
             var_type = self.variable_types[var_name]
+        else:
+            raise Exception(f"var {var_name} not in defined, line {node.lineno}")
         if var_type is Array:
             return True
         return False
@@ -898,7 +899,10 @@ class CompileTR(compilerTransformer):
         if hasattr(node, 'length'):
             return node.length
         else:
-            return self.get_var_type(node).length
+            var_type = self.get_var_type(node)
+            if not var_type:
+                raise Exception(f"var {node.var_name()} not defined, line {node.lineno}")
+            return var_type.length
 
     def visit_BinOp(self, node, parent, in_field, in_node):
         # will be 2CT and needs to be up-goal-modify # ALWAYS use temperary vars for this
@@ -1011,7 +1015,6 @@ class CompileTR(compilerTransformer):
             )]
         return node
 
-
     def make_jump_back_rules(self, lineno):
         set_jump_back = DefRule(
             Command(AOE2FUNC.true, [], None),
@@ -1072,7 +1075,7 @@ class CompileTR(compilerTransformer):
         for arg in node.args.args:
             if not hasattr(arg, 'annotation') or arg.annotation is None:
                 raise Exception(f"function {node.name} arg {arg.arg} has no annotation, line {node.lineno}")
-            self.set_var_type(arg.arg,arg.annotation.id)
+            #self.set_var_type(arg.arg,arg.annotation.id) currently already done in the get_function_param_types()
         self.generic_visit(node)
         jump_back_rules = self.make_jump_back_rules(node.lineno)
         node.body = node.body + jump_back_rules
@@ -1262,6 +1265,18 @@ class ScopeAllVariables(compilerTransformer):
         super().__init__()
         self.scope_level = 0
         self.current_function = None
+        self.globalized_variables = {} #function name -> list of variables
+
+    def visit_Global(self, node):
+        for name in node.names:
+            if not self.current_function:
+                raise Exception(f"global can only be used inside a function, line {node.lineno}")
+            if not self.globalized_variables.get(self.current_function, None):
+                self.globalized_variables[self.current_function] = [name]
+            else:
+                self.globalized_variables[self.current_function].append(name)
+        self.generic_visit(node)
+        return node
 
     def visit_FunctionDef(self, node):
         if self.current_function is not None:
@@ -1270,19 +1285,20 @@ class ScopeAllVariables(compilerTransformer):
             )
         self.current_function = node.name
         for arg in node.args.args:
-            if "." in arg.arg:
-                raise Exception(f"arg {arg.arg.id} already has a '.', line {node.lineno}")
-            arg.arg = self.current_function + "." + arg.arg
+            if arg.arg not in self.globalized_variables.get(self.current_function, []):
+                if "." in arg.arg:
+                    raise Exception(f"arg {arg.arg.id} already has a '.', line {node.lineno}")
+                arg.arg = self.current_function + "." + arg.arg
         self.generic_visit(node)
         self.current_function = None
         return node
 
 
     def visit_Variable(self, node):
-        if hasattr(node, 'offset_index') and type(node.offset_index) is Variable:
+        if hasattr(node, 'offset_index') and type(node.offset_index) is Variable: #visiting variables inside array []
             node.offset_index = self.visit_Variable(node.offset_index)
         self.generic_visit(node)
-        if node.id not in reserved_function_names:
+        if node.id not in reserved_function_names and node.id not in self.globalized_variables.get(self.current_function, []):
             if "." in node.id:
                 raise Exception(f"already has a '.', {node.id}, line {node.lineno}")
             node.id = self.current_function + "." + node.id #make this a function that determins how variable names are made to be used elsewere
@@ -1340,6 +1356,7 @@ class Compiler:
             name
             for name, obj in inspect.getmembers(aoe2scriptFunctions, inspect.isclass)
         ]
+        self.aoe2_var_types = get_aoe2_var_types()
         return
 
     def get_func_def_dict(self, func_tree):
@@ -1358,8 +1375,22 @@ class Compiler:
             const_dict[const.targets[0].id] = const.value.args[0].value
         return const_dict
 
+
+    def get_function_param_types(self, func_tree):
+        set_var_type = {}
+        for node in func_tree.body:
+            for arg in node.args.args:
+                var_name, var_type = arg.arg, arg.annotation.id
+                if not hasattr(arg, 'annotation') or arg.annotation is None:
+                    raise Exception(f"function {node.name} arg {arg.arg} has no annotation, line {node.lineno}")
+                elif aoe2_vartype := self.aoe2_var_types.get(var_type, None):
+                    cleaned_var_type = aoe2_vartype
+                elif aoe2_vartype := self.aoe2_var_types.get(var_type.__name__, None):
+                    cleaned_var_type = aoe2_vartype
+                set_var_type[var_name] = cleaned_var_type
+            return set_var_type
+
     def compile(self, trees, vv=False):
-        
 
         trees.const_tree = AstToCustomTR(
             self.command_names, self.object_names
@@ -1381,10 +1412,12 @@ class Compiler:
         func_def_dict = self.get_func_def_dict(trees.func_tree)
         print(ast.dump(trees.func_tree, indent=4))
 
-        func_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="F")
-        trees.func_tree = func_compiler.p_visit(trees.func_tree, "func_tree", vv)
-        main_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="T", variable_type_dict = func_compiler.get_temp_variable_type_dict())
+        get_function_param_types = self.get_function_param_types(trees.func_tree)
+        main_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="T", variable_type_dict = get_function_param_types)
         trees.main_tree = main_compiler.p_visit(trees.main_tree, "main_tree", vv)
+        func_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="F", variable_type_dict = main_compiler.get_temp_variable_type_dict() | get_function_param_types)
+        trees.func_tree = func_compiler.p_visit(trees.func_tree, "func_tree", vv)
+        
         temp_variable_type_dict = main_compiler.get_temp_variable_type_dict()
         
         trees.main_tree = WrapInDefRules().p_visit(trees.main_tree, "main_tree", vv)  # optimize commands together into defrules
