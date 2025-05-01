@@ -143,3 +143,18 @@ def get_enum_classes():
         if inspect.isclass(obj) and issubclass(obj, enum.Enum):
             enum_classes[name] = obj
     return enum_classes
+
+def normalize_var_type(var_type_n):
+    if type(var_type_n) is ast.Name:
+        var_type_n = var_type_n.id
+    else:
+        if type(var_type_n) is AOE2OBJ:
+            var_type_n = var_type_n.name
+        else:
+            var_type_n = var_type_n.__name__
+
+    for type_str, real_type in get_aoe2_var_types().items():
+        if var_type_n == type_str:
+            return real_type
+
+    raise Exception(f"Unknown variable type: {var_type_n}")

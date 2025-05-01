@@ -21,6 +21,8 @@ class AOE2VarType():
         if abstracted_offset is None:
             return 0
         offset = cls.params_to_offet.get(abstracted_offset)
+        if offset is None:#todo: remove this at some point
+            offset = cls.params_to_offet.get(int(abstracted_offset))
         if offset is None:
             raise Exception(f"Offset {abstracted_offset} not found in {cls.params_to_offet}")
         else:
@@ -30,14 +32,14 @@ class Array(AOE2VarType):
 
     @property
     def length(self):
-        return self.length
+        return self._length
     
     def __init__(self, type, length):
         if type(length) is not int and length < 0:
             raise Exception(f"Array length {length} is not valid")
         if not isinstance(type, AOE2VarType):
             raise Exception(f"Array type {type} is not valid")
-        self.length = length
+        self._length = length
         self.type = type
     
     @classmethod

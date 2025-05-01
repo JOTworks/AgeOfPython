@@ -38,12 +38,6 @@ from scraper import (
 #            return EMPLOYED
 #    return UNEMPLOYED
 
-outside = 12
-
-def explore(test:Integer) -> Integer:
-    global outside
-    outside += 1
-    return outside
-
-myTest = 44
-explore(myTest)
+J_explore_object_ids = Array(Integer, 100)
+test = 0
+J_explore_object_ids[2] = 12

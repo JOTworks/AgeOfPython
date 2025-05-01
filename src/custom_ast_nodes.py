@@ -60,6 +60,8 @@ class EnumNode(ast.Attribute):
         assert arg is not str
         self.enum = arg
 
+    def var_name(self):
+        return self.attr
 
 class Variable(ast.Name): #! give Variable a good constructor for comiler classes to use.
     """
@@ -69,6 +71,10 @@ class Variable(ast.Name): #! give Variable a good constructor for comiler classe
 
     def __init__(self, args, as_const = False):
         self.as_const = as_const
+        if "slice" in args:
+            self.slice = args.pop("slice")
+        else:
+            self.slice = None
         if "offset_index" in args:
             self.offset_index = args.pop("offset_index")
         else:
@@ -98,6 +104,12 @@ ast.Return.var_name = return_var_name
 def tuple_var_name(self):
     return None
 ast.Tuple.var_name = return_var_name
+
+def name_var_name(self):
+    return self.id
+ast.Name.var_name = name_var_name
+
+
 
 class aoeOp(ast.BoolOp):
     """
