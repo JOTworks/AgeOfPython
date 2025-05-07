@@ -144,7 +144,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         start = time()
         def_const_string = ''
         def_const_string = '\n'.join([f"(defconst {def_const})" for def_const in self.def_const_list])
-        self.final_list.insert(0, def_const_string + "\n")
+        self.final_list.insert(0, blue(def_const_string) + "\n")
         self.time_tracker["add_def_consts"] += time() - start
         self.call_tracker["add_def_consts"] += 1
 
@@ -224,14 +224,14 @@ class Printer:
 def comment(node, NO_FILE):
     #if NO_FILE:
     #    return ""
-    if hasattr(node, "file_path"):
+    source_segment = lineno = file_path = ""
+    if hasattr(node, "file_path") and node.file_path not in ["TEST","NOFILE"]:
         source_segment = ast.get_source_segment(
             read_file_as_string(node.file_path), node
         )
         lineno = str(node.lineno)
         file_path = str(node.file_path).split("/")[-1]
-    else:
-        source_segment = lineno = file_path = ""
+    
     return (
         Fore.GREEN
         + Style.DIM

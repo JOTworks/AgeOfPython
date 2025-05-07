@@ -8,7 +8,7 @@ import ast
 import inspect
 from MyLogging import logger
 
-#!#!#!#!#!#! find out where the return pts for functions is and is the 15900 still hardcoded
+#! find out where the return pts for functions is and is the 15900 still hardcoded
 
 #function return memory
 FUNC_DEPTH_COUNT = "func_depth_count" #offset for knowing what function return pointer to use
@@ -20,6 +20,7 @@ FUNC_RETURN_LENGTH = 100
 #array menipulation memory
 ARRAY_RETURN_PTR = "array_return_pointer" #pointer mem location of array element
 ARRAY_RETURN_REG = "array_return_register" #array to store array element being used
+ARRAY_OFFSET = "array_offset" #offset of the slice  of array being used
 ARRAY_RETURN_LENGTH = 100
 
 
@@ -71,6 +72,7 @@ class Memory:
         
         self.malloc(FUNC_DEPTH_COUNT, AOE2OBJ.Integer)
         self.malloc(ARRAY_RETURN_PTR, AOE2OBJ.Integer)
+        self.malloc(ARRAY_OFFSET, AOE2OBJ.Integer)
         self.malloc(ARRAY_RETURN_REG, AOE2OBJ.Integer, ARRAY_RETURN_LENGTH, is_array=True, front=False)
         self.malloc(FUNC_RET_REG, AOE2OBJ.Integer, FUNC_RETURN_LENGTH, is_array=True, front=False)
 
@@ -153,6 +155,9 @@ class Memory:
         raise Exception(f"could not find {reg_number} in {self._used_memory}")
 
     def get(self, var_name, abstracted_offset=None, slice=None):
+        if slice is not None and type(slice) is not int:
+            logger.warning(f"slice is not an int, using {type(slice)}")
+            slice = None
         try:
             stored_memory = self.used_memory_in_scope()[var_name]
         except KeyError:

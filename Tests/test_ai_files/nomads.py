@@ -183,6 +183,7 @@ J_explore_object_timers[2] = 3
 
 def J_get_employment_status(id:Integer) -> Integer:
     global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
+    array_explorer_id = Integer()
     for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
         array_explorer_id = J_explore_object_ids[i]
         if array_explorer_id == id:
@@ -197,7 +198,7 @@ def J_explore_object():
     normalized_point = Point(0,0)
 
     for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
-
+        explorer_id = i
         explorer_id = J_explore_object_ids[i]
         thing = J_explore_object_things[i]
         tiles_away = J_explore_object_tiles_away[i]

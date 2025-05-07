@@ -14,3 +14,8 @@
 #todo: asigning and using points and objects differntly from ints
 #todo: get nested binOp expressions working
 #todo: get expressions working in conditionals
+
+#FUNCTION ISSUES
+#todo: for loops in functions (maybe all) asigning a variable to an array does not initialize it
+    #todo: for i in range(10):
+    #todo:      explorer_id = J_explore_object_ids[i]

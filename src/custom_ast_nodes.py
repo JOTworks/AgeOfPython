@@ -136,7 +136,7 @@ class Command(ast.Call):
             self.end_lineno = node.end_lineno
             self.col_offset = node.col_offset
             self.end_col_offset = node.end_col_offset
-            self.file_path = node.file_path if hasattr(node, "file_path") else "no file"
+            self.file_path = node.file_path if hasattr(node, "file_path") else "NOFILE"
         
         del node
 

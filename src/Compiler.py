@@ -6,7 +6,7 @@ from scraper import *
 from scraper import AOE2FUNC, Integer, Constant, Array, Register
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
-from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT, FUNC_RETURN_LENGTH, ARRAY_RETURN_PTR, FUNC_RETURN_ARRAY
+from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT, FUNC_RETURN_LENGTH, ARRAY_RETURN_PTR, FUNC_RETURN_ARRAY, ARRAY_OFFSET
 from copy import copy, deepcopy
 from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return
 from utils_display import print_bordered
@@ -86,7 +86,7 @@ class AstToCustomTR(compilerTransformer):
                 "end_col_offset": node.end_col_offset,
             }
             if hasattr(node, "slice"):
-                args['slice'] = node.slice.var_name()
+                args['slice'] = node.slice
 
             node = Variable(args)
         return node
@@ -370,11 +370,6 @@ class AlocateAllMemory(compilerTransformer):
         for exp in node.body:
             exp = self.visit(exp)
         node = super().visit_Return(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
-        print("!!!visit_Assign!!!")
-        print(ast.dump((node), indent=4))
-        for item in node.body:
-            print("!item!")
-            print(ast.dump((item), indent=4))
         return node
 
     def visit_DefRule(self, node):
@@ -397,31 +392,39 @@ class AlocateAllMemory(compilerTransformer):
         return node
 
     def visit_Variable(self, node):
-        print("!!!visit_Variable!!!", node.var_name)
         if node.var_name() == FUNC_RET_REG:
-            #node.memory_location = 
-            #node.memory_name = 
-            print("helllo kent")
+            logger.warning("FUNC_RET_REG is not a variable")
         single_slice = node.slice if hasattr(node, "slice") else None
+        
+        if node.id in self.const_dict:
+            node.as_const = True
+            node.memory_location = self.const_dict[node.id]
+            node.memory_name = node.id
+            return node #todo: maybe make these constant objects instead of variables with as_const, beucause as_const is ment for pointer
+                
+        if node.id is FUNC_RET_REG:
+            node.memory_location = self.memory.get(node.id,0) + node.offset_index
+            node.memory_name = self.memory.get_name_at_location(node.memory_location)
+            return node
+        
         if not (location := self.memory.get(node.id,node.offset_index, slice=single_slice)):
             logger.error(f"we are doing strict typing. you need to initialize {node.id}")
             self.memory.malloc(node.id, Integer)
             location = self.memory.get(node.id, node.offset_index, slice=single_slice)
 
-        #!#!#!HELP! I CANT GET TEH INTERNAL VARIABLE TO BE CHANGED ONLY THE TARGETS ONE IS CHANGED, NOT THE ONE IN THE DEFF RULE OF THE ASIGN WRAPPER
         node.memory_location = location
         node.memory_name = self.memory.get_name_at_location(location)
         return node
 
 class CompileTR(compilerTransformer):
-    def __init__(self, command_names, func_def_dict, temp_var_prefix, variable_type_dict = {}):
+    def __init__(self, command_names, func_def_dict, temp_var_prefix, variable_type_dict = {}, variable_array_types = {}, variable_array_lengths = {}):
         super().__init__()
         self.temp_var_prefix = "0" + str(temp_var_prefix) + "temp"
         self.command_names = command_names
         self.parent_map = {}
         self.variable_types = variable_type_dict
-        self.variable_array_lengths = {}
-        self.variable_array_types = {}
+        self.variable_array_lengths = variable_array_lengths
+        self.variable_array_types = variable_array_types
         self.temp_var_counter = 0
         self.func_def_dict = func_def_dict
         self.current_func_def = None
@@ -558,7 +561,7 @@ class CompileTR(compilerTransformer):
         if type(node.iter) is not ast.Call or node.iter.func.id != "range":
             raise Exception(f"for loops only support range, not {node.iter}, line {node.lineno}")
         if not self.get_var_type(node.target): #becasue we need to asign itr in for loop before we get to the visit_assign where it would happen natural
-            self.set_var_type(node.target.id, Integer) #jack is dumb
+            self.set_var_type(node.target.id, Integer) #I is dumb
         self.generic_visit(node)
         if len(node.iter.args) == 1: 
             start, stop, step = (
@@ -582,7 +585,7 @@ class CompileTR(compilerTransformer):
             op = compareOp.greater_than
 
         test = DefRule(
-            Command(AOE2FUNC.up_compare_goal, [node.target, op, stop], node),
+            Command(AOE2FUNC.up_compare_goal, [node.target, op, stop], None),
             [new_jump(JumpType.test_jump_to_beginning_after_init)],
             None,
             comment="FOR test " + str(node.lineno),
@@ -601,7 +604,7 @@ class CompileTR(compilerTransformer):
         )
         incrementer = DefRule(
             Command(AOE2FUNC.true, [], None),
-            [Command(AOE2FUNC.up_modify_goal, [node.target, mathOp.add, step], node)],
+            [Command(AOE2FUNC.up_modify_goal, [node.target, mathOp.add, step], None)],
             None,
             comment="FOR inc " + str(node.lineno),
         )
@@ -652,7 +655,7 @@ class CompileTR(compilerTransformer):
             test,
             skip,
         ] + node.body
-        print(type(node.orelse))
+
         if node.orelse != []: 
             node.body.append(skip_orelses_if_true)
 
@@ -763,8 +766,8 @@ class CompileTR(compilerTransformer):
         modify_commands = [] 
         
         #Right side set length
-        if type(node_2) is Variable and node_2.offset_index is not None: #!how does not no offset mean length1????
-            node_2_length = 1
+        if type(node_2) is Variable and node_2.offset_index is not None:
+            node_2_length = 1 #all basic type offset attr aka .x or .locallsit are size 1 elements
         elif type(node_2) is Variable and node_2.var_name() == FUNC_RET_REG:
             node_2_length = None
         elif type(node_2) is ast.Tuple:
@@ -782,8 +785,8 @@ class CompileTR(compilerTransformer):
         if type(node_1) is not ast.Tuple and self.get_var_type(node_1) is None:
             self.set_var_type(node_1.var_name(), self.get_var_type(node_2))
 
-        if type(node_1) is Variable and node_1.offset_index is not None: #!how does not no offset mean length1????
-            node_1_length = 1
+        if type(node_1) is Variable and node_1.offset_index is not None:
+            node_1_length = 1 #all basic type offset attr aka .x or .locallsit are size 1 elements
         elif type(node_1) is ast.Tuple:
             node_1_length = len(node_1.elts)
         elif type(node_1) is ast.Return: 
@@ -828,32 +831,38 @@ class CompileTR(compilerTransformer):
             #if its the full basic type getting coppied
             left_offset_index = i
             right_offset_index = i
+            left_slice = None
+            right_slice = None
             
             #should only happen if length is 1, pulls the one piece of the basic type
             if type(node_1) is Variable and node_1.offset_index is not None:
                 if length != 1:
                     raise Exception(f"basic type attr should only by length 1, not {length}, line {node_1.lineno}")
                 left_offset_index = node_1.offset_index
+                left_slice = node_1.slice
             if type(node_2) is Variable and node_2.offset_index is not None:
                 if length != 1:
                     raise Exception(f"basic type attr should only by length 1, not {length}, line {node_1.lineno}")
                 right_offset_index = node_2.offset_index
+                right_slice = node_2.slice
 
             #for when we are using the amourphous cunt_ret_reg array devoid of types
             if node_1.var_name() == FUNC_RET_REG:
                 left_offset_index = self.array_return_offset
+                left_slice = None
                 self.array_return_offset += 1
             if node_2.var_name() == FUNC_RET_REG:
                 right_offset_index = self.array_return_offset
+                right_slice = None
                 self.array_return_offset += 1
 
-            left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index, 'slice':node_1.slice})
-            right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index, 'slice':node_1.slice})
+            left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index, 'slice':left_slice})
+            right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index, 'slice':right_slice})
             if type(node_2) is ast.Constant:
                 right = node_2
             
             #ARRAYS #todo: optimization, add for i in array: and make it just add element_size each time when accessing
-            if hasattr(node_2, 'slice') and type(node_2.slice) is Variable: #getting array element
+            if hasattr(node_2, 'slice') and type(node_2.slice) in [Variable, str]: #getting array element
                 modify_commands += self.create_set_array_ptr_commands(node_2)
                 modify_commands.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal
                     AOE2FUNC.up_get_indirect_goal,
@@ -862,7 +871,7 @@ class CompileTR(compilerTransformer):
                 ))
                 right = Variable({'id':ARRAY_RETURN_REG,'offset_index':None})
 
-            if hasattr(node_1, 'slice') and type(node_1.offset_index) is Variable: #setting array element
+            if hasattr(node_1, 'slice') and type(node_1.offset_index) is [Variable, str]: #setting array element
                 if type(op) is not ast.Eq:
                     raise Exception(f"cannot use {op} on Array asignments, line {node_1.lineno}")
                 modify_commands += self.create_set_array_ptr_commands(node_1)
@@ -878,6 +887,8 @@ class CompileTR(compilerTransformer):
         return modify_commands
 
     def create_set_array_ptr_commands(self, node):
+        if node.offset_index is None:
+            offset = self.const_constructor(0)
         if node.offset_index and self.get_var_type(node.offset_index) not in [Integer, Register]:
             raise Exception(f"array [] must be [Integer, Register] not {self.get_var_type(node.offset_index)}, line {node.lineno}")
         modify_commands = []
@@ -886,12 +897,29 @@ class CompileTR(compilerTransformer):
             [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.eql, node],
             None,
         ))
-        for i in range(self.get_array_element_size(node)):
-            modify_commands.append( Command(
+        #add offset
+        modify_commands.append( Command(
                 AOE2FUNC.up_modify_goal,
-                [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.add, node.offset_index],
+                [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.add, offset],
                 node,
             ))
+        #calculate slice
+        modify_commands.append( Command(
+            AOE2FUNC.up_modify_goal,
+            [Variable({'id':ARRAY_OFFSET,'offset_index':None}), mathOp.eql, ast.Constant(value=self.get_array_element_size(node))],
+            node,
+            ))
+        modify_commands.append( Command(
+            AOE2FUNC.up_modify_goal,
+            [Variable({'id':ARRAY_OFFSET,'offset_index':None}), mathOp.mul, node.slice],
+            node,
+            ))
+        #add slice
+        modify_commands.append( Command(
+            AOE2FUNC.up_modify_goal,
+            [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.add, Variable({'id':ARRAY_OFFSET,'offset_index':None})],
+            node,
+        ))
         return modify_commands
 
     def get_array_element_size(self, node):
@@ -917,6 +945,7 @@ class CompileTR(compilerTransformer):
     def set_var_type(self, var_name, var_type):
         if type(var_name) is not str:
             raise Exception(f"var_name must be a string, not {type(var_name)}, line {var_name.lineno}")
+
         cleaned_var_type = None
         if var_name in self.variable_types:
             raise Exception(f"var {var_name} already has a type {self.variable_types[var_name]}, line unknown")
@@ -934,13 +963,15 @@ class CompileTR(compilerTransformer):
 
     def is_array(self, node):
         var_name = node.var_name()
+        if type(node) in [ast.Constant,Constant]:
+            return False
         if var_name in self.variable_types:
             var_type = self.variable_types[var_name]
         else:
             raise Exception(f"var {var_name} not in defined, line {node.lineno}")
         if var_type is Array:
             return True
-        return False
+        return False    
 
     def get_var_type(self, node):
         if type(node) is EnumNode:
@@ -964,6 +995,9 @@ class CompileTR(compilerTransformer):
         if hasattr(node, 'offset_index') and node.offset_index is not None: #all subsection are currently single regesters
             return Register
 
+        if hasattr(node, 'slice') and node.slice is not None:
+            return self.variable_array_types.get(var_name, None)
+
         if var_name in self.variable_types:
             return self.variable_types[var_name]
         
@@ -980,11 +1014,13 @@ class CompileTR(compilerTransformer):
             var_type = self.get_var_type(node)
             if not var_type:
                 raise Exception(f"var {node.var_name()} not defined, line {node.lineno}")
-            if var_type is Array:
+            if self.is_array(node) is Array:
                 if slice is None:
                     length = self.variable_array_lengths[node.var_name()] * self.get_length(self.variable_array_types[node.var_name()])
                 else:
-                    length = self.get_length(self.variable_array_types[node.var_name()])
+                    if not (array_type := self.variable_array_types.get(node.var_name())):
+                        raise Exception(f"array {node.var_name()} not defined, line {node.lineno}")
+                    length = self.get_length(array_type)
             elif type(var_type) is EnumType:
                 length = 1
             else:
@@ -1473,12 +1509,19 @@ class Compiler:
         return const_dict
 
     def get_function_param_types(self, func_tree):
+        enum_classes = get_enum_classes()
+        #enum_class_var_type_dict = {
+        #    ObjectId
+        #}
         set_var_type = {}
         for node in func_tree.body:
             for arg in node.args.args:
-                var_name, var_type = arg.arg, arg.annotation.id
+                var_name, var_type = arg.arg, arg.annotation.id #todo: allow annotations of aoe2params, aka ObjectId instead of just Integer
                 if not hasattr(arg, 'annotation') or arg.annotation is None:
                     raise Exception(f"function {node.name} arg {arg.arg} has no annotation, line {node.lineno}")
+                if var_type in enum_classes:
+                    cleaned_var_type = enum_classes[var_type]
+                    #raise Exception(f"Not yet supporting AOE2Script Parameter like {var_type} types as annotations, Use basic types, {node.lineno}")
                 elif aoe2_vartype := self.aoe2_var_types.get(var_type, None):
                     cleaned_var_type = aoe2_vartype
                 elif aoe2_vartype := self.aoe2_var_types.get(var_type.__name__, None):
@@ -1513,13 +1556,12 @@ class Compiler:
 
         trees.func_tree = ScopeAllVariables().p_visit(trees.func_tree, "func_tree", vv)
         func_def_dict = self.get_func_def_dict(trees.func_tree)
-        print(ast.dump(trees.func_tree, indent=4))
 
 
         function_param_and_constant_types = self.get_function_param_types(trees.func_tree) | self.get_constant_param_types(trees.const_tree)
         main_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="T", variable_type_dict = function_param_and_constant_types)
         trees.main_tree = main_compiler.p_visit(trees.main_tree, "main_tree", vv)
-        func_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="F", variable_type_dict = main_compiler.get_temp_variable_type_dict() | function_param_and_constant_types)
+        func_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="F", variable_type_dict = main_compiler.get_temp_variable_type_dict() | function_param_and_constant_types, variable_array_lengths = main_compiler.variable_array_lengths, variable_array_types = main_compiler.variable_array_types)
         trees.func_tree = func_compiler.p_visit(trees.func_tree, "func_tree", vv)
         
         temp_variable_type_dict = main_compiler.get_temp_variable_type_dict()

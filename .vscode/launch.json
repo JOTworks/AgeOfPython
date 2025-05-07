@@ -15,10 +15,10 @@
       "args": [
         //"block_code", "-v",
         //"-f","compare_boolOp_binOp", "-v", //"compare_boolOp_binOp.py${cwd}"
-        "-f","all_code", "-vv",
+        //"-f","all_code", "-vv",
         //"-f","TuskenRail", "-r",
         //"-f","QuickElectrum", "-v", "-t"
-        //"-f","nomads", "-v", "-t"
+        "-f","nomads", "-v", "-t"
       ]
     }
   ]

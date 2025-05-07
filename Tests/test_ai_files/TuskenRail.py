@@ -732,7 +732,6 @@ if game_time() > TIME_START_DEER_LURE and game_time() < TIME_END_DEER_LURE:
             up_target_point(point_next_to_deer, DUCAction.action_move, _, AttackStance.stance_no_attack)
             SN.target_point_adjustment = 0 #reset
 
-
     #shooting Deer
     up_full_reset_search()
     up_set_target_point(p_home)

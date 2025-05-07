@@ -38,6 +38,11 @@ from scraper import (
 #            return EMPLOYED
 #    return UNEMPLOYED
 
-J_explore_object_ids = Array(Integer, 100)
-test = 0
-J_explore_object_ids[2] = 12
+i = Integer(2)
+J_explore_object_things = Array(Integer, 10) #J_EXPLORE_OBJECT_ARRAY_SIZE
+out_thing = J_explore_object_things[i]
+def J_explore_object():
+    global J_explore_object_things
+
+    for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
+        thing = J_explore_object_things[i]
