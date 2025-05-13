@@ -749,7 +749,7 @@ class CompileTR(compilerTransformer):
     def get_aoe2_modify_function(self, node):
         if type(node) in [Variable, ast.arg, ast.Return]:
             return AOE2FUNC.up_modify_goal
-        if type(node) in [SN, SnId]:
+        if type(node) is EnumNode and type(node.enum) is SN: #used to say type(node) in [SN, SnId] but i think that never worked?
             return AOE2FUNC.up_modify_sn
         if type(node) is ast.Constant:
             raise Exception(
