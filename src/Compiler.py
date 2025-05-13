@@ -514,19 +514,18 @@ class CompileTR(compilerTransformer):
             Command(AOE2FUNC.true, [], None),
             [Command(AOE2FUNC.up_jump_direct, [JumpType.jump_to_func], node)],
             node,
+            comment="FUNC_jump " + str(node.lineno),
         )
 
-        func_call_module.body = (
-            [
-                func_depth_incromenter,
-                set_return_rule_pointer,
-            ] 
-            + [asign_func_args] if asign_func_args else [] 
-            + [
-                jump_to_func,
-                func_depth_decromenter,
-            ]
-        )
+
+        func_call_module.body = []
+        func_call_module.body.append(func_depth_incromenter)
+        func_call_module.body.append(set_return_rule_pointer)
+        if asign_func_args:
+            func_call_module.body.append(asign_func_args)
+        func_call_module.body.append(jump_to_func)
+        func_call_module.body.append(func_depth_decromenter)
+
         return func_call_module
 
     def visit_While(self, node, parent, in_field, in_node):
