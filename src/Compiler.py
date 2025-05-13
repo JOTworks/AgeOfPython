@@ -367,9 +367,8 @@ class AlocateAllMemory(compilerTransformer):
                     self.memory.malloc(node.targets[0].id, node.value.args[0], array_length=length, is_array=True)
                 else:
                     self.memory.malloc(node.targets[0].id, var_type)
-        for exp in node.body:
-            exp = self.visit(exp)
-        node = super().visit_Return(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
+
+        node = super().visit_Assign(node) #this one needs to happen after so it can us the Constructor before visit_Variable uses the default of Integer
         return node
 
     def visit_DefRule(self, node):
@@ -502,11 +501,14 @@ class CompileTR(compilerTransformer):
                 ast.Eq,
                 arg,
                 )
-        asign_func_args = DefRule(
-                Command(AOE2FUNC.true, [], None),
-                asign_func_arg_commands,
-                node,
-        )
+        if len(asign_func_arg_commands) > 0:
+            asign_func_args = DefRule(
+                    Command(AOE2FUNC.true, [], None),
+                    asign_func_arg_commands,
+                    node,
+            )
+        else:
+            asign_func_args = None
 
         jump_to_func = DefRule(
             Command(AOE2FUNC.true, [], None),
@@ -518,7 +520,9 @@ class CompileTR(compilerTransformer):
             [
                 func_depth_incromenter,
                 set_return_rule_pointer,
-                asign_func_args,
+            ] 
+            + [asign_func_args] if asign_func_args else [] 
+            + [
                 jump_to_func,
                 func_depth_decromenter,
             ]
@@ -1119,6 +1123,8 @@ class CompileTR(compilerTransformer):
         if type(node.value) is Constructor:
             self.set_var_type(target.var_name(), node.value.func.id.name)
             if node.value.func.id.name is Array.__name__:
+                if len(node.value.args) != 2:
+                    raise Exception(f"array constructor must have 2 args, not {len(node.value.args)}, line {node.lineno}")
                 self.variable_array_lengths[target.var_name()] = node.value.args[1].value #!add 2 checks to make sure you initilize an array correctly
                 self.set_array_var_type(target.var_name(), node.value.args[0].id)
                 #todo:fix array initilization
@@ -1128,23 +1134,27 @@ class CompileTR(compilerTransformer):
                         right = node.value.args[0]
                     else:
                         right = ast.Tuple(elts=node.value.args)
-                    assign_commands += self.create_modify_commands(node.targets[0], ast.Eq(), right)
+                    assign_commands += self.create_modify_commands(target, ast.Eq(), right)
                     assign_commands.append(Command(AOE2FUNC.disable_self, [], node))
         else:
-            assign_commands += self.create_modify_commands(node.targets[0], ast.Eq(), node.value)
-            
+            assign_commands += self.create_modify_commands(target, ast.Eq(), node.value)
+
         # multiple targets (ei x = y = 12)
         if len(node.targets) > 1:
             for i in range(1, len(node.targets)):
-                assign_commands += self.create_modify_commands(node.targets[i], ast.Eq(), node.targets[0])
+                assign_commands += self.create_modify_commands(node.targets[i], ast.Eq(), target)
         
         #Return it all
-        node.body = [DefRule(
-                Command(AOE2FUNC.true, [], None),
-                assign_commands,
-                node,
-                '' if msg is None else msg + " " + str(node.lineno),
-            )]
+        if len(assign_commands) == 0:
+            logger.warning("no assign commands, line " + str(node.lineno))
+            node.body = []
+        else:
+            node.body = [DefRule(
+                    Command(AOE2FUNC.true, [], None),
+                    assign_commands,
+                    node,
+                    '' if msg is None else msg + " " + str(node.lineno),
+                )]
         return node
 
     def make_jump_back_rules(self, lineno):

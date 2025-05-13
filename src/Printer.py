@@ -68,6 +68,8 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.final_list.append( yellow(f";--- END {node.name} ---;\n"))
 
     def visit_DefRule(self, node):  # adds (defrule _______  => ______)
+        if node.body is None or len(node.body) == 0:
+            logger.critical(f"defrule has no body, line {node.lineno}")
         start = time()
         self.final_list.append( (
             green("(defrule")

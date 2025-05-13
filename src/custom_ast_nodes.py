@@ -252,6 +252,8 @@ class DefRule(ast.If):
             pass  # TODO: check if all of the tree end objects are commands
         if not isinstance(body, list):
             raise TypeError(f"body {type(body)} must be a list")
+        if len(body) == 0:
+            raise TypeError("body must not be empty")
         for stmt in body:
             if not isinstance(stmt, Command):
                 raise TypeError(f"body {type(stmt)} must be a list of commands")
