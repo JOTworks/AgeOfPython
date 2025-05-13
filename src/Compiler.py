@@ -860,7 +860,10 @@ class CompileTR(compilerTransformer):
                 right_slice = None
                 self.array_return_offset += 1
 
-            left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index, 'slice':left_slice})
+            if modify_func is AOE2FUNC.up_modify_sn: #todo: make sure that right side SN works (ie x = SN.food_gathereres)
+                left = node_1
+            else:
+                left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index, 'slice':left_slice})
             right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index, 'slice':right_slice})
             if type(node_2) is ast.Constant:
                 right = node_2
@@ -1612,6 +1615,7 @@ class Compiler:
 
         memory = Memory()
         const_dict = self.get_dict_from_const_tree(trees.const_tree)
+        print(ast.dump(combined_tree, indent=4))
         combined_tree = AlocateAllMemory(memory, const_dict, temp_variable_type_dict).p_visit(
             combined_tree, "combined_tree", vv
         )
