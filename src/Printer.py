@@ -133,14 +133,14 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {type(next_expr)}")
             if type(expr) is typeOp:
                 if prefix.string != expr.string:
-                        if hasattr(next_expr, "value"):
-                            next_expr_str = str(next_expr.value)
-                        else:
-                            next_expr_str = str(next_expr.id)
-                        logger.warning(f"TypeOp missmatch {expr.string} {next_expr_str}, line {next_expr.end_lineno}")
+                    if hasattr(next_expr, "value"):
+                        next_expr_str = str(next_expr.value)
+                    else:
+                        next_expr_str = str(next_expr.id)
+                    logger.warning(f"TypeOp missmatch {expr.string} {next_expr_str}, line {next_expr.end_lineno}")
                 
-                if next_expr_str == "15900": #todo: get rid of this magic number
-                    return expr.string
+                    if next_expr_str == "15900": #todo: get rid of this magic number
+                        return expr.string
                 return prefix.string
             return prefix.string + expr.string
         
