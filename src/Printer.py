@@ -144,8 +144,8 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 return prefix.string
             return prefix.string + expr.string
         
-        if type(expr) in [ObjectData, SearchSource, SearchOrder, ObjectStatus, ObjectList]: #parameters that dont seem to have defconts internaly in AOE2
-            return str(expr.value)
+        if type(type(expr)) is Strenum #type(expr) in [ObjectData, SearchSource, SearchOrder, ObjectStatus, ObjectList]: #parameters that dont seem to have defconts internaly in AOE2
+            return str(expr.value) #goals need the number not the string if set
 
         if type(expr) is SN:
             return 'sn-' + expr.string.replace("_", "-")
