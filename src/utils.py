@@ -142,6 +142,7 @@ def get_enum_classes():
     for name, obj in inspect.getmembers(aoe2scriptEnums):
         if inspect.isclass(obj) and issubclass(obj, enum.Enum):
             enum_classes[name] = obj
+    
     return enum_classes
 
 def normalize_var_type(var_type_n):

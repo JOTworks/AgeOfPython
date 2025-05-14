@@ -1,7 +1,7 @@
 import ast
 from Compiler import Command, Variable, aoeOp
 from scraper import *
-from scraper import mathOp, compareOp, Strenum
+from scraper import mathOp, compareOp, Strenum, typeOp
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re
@@ -112,7 +112,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
     def evaluate_enum(self, expr, next_expr, human_readable = True):
         start = time()
         value_str = ''
-        if type(expr) in [mathOp, compareOp]: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
+        if type(expr) in [mathOp, compareOp, typeOp]: #todo:figure out if this should even be in Printer as it is doing logic, not just printing. Also if that is true for all mathOp usages
             if next_expr is None:
                 raise Exception(f"next_expr is None, but it should be a Variable or Constant or SnI, line {expr.lineno}")
             if type(next_expr) is Variable:
@@ -131,6 +131,10 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 prefix = typeOp.constant
             else:
                 raise Exception(f"expr.value is not a Variable or Constant or SnI, it is {type(next_expr)}")
+            if type(expr) is typeOp:
+                if prefix.string != expr.string:
+                    logger.warning(f"prefix.string {prefix.string} != expr.string {expr.string}, line {next_expr.end_lineno}")
+                return prefix.string
             return prefix.string + expr.string
         
         if type(expr) in [ObjectData, SearchSource, SearchOrder, ObjectStatus, ObjectList]: #parameters that dont seem to have defconts internaly in AOE2
@@ -207,7 +211,7 @@ class Printer:
         return no_whitespace
 
     def print_for_string_testing(self):
-        visitor = DefRulePrintVisitor(self.final_string, NO_FILE=True)
+        visitor = DefRulePrintVisitor(self.final_string, self.const_tree, NO_FILE=True)
         visitor.visit(self.tree)
 
     def print_all(self, TEST=False):
