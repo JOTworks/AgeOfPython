@@ -5,6 +5,7 @@ from scraper import mathOp, compareOp, Strenum, typeOp
 from utils_display import read_file_as_string
 from colorama import Fore, Back, Style
 import re
+from aenum import EnumType
 from MyLogging import logger
 from utils import get_enum_classes
 from time import time
@@ -144,7 +145,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 return prefix.string
             return prefix.string + expr.string
         
-        if type(type(expr)) is Strenum: #type(expr) in [ObjectData, SearchSource, SearchOrder, ObjectStatus, ObjectList]: #parameters that dont seem to have defconts internaly in AOE2
+        if type(type(expr)) is EnumType: #type(expr) in [ObjectData, SearchSource, SearchOrder, ObjectStatus, ObjectList]: #parameters that dont seem to have defconts internaly in AOE2
             return str(expr.value) #goals need the number not the string if set
 
         if type(expr) is SN:
