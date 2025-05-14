@@ -862,8 +862,11 @@ class CompileTR(compilerTransformer):
             if modify_func is AOE2FUNC.up_modify_sn: #todo: make sure that right side SN works (ie x = SN.food_gathereres)
                 left = node_1
             else:
-                left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index, 'slice':left_slice})
-            right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index, 'slice':right_slice})
+                left = Variable({'id':node_1.var_name(),'offset_index':left_offset_index, 'slice':left_slice}) #! EnumNode should not become a variable in this function
+            if modify_func is AOE2FUNC.up_modify_sn or type(node_2) is EnumNode:
+                right = node_2
+            else:
+                right = Variable({'id':node_2.var_name(),'offset_index':right_offset_index, 'slice':right_slice})
             if type(node_2) is ast.Constant:
                 right = node_2
             
