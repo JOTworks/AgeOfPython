@@ -24,21 +24,31 @@ def reverse_compare_op(compare_op):
     combined_dict = {**reverse_dict, **{v: k for k, v in reverse_dict.items()}}
     return combined_dict[compare_op]
 
-def ast_to_aoe(item):
-    ast_to_aoe_dict = {
+def ast_to_aoe(item, type):
+    ast_to_aoe_compare_dict = {
         ast.Gt: compareOp.greater_than,
         ast.GtE: compareOp.greater_or_equal,
         ast.Lt: compareOp.less_than,  # todo: make the scraper pull in compareOp.less_then
         ast.LtE: compareOp.less_or_equal,
         ast.Eq: compareOp.equal,
         ast.NotEq: compareOp.not_equal,
+    }
+    ast_to_aoe_math_dict = {
         ast.Add: mathOp.add,
+        ast.Eq: mathOp.eql,
         ast.Sub: mathOp.sub,
         ast.Mult: mathOp.mul,
         ast.Div: mathOp.div_rd,
         ast.FloorDiv: mathOp.div_fl,
         ast.Mod: mathOp.mod,
     }
+    if type == compareOp:
+        ast_to_aoe_dict = ast_to_aoe_compare_dict
+    elif type is mathOp:
+        ast_to_aoe_dict = ast_to_aoe_math_dict
+    else:
+        raise ValueError(f"ast_to_aoe: Unsupported type: {type}")
+
     out_item = ast_to_aoe_dict.get(item, None)
     if out_item is None:
         out_item = ast_to_aoe_dict.get(item.__class__, None)
@@ -142,7 +152,7 @@ def get_enum_classes():
     for name, obj in inspect.getmembers(aoe2scriptEnums):
         if inspect.isclass(obj) and issubclass(obj, enum.Enum):
             enum_classes[name] = obj
-    
+
     return enum_classes
 
 def normalize_var_type(var_type_n):
