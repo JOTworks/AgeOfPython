@@ -901,9 +901,20 @@ class CompileTR(compilerTransformer):
         if node.offset_index and self.get_var_type(node.offset_index) not in [Integer, Register]:
             raise Exception(f"array [] must be [Integer, Register] not {self.get_var_type(node.offset_index)}, line {node.lineno}")
         modify_commands = []
+        #set to begining of array
+        node_copy = Variable({ #todo: copy() would be better but cannot get it to work
+            "id": node.target.id,
+            "ctx": node.target.ctx,
+            "offset_index": node.target.offset_index,
+            "lineno": node.target.lineno,
+            "end_lineno": node.target.end_lineno,
+            "col_offset": node.target.col_offset,
+            "end_col_offset": node.target.end_col_offset,
+            "as_const": True, #set this up so it looks at the memory location and not the values
+        })
         modify_commands.append( Command(
             AOE2FUNC.up_modify_goal,
-            [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.eql, node],
+            [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.eql, node_copy],
             None,
         ))
         #add offset
