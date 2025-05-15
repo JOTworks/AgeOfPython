@@ -1617,7 +1617,6 @@ class Compiler:
 
         memory = Memory()
         const_dict = self.get_dict_from_const_tree(trees.const_tree)
-        print(ast.dump(combined_tree, indent=4))
         combined_tree = AlocateAllMemory(memory, const_dict, temp_variable_type_dict).p_visit(
             combined_tree, "combined_tree", vv
         )

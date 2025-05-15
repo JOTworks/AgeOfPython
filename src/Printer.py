@@ -145,7 +145,8 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 return prefix.string
             return prefix.string + expr.string
         
-        if type(type(expr)) is EnumType: #type(expr) in [ObjectData, SearchSource, SearchOrder, ObjectStatus, ObjectList]: #parameters that dont seem to have defconts internaly in AOE2
+        #todo: make sure SN is the right numbres, make sure we can use SN numbers or if we always need to use text names
+        if type(type(expr)) is EnumType and type(expr) is not SN: #type(expr) in [ObjectData, SearchSource, SearchOrder, ObjectStatus, ObjectList]: #parameters that dont seem to have defconts internaly in AOE2
             return str(expr.value) #goals need the number not the string if set
 
         if type(expr) is SN:
@@ -229,9 +230,9 @@ class Printer:
         visitor.add_def_consts()
         
         self.final_string = ('').join(visitor.final_list)
-        print(self.non_readable_final_string)
-        pprint(visitor.time_tracker)
-        pprint(visitor.call_tracker)
+        #print(self.non_readable_final_string)
+        #pprint(visitor.time_tracker)
+        #pprint(visitor.call_tracker)
         return self.final_string
 
 
