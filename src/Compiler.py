@@ -418,7 +418,7 @@ class AlocateAllMemory(compilerTransformer):
 class CompileTR(compilerTransformer):
     def __init__(self, command_names, func_def_dict, temp_var_prefix, variable_type_dict = {}, variable_array_types = {}, variable_array_lengths = {}):
         super().__init__()
-        self.temp_var_prefix = "0" + str(temp_var_prefix) + "temp"
+        self.temp_var_prefix = str(temp_var_prefix) + "temp"
         self.command_names = command_names
         self.parent_map = {}
         self.variable_types = variable_type_dict
