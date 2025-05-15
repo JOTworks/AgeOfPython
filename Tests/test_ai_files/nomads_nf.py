@@ -1,19 +1,3 @@
-#THINGS TO DO in compiler
-#todo: make arrays work with items of lenght > 1
-#todo: implement struct object types
-#todo: make objects asign to each other nicely, including touple asignments
-
-#not really needed
-#todo: implement default values for functions
-#todo: get boolians working (currrently using the coments)
-
-#THINGS TO CODE in this AI
-#todo: make a system of units having jobs and prios exec.
-    #job name aka enum
-    #job prioirity
-    #way to lookup if a unit is busy
-    #job return values for if the job is full or things like that
-
 from scraper import *
 from scraper import (
   #OBJECT TYPES
@@ -132,41 +116,7 @@ EMPLOYED = Constant(1)
 UNEMPLOYED = Constant(0)
 
 i = Integer(0)
-##region Round Counters
-#if True:
-#    round_counter = 0
-#    disable_self()
-#every_2 = FALSE
-#every_4 = FALSE
-#every_8 = FALSE
-#every_16 = FALSE
-#every_32 = FALSE
-#every_64 = FALSE
-#every_128 = FALSE
-#every_256 = FALSE
-#reset_every = FALSE
-#round_counter += 1 #round_counter goes from 1 - 256
-#if round_counter % 2 == 0:
-#    every_2 = TRUE
-#if round_counter % 4 == 0:
-#    every_4 = TRUE
-#if round_counter % 8 == 0:
-#    every_8 = TRUE
-#if round_counter % 16 == 0:
-#    every_16 = TRUE
-#if round_counter % 32 == 0:
-#    every_32 = TRUE
-#if round_counter % 64 == 0:
-#    every_64 = TRUE
-#if round_counter % 128 == 0:
-#    every_128 = TRUE
-#if round_counter % 256 == 0:
-#    every_256 = TRUE
-#if round_counter >= 256:
-#    round_counter = 0
-##endregion
-
-
+j = Integer(0)
 #===========================#
 #|   JOB MANAGER CLASS     |#
 #===========================#
@@ -188,7 +138,7 @@ villager_id = Integer()
 is_employed = Integer(8)
 villager_point = Point(0,0)
 closest_gold_point = Point(0,0)
-
+'''
 def J_get_employment_status(id:Integer) -> Integer:
     #chat_to_all("in J_get_employment_status")
     global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
@@ -275,34 +225,6 @@ def J_FIRE_explore_object(explorer_id:Integer) -> Integer:
         up_chat_data_to_all("%d did not have the explorer job", explorer_id)
         return UNEMPLOYED
 
-##__________explore_terrain__________#
-#def J_explore_terrain(explorer_id, terrain:Terrain, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
-#    terrain_type_at_point = Integer()
-#    terrain_id_at_point = Integer()
-#    up_get_point_terrain(terrain_type_at_point, terrain_id_at_point)
-##__________push_deer__________#
-#J_deer_push_hunter = Array(3)
-#J_deer_push_pray = Array(3)
-#def J_push_deer(hunter_id, deer_id) -> Integer:
-#    return #return 0 if J full
-#def J_HIRE_push_deer(hunter_id, deer_id) -> Integer:
-#    pass
-#def J_FIRE_push_deer(hunter_id) -> Integer:
-#   pass
-##__________lure_boar__________#
-#def J_lure_boar(hunter_id, bore_id) -> Integer:
-#    return #return 0 if J full
-##__________collect_heardables__________#
-##def J_collect_headables(hearder_id, distance = 10) -> Integer:
-#    #find heardables within distance of hearder_id
-#    #move to the closest one
-#    #if there is none:
-#        return UNEMPLOYED
-#    #if there is one:
-#        return EMPLOYED_AS_HEARDABLE_COLLECTOR
-
-
-
 def get_closest_unit_id(unit_type:UnitId, point:Point, count:Integer = 0) -> Integer:
   chat_to_all("in get_closest_unit_id")
   #will return unit id of closest unit, but will still set the active list with count you want
@@ -326,7 +248,7 @@ def get_closest_resource_point(resource:Resource, point:Point) -> (Integer, Inte
   up_filter_range(-1,-1,0,100)
   up_set_target_point(point)
   up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
-  up_find_resource(resource, 100)
+  up_find_resource(resource, 5)
   up_chat_data_to_all("resource num: %d", resource)
   up_get_search_state(temp_state)
   up_chat_data_to_all("gold Count: %d", temp_state.RemoteIndex)
@@ -359,7 +281,7 @@ def try_train(unit:UnitId):
 def try_research(tech_id:TechId):
     if up_can_research(tech_id):
         up_research(tech_id)
-
+'''
 #SETTERS
 if True:
     map_center_point = Point(0,0)
@@ -370,49 +292,40 @@ if True:
     SN.food_gatherer_percentage = 0
     SN.stone_gatherer_percentage = 0
     SN.gold_gatherer_percentage = 0
-    SN.cap_civilian_gatherers=0
+    SN.cap_civilian_gatherers = 0
     SN.maximum_food_drop_distance=10
     SN.maximum_gold_drop_distance=10
     SN.maximum_hunt_drop_distance=20
     SN.maximum_stone_drop_distance=10
     SN.maximum_wood_drop_distance=10
-    # SN.isable_villager_garrison=3
     SN.percent_civilian_explorers=0
     SN.minimum_civilian_explorers=0
     SN.cap_civilian_explorers=0
     SN.total_number_explorers=0
     SN.number_explore_groups=0
-    SN.percent_civilian_builders=0
+    SN.percent_civilian_builders=0 #100 maybe
     SN.initial_exploration_required=0
 
     SN.cap_civilian_builders = 200
-    SN.percent_civilian_builders = 100
     SN.disable_builder_assistance = 0
     SN.consecutive_idle_unit_limit = 1
     SN.do_not_scale_for_difficulty_level = 1
-    SN.enable_boar_hunting = 1
+    SN.enable_boar_hunting = 0
     SN.enable_offensive_priority = 1
     SN.enable_patrol_attack = 1
-    SN.initial_exploration_required = 0
     SN.maximum_fish_boat_drop_distance = 30
-    SN.maximum_food_drop_distance = 20
-    SN.maximum_gold_drop_distance = 20
-    SN.maximum_hunt_drop_distance = 30
-    SN.maximum_stone_drop_distance = 20
     SN.scale_minimum_attack_group_size = 0
     SN.task_ungrouped_soldiers = 0
-    SN.allow_civilian_defense = 1
-    SN.allow_civilian_offense = 1
+    SN.allow_civilian_defense = 0
+    SN.allow_civilian_offense = 0
     SN.percent_attack_soldiers = 95
     SN.number_attack_groups = 0
     SN.maximum_town_size = 255
     SN.number_civilian_militia = 0
-    SN.enable_new_building_system = 1 #I added this for stone mining
+    SN.enable_new_building_system = 0 #I added this for stone mining
     SN.mill_max_distance = 50
     SN.camp_max_distance = 300
     SN.zero_priority_distance = 255
-    SN.cap_civilian_explorers = 0
-    SN.number_explore_groups = 0
     chat_to_all("Setters Ran!")
     disable_self()
 
@@ -426,7 +339,6 @@ if current_age() == Age.dark_age:
     if building_type_count_total(BuildingId.town_center) == 0:
         #region ___walk twords middle of map for 5 seconds___
         if True:
-            
             up_full_reset_search()
             up_find_local(ClassId.villager_class, STARTING_VILL_COUNT)
             chat_to_all("walking to center")
@@ -443,22 +355,47 @@ if current_age() == Age.dark_age:
 
                 up_set_target_object(SearchSource.search_local, i)
                 up_get_object_data(ObjectData.object_data_id, villager_id)
-                is_employed = J_get_employment_status(villager_id)
-                up_chat_data_to_all("interaer: %d",i)
-                up_chat_data_to_all("Villager: %d",villager_id)
-                up_chat_data_to_all("employed: %d",is_employed)
+
+                #---J_get_employment_status---#
+                array_explorer_id = Integer()
+                is_employed = UNEMPLOYED
+                for j in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
+                    array_explorer_id = J_explore_object_ids[j]
+                    if array_explorer_id == villager_id:
+                        is_employed = EMPLOYED
+                #----------------------------#
+
+                #up_chat_data_to_all("interaer: %d",i)
+                #up_chat_data_to_all("Villager: %d",villager_id)
+                #up_chat_data_to_all("employed: %d",is_employed)
                 if True: #is_employed == UNEMPLOYED:
                     
                     #villager_point.x, villager_point.y  = up_get_object_Point()
                     up_get_object_data(ObjectData.object_data_point_x, villager_point.x)
                     up_get_object_data(ObjectData.object_data_point_y, villager_point.y)
-                    #up_chat_data_to_all("V.x: %d", villager_point.x)
-                    #up_chat_data_to_all("V.y: %d", villager_point.y)
+                    up_chat_data_to_all("V.x: %d", villager_point.x)
+                    up_chat_data_to_all("V.y: %d", villager_point.y)
 
-                    closest_gold_point.x, closest_gold_point.y = get_closest_resource_point(Resource.gold, villager_point)
+
+                    #---GET CLOSEST RESOURCE POINT---#
+                    temp_state = State()
+                    up_full_reset_search()
+                    up_filter_range(-1,-1,0,100)
+                    up_set_target_point(villager_point)
+                    up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
+                    up_find_resource(Resource.gold, 100)
+                    #up_chat_data_to_all("resource num: %d", Resource.gold)
+                    up_get_search_state(temp_state)
+                    #up_chat_data_to_all("gold Count: %d", temp_state.RemoteIndex)
+
+                    up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
                     
-                    #up_chat_data_to_all("G.x: %d",closest_gold_point.x)
-                    #up_chat_data_to_all("G.y: %d",closest_gold_point.y)
+                    up_set_target_object(SearchSource.search_remote, 0)
+                    up_get_point(PositionType.position_object, closest_gold_point)
+                    up_chat_data_to_all("gold.x: %d", closest_gold_point.x)
+                    up_chat_data_to_all("gold.y: %d", closest_gold_point.y)
+                     
+                    #--------------------------------#
 
                     if up_point_distance(villager_point, closest_gold_point) <= VILLAGER_LOS:
                         up_chat_data_to_all("is close to gold!!!!: %d",villager_id)
@@ -527,72 +464,3 @@ if current_age() == Age.dark_age:
     ##region ___bring malitia back if there is shinanigans___
     ##endregion
     #pass
-'''
-#=============================#
-#|        Feudal Age         |#
-#=============================#
-if current_age() == Age.feudal_age:
-
-    #__kill buildings__
-    #1. train malitia on the way up
-    try_research(TechId.ri_man_at_arms)
-    try_research(TechId.ri_long_swordsman)
-    try_research(TechId.ri_arson)
-    #3. attack plan to kill dock, one guy to keep curcling
-    #4. attack plan to kill other buildings. specificaly target archery ranges
-    #
-    #__Eco__
-    try_research(TechId.ri_double_bit_axe)
-    try_research(TechId.ri_gold_mining)
-    #1. mule cart to get farther away hunt (mule cart to block bores)(build houses with these viligers)(now that military is attacking)
-    #2. mill far away berries if no hunt availible, or get gold/stone if i dont need more food
-    #3. mule cart for more efective wood gathering
-    #4. mule cart upgrades as fast as possible/both if i have 2 out at the same time
-    #5. if no docks, build fishingships, if not build mill and farms last case canario
-    #
-    #__defence__
-    try_research(TechId.ri_pikeman)
-    #1. build second baracks, pikemen if i see lots of scouts
-    #2. pikeman guard logic
-    #3. wall in base logic
-    #4. tower against archer logic
-    #
-    #__Finish it__
-    try_research(TechId.ri_forging)
-    try_research(TechId.ri_scale_mail)  
-    #1. if no bilding around and 20+ longswords dive
-    #2. blacksmith and upgrades if i have extra resources
-    #3. go to castle age if extra resources and 15+ longswords
-
-#=============================#
-#|        Castle Age         |#
-#=============================#
-if current_age() == Age.castle_age:
-    #region __upgrades people, Upgrades!__
-    try_research(TechId.ri_bow_saw)
-    #endregion
-    #1. eco
-    #2. military
-    #
-    #__monestary__
-    #1. get worrior priest and relics (healing silliness)
-    #2. research faith if get converted
-    #3. monestary drop silliness
-    #
-    #__castle__
-    #1. composit bowmen?
-    #2. find good place to defence with it
-    #
-    #__Eco__
-    #1. docks and fish traps
-    #2. balancing larger ecomony
-    #3.
-'''
-#=============================#
-#|       Basic stuff         |#
-#=============================#
-#if housing_headroom() < 3 and population_headroom() > 0 and building_type_count(BuildingId.town_center) > 0: #to not build house while searching for TC on nomad
-#    build(BuildingId.house)
-#
-#try_train(UnitId.villager)
-
