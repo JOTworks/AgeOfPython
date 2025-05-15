@@ -903,13 +903,13 @@ class CompileTR(compilerTransformer):
         modify_commands = []
         #set to begining of array
         node_copy = Variable({ #todo: copy() would be better but cannot get it to work
-            "id": node.target.id,
-            "ctx": node.target.ctx,
-            "offset_index": node.target.offset_index,
-            "lineno": node.target.lineno,
-            "end_lineno": node.target.end_lineno,
-            "col_offset": node.target.col_offset,
-            "end_col_offset": node.target.end_col_offset,
+            "id": node.id,
+            "ctx": node.ctx,
+            "offset_index": node.offset_index,
+            "lineno": node.lineno,
+            "end_lineno": node.end_lineno,
+            "col_offset": node.col_offset,
+            "end_col_offset": node.end_col_offset,
             "as_const": True, #set this up so it looks at the memory location and not the values
         })
         modify_commands.append( Command(
