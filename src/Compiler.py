@@ -1451,12 +1451,13 @@ class ScopeAllVariables(compilerTransformer):
         self.current_function = None
         return node
 
-
     def visit_Variable(self, node):
         if hasattr(node, 'offset_index') and type(node.offset_index) is Variable: #visiting variables inside array []
             raise Exception(f"Depricated, should not hit this, useing array [] instead of offset {node.offset_index}, line {node.lineno}")
             node.offset_index = self.visit_Variable(node.offset_index)
         self.generic_visit(node)
+        if hasattr(node, 'slice') and type(node.slice) is Variable:
+            node.slice = self.visit_Variable(node.slice)
         if node.id not in reserved_function_names and node.id not in self.globalized_variables.get(self.current_function, []):
             if "." in node.id:
                 raise Exception(f"already has a '.', {node.id}, line {node.lineno}")
