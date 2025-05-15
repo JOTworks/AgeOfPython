@@ -834,8 +834,8 @@ class CompileTR(compilerTransformer):
             #if its the full basic type getting coppied
             left_offset_index = i
             right_offset_index = i
-            left_slice = None
-            right_slice = None
+            left_slice = node_1.slice if hasattr(node_1, 'slice') else None
+            right_slice = node_2.slice if hasattr(node_2, 'slice') else None
             
             #should only happen if length is 1, pulls the one piece of the basic type
             if type(node_1) is Variable and node_1.offset_index is not None:
@@ -849,7 +849,7 @@ class CompileTR(compilerTransformer):
                 right_offset_index = node_2.offset_index
                 right_slice = node_2.slice
 
-            #for when we are using the amourphous cunt_ret_reg array devoid of types
+            #for when we are using the amourphous func_ret_reg array devoid of types
             if node_1.var_name() == FUNC_RET_REG:
                 left_offset_index = self.array_return_offset
                 left_slice = None
@@ -871,21 +871,23 @@ class CompileTR(compilerTransformer):
                 right = node_2
             
             #ARRAYS #todo: optimization, add for i in array: and make it just add element_size each time when accessing
-            if hasattr(node_2, 'slice') and type(node_2.slice) in [Variable, str]: #getting array element
-                modify_commands += self.create_set_array_ptr_commands(node_2)
-                modify_commands.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal, you can but may not want to for optimizations later
-                    AOE2FUNC.up_get_indirect_goal,
-                    [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
-                    node_2,
-                ))
-                right = Variable({'id':ARRAY_RETURN_REG,'offset_index':None})
+            if hasattr(node_2, 'slice') and node_2.slice is not None:
+                if type(node_2.slice) in [Variable, str]: #getting array element
+                    modify_commands += self.create_set_array_ptr_commands(node_2)
+                    modify_commands.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal, you can but may not want to for optimizations later
+                        AOE2FUNC.up_get_indirect_goal,
+                        [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
+                        node_2,
+                    ))
+                    right = Variable({'id':ARRAY_RETURN_REG,'offset_index':None})
 
-            if hasattr(node_1, 'slice') and type(node_1.slice) in [Variable, str]: #setting array element
-                if type(op) is not ast.Eq:
-                    raise Exception(f"cannot use {op} on Array asignments, line {node_1.lineno}")
-                modify_commands += self.create_set_array_ptr_commands(node_1)
-                modify_func = AOE2FUNC.up_set_indirect_goal
-                left = Variable({'id':ARRAY_RETURN_PTR,'offset_index':None})
+            if hasattr(node_1, 'slice') and node_1.slice is not None:
+                if type(node_1.slice) in [Variable, str]: #setting array element
+                    if type(op) is not ast.Eq:
+                        raise Exception(f"cannot use {op} on Array asignments, line {node_1.lineno}")
+                    modify_commands += self.create_set_array_ptr_commands(node_1)
+                    modify_func = AOE2FUNC.up_set_indirect_goal
+                    left = Variable({'id':ARRAY_RETURN_PTR,'offset_index':None})
 
             if modify_func in [AOE2FUNC.up_set_indirect_goal, AOE2FUNC.up_get_indirect_goal]:
                 args = [left, right]

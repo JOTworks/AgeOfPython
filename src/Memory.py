@@ -155,6 +155,8 @@ class Memory:
         raise Exception(f"could not find {reg_number} in {self._used_memory}")
 
     def get(self, var_name, abstracted_offset=None, slice=None):
+        if type(slice) is ast.Constant:
+            slice = slice.value
         if slice is not None and type(slice) is not int:
             logger.warning(f"slice is not an int, using {type(slice)}")
             slice = None
