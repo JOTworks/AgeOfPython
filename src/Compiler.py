@@ -873,9 +873,9 @@ class CompileTR(compilerTransformer):
             #ARRAYS #todo: optimization, add for i in array: and make it just add element_size each time when accessing
             if hasattr(node_2, 'slice') and type(node_2.slice) in [Variable, str]: #getting array element
                 modify_commands += self.create_set_array_ptr_commands(node_2)
-                modify_commands.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal
+                modify_commands.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal, you can but may not want to for optimizations later
                     AOE2FUNC.up_get_indirect_goal,
-                    [Variable({'id':ARRAY_RETURN_REG,'offset_index':None}), Variable({'id':ARRAY_RETURN_PTR,'offset_index':None})],
+                    [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
                     node_2,
                 ))
                 right = Variable({'id':ARRAY_RETURN_REG,'offset_index':None})
