@@ -224,7 +224,7 @@ class ReduceTR(compilerTransformer):
             function_obj = globals()[func_name]
             parameters = inspect.signature(function_obj).parameters
             if compareOp.__name__ in parameters:
-                node.left.append_args(ast_to_aoe(node.ops[0]))
+                node.left.append_args(ast_to_aoe(node.ops[0], compareOp))
                 node.left.append_args(node.comparators[0])
                 return node.left 
                  
@@ -693,7 +693,7 @@ class CompileTR(compilerTransformer):
         elif left_type is Variable and right_type in (ast.Constant, Variable):
             compare_comand = Command(
                 AOE2FUNC.up_compare_goal,
-                [node.left, ast_to_aoe(type(node.ops[0])), node.comparators[0]],
+                [node.left, ast_to_aoe(type(node.ops[0]), compareOp), node.comparators[0]],
                 node,
             )
         elif left_type is ast.Constant and right_type is Variable:
@@ -701,7 +701,7 @@ class CompileTR(compilerTransformer):
                 AOE2FUNC.up_compare_goal,
                 [
                     node.comparators[0],
-                    reverse_compare_op(ast_to_aoe(type(node.ops[0]))),
+                    reverse_compare_op(ast_to_aoe(type(node.ops[0], compareOp))),
                     node.left,
                 ],
                 node,
@@ -890,7 +890,7 @@ class CompileTR(compilerTransformer):
             if modify_func in [AOE2FUNC.up_set_indirect_goal, AOE2FUNC.up_get_indirect_goal]:
                 args = [left, right]
             else: 
-                args = [left, ast_to_aoe(op), right]
+                args = [left, ast_to_aoe(op, mathOp), right]
             modify_commands.append(Command(modify_func, args, None))
 
         return modify_commands
