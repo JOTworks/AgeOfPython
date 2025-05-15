@@ -880,7 +880,7 @@ class CompileTR(compilerTransformer):
                 ))
                 right = Variable({'id':ARRAY_RETURN_REG,'offset_index':None})
 
-            if hasattr(node_1, 'slice') and type(node_1.offset_index) is [Variable, str]: #setting array element
+            if hasattr(node_1, 'slice') and type(node_1.slice) in [Variable, str]: #setting array element
                 if type(op) is not ast.Eq:
                     raise Exception(f"cannot use {op} on Array asignments, line {node_1.lineno}")
                 modify_commands += self.create_set_array_ptr_commands(node_1)
@@ -898,6 +898,8 @@ class CompileTR(compilerTransformer):
     def create_set_array_ptr_commands(self, node):
         if node.offset_index is None:
             offset = self.const_constructor(0)
+        if hasattr(node.slice, 'slice') and node.slice.slice is not None:
+            raise Exception(f"slicing not supprted in slices, line {node.lineno}")
         if node.offset_index and self.get_var_type(node.offset_index) not in [Integer, Register]:
             raise Exception(f"array [] must be [Integer, Register] not {self.get_var_type(node.offset_index)}, line {node.lineno}")
         modify_commands = []
