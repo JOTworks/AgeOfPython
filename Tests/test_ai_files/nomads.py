@@ -32,7 +32,7 @@ from scraper import (
   up_build, current_age, up_can_train, up_train, up_can_research, up_research,
   build, housing_headroom, population_headroom, building_type_count,
   up_lerp_tiles, up_set_target_by_id, up_target_point, building_type_count_total,
-  chat_to_all, up_send_flare, up_filter_range,
+  chat_to_all, up_send_flare, up_filter_range, up_add_object_by_id
 )
 '''
 building killing idea:
@@ -130,6 +130,7 @@ FALSE = Constant(0)
 TRUE = Constant(1)
 EMPLOYED = Constant(1)
 UNEMPLOYED = Constant(0)
+BUILD_TC_TIME = Constant(15)
 
 i = Integer(0)
 ##region Round Counters
@@ -166,6 +167,19 @@ i = Integer(0)
 #    round_counter = 0
 ##endregion
 
+#===========================#
+#| RESROUCE MANAGER CLASS  |#
+#===========================#
+R_gold_pile_count = Integer()
+R_gold_total_count = Integer()
+R_gold_location = Array(Integer, 10)
+R_gold_ammount = Array(Integer, 10)
+R_stone_location = Array(Integer, 10)
+R_stone_ammount = Array(Integer, 10)
+def R_update_resource(resource:Resource):
+    #get all resoruces
+    
+    #filter out groups that are close to each target point
 
 #===========================#
 #|   JOB MANAGER CLASS     |#
@@ -193,58 +207,63 @@ def J_get_employment_status(id:Integer) -> Integer:
     #chat_to_all("in J_get_employment_status")
     global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
     array_explorer_id = Integer()
-    for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
+    for i in range(3): #J_EXPLORE_OBJECT_ARRAY_SIZE
         array_explorer_id = J_explore_object_ids[i]
         if array_explorer_id == id:
             return EMPLOYED
     return UNEMPLOYED
 
 def J_explore_object():
-    chat_to_all("in J_explore_object")
     global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
-    explorer_point = Point(0,0)
-    resource_point = Point(0,0)
-    dest_point = Point(0,0)
-    normalized_point = Point(0,0)
+    explorer_point = Point()
+    resource_point = Point()
+    dest_point = Point()
+    prime_point = Point()
+    normalized_point = Point()
+    for i in range(3): #J_EXPLORE_OBJECT_ARRAY_SIZE
 
-    for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
-        explorer_id = i
         explorer_id = J_explore_object_ids[i]
-        thing = J_explore_object_things[i]
-        tiles_away = J_explore_object_tiles_away[i]
-        explore_direction = J_explore_object_direction[i]
-        explorer_timer = J_explore_object_timers[i]
-        
-        #the math #todo: fix this to use specific points, i think how it is, it wont work only using tile integeres
-        up_full_reset_search()
-        up_set_target_by_id(explorer_id)
-        explorer_point.x, explorer_point.y = up_get_object_Point()
-        #resource_point.x, resource_point.y = get_closest_resource_point(thing, dest_point)
-        
-        dest_point.x = resource_point.x
-        dest_point.y = resource_point.y
-        up_lerp_tiles(dest_point, explorer_point, tiles_away)
+        if explorer_id != -1:
+            thing = J_explore_object_things[i]
+            tiles_away = J_explore_object_tiles_away[i]
+            explore_direction = J_explore_object_direction[i]
+            explorer_timer = J_explore_object_timers[i]
+            #the math #todo: fix this to use specific points, i think how it is, it wont work only using tile integeres
+            up_full_reset_search()
+            up_set_target_by_id(explorer_id)
+            explorer_point.x, explorer_point.y = up_get_object_Point()
+            resource_point.x, resource_point.y = get_closest_resource_point(thing, explorer_point)
+            
+            dest_point.x = resource_point.x
+            dest_point.y = resource_point.y
+            
+            up_lerp_tiles(dest_point, explorer_point, tiles_away)
+           
 
-        #Rotate point 90 degrees to get perpendicular line 1 tile away
-        #normalized_point.x = -(dest_point.y - resource_point.y)/tiles_away
-        normalized_point.x = dest_point.y 
-        normalized_point.x -= resource_point.y 
-        normalized_point.x *= -1
-        normalized_point.x /= tiles_away
-        #normalized_point.y = (dest_point.x - resource_point.x)/tiles_away
-        normalized_point.y = dest_point.x
-        normalized_point.y -= resource_point.x
-        normalized_point.y /= tiles_away
-        
-        up_full_reset_search()
-        up_set_target_by_id(explorer_id)
-        up_target_point(normalized_point, DUCAction.action_move, _, _)
+            #translate reletive
+            #prime_point = resource_point - dest_point #todo:we want to be able to do this
+            prime_point.x = resource_point.x
+            prime_point.y = resource_point.y
+            prime_point.x -= dest_point.x
+            prime_point.y -= dest_point.y
+            #rotate 90
+            temp = Integer()
+            temp = prime_point.x
+            prime_point.x = prime_point.y
+            prime_point.y = temp * -1
+            #translate back
+            dest_point.x += prime_point.x
+            dest_point.y += prime_point.y
 
-        if timer_triggered(explorer_timer):
-            J_FIRE_explore_object(explorer_id)
+            up_full_reset_search()
+            up_add_object_by_id(SearchSource.search_local, explorer_id)
+            
+            up_target_point(dest_point, DUCAction.action_move, _, _)
+
+            if timer_triggered(explorer_timer):
+                J_FIRE_explore_object(explorer_id)
 
 def J_HIRE_explore_object(explorer_id:Integer, thing:ObjectId, tiles_away:Integer, explore_duration:Integer = 50, explore_direction:Integer = CLOCKWIZE) -> Integer:
-    chat_to_all("in J_HIRE_explore_object")
     global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
     for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
         array_explorer_id = J_explore_object_ids[i]
@@ -255,9 +274,16 @@ def J_HIRE_explore_object(explorer_id:Integer, thing:ObjectId, tiles_away:Intege
             J_explore_object_tiles_away[i] = tiles_away
             J_explore_object_direction[i] = explore_direction
             enable_timer(J_explore_object_timers[i], explore_duration)
+            t = J_explore_object_ids[0]
+            up_chat_data_to_all("A0: %d",t)
+            t = J_explore_object_ids[1]
+            up_chat_data_to_all("A1: %d",t)
+            t = J_explore_object_ids[2]
+            up_chat_data_to_all("A2: %d",t)
             return EMPLOYED
-        up_chat_data_to_all("%d did not have explorer job open", explorer_id)
-        return UNEMPLOYED
+    up_chat_data_to_all("%d did not have explorer job open", explorer_id)
+
+    return UNEMPLOYED
 
 def J_FIRE_explore_object(explorer_id:Integer) -> Integer:
     chat_to_all("in J_FIRE_explore_object")
@@ -275,6 +301,7 @@ def J_FIRE_explore_object(explorer_id:Integer) -> Integer:
         up_chat_data_to_all("%d did not have the explorer job", explorer_id)
         return UNEMPLOYED
 
+J_explore_object()
 ##__________explore_terrain__________#
 #def J_explore_terrain(explorer_id, terrain:Terrain, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
 #    terrain_type_at_point = Integer()
@@ -302,7 +329,6 @@ def J_FIRE_explore_object(explorer_id:Integer) -> Integer:
 #        return EMPLOYED_AS_HEARDABLE_COLLECTOR
 
 
-
 def get_closest_unit_id(unit_type:UnitId, point:Point, count:Integer = 0) -> Integer:
   chat_to_all("in get_closest_unit_id")
   #will return unit id of closest unit, but will still set the active list with count you want
@@ -319,34 +345,36 @@ def get_closest_unit_id(unit_type:UnitId, point:Point, count:Integer = 0) -> Int
 def get_closest_resource_point(resource:Resource, point:Point) -> (Integer, Integer):
   #chat_to_all("in get_closest_resource_point")
 
-
-  temp_point = Point(8,8)
-  temp_state = State(8,8,8,8)
+  temp_point = Point()
+  temp_state = State()
   up_full_reset_search()
   up_filter_range(-1,-1,0,100)
   up_set_target_point(point)
-  up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
-  up_find_resource(resource, 100)
-  up_chat_data_to_all("resource num: %d", resource)
+
+  if resource == Resource.wood:
+    up_filter_status(ObjectStatus.status_ready, ObjectList.list_active)
+  else:
+    up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
+  up_find_resource(resource, 240)
   up_get_search_state(temp_state)
-  up_chat_data_to_all("gold Count: %d", temp_state.RemoteIndex)
 
   up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
-
   
   up_set_target_object(SearchSource.search_remote, 0)
   up_get_point(PositionType.position_object, temp_point)
-  up_chat_data_to_all("gold.x: %d", temp_point.x)
-  up_chat_data_to_all("gold.y: %d", temp_point.y)
+  #up_chat_data_to_all("gold.x: %d", temp_point.x)
+  #up_chat_data_to_all("gold.y: %d", temp_point.y)
   return temp_point.x, temp_point.y
 
 def get_best_nomad_tc_location() -> Point:
-   chat_to_all("in get_best_nomad_tc_location")
-   point = Point(0,0)
-   return point #return (0,0) #todo: make this work
+    chat_to_all("in get_best_nomad_tc_location")
+    global J_explore_object_ids
+    for i in range(10):
+        point = Point()
+    return point #return (0,0) #todo: make this work
 
 def up_get_object_Point() -> (Integer, Integer):
-    chat_to_all("in up_get_object_Point")
+    #chat_to_all("in up_get_object_Point")
     temp_point = Point()
     up_get_object_data(ObjectData.object_data_point_x, temp_point.x)
     up_get_object_data(ObjectData.object_data_point_y, temp_point.y)
@@ -422,6 +450,7 @@ if True:
 #===========================#
 
 if current_age() == Age.dark_age:
+
     #=========find TC Location=========#
     if building_type_count_total(BuildingId.town_center) == 0:
         #region ___walk twords middle of map for 5 seconds___
@@ -443,30 +472,23 @@ if current_age() == Age.dark_age:
 
                 up_set_target_object(SearchSource.search_local, i)
                 up_get_object_data(ObjectData.object_data_id, villager_id)
+
                 is_employed = J_get_employment_status(villager_id)
-                up_chat_data_to_all("interaer: %d",i)
-                up_chat_data_to_all("Villager: %d",villager_id)
-                up_chat_data_to_all("employed: %d",is_employed)
-                if True: #is_employed == UNEMPLOYED:
-                    
-                    #villager_point.x, villager_point.y  = up_get_object_Point()
-                    up_get_object_data(ObjectData.object_data_point_x, villager_point.x)
-                    up_get_object_data(ObjectData.object_data_point_y, villager_point.y)
-                    #up_chat_data_to_all("V.x: %d", villager_point.x)
-                    #up_chat_data_to_all("V.y: %d", villager_point.y)
-
+                #up_chat_data_to_all("employed: %d",is_employed)
+                
+                if is_employed == UNEMPLOYED:
+                    villager_point.x, villager_point.y  = up_get_object_Point()
                     closest_gold_point.x, closest_gold_point.y = get_closest_resource_point(Resource.gold, villager_point)
-                    
-                    #up_chat_data_to_all("G.x: %d",closest_gold_point.x)
-                    #up_chat_data_to_all("G.y: %d",closest_gold_point.y)
-
                     if up_point_distance(villager_point, closest_gold_point) <= VILLAGER_LOS:
-                        up_chat_data_to_all("is close to gold!!!!: %d",villager_id)
-                    #    up_chat_data_to_all("HIRE!: %d",villager_id)
-        #                J_HIRE_explore_object(villager_id, Resource.gold, VILLAGER_LOS, 50, CLOCKWIZE)
+                        up_chat_data_to_all("HIRE!: %d",villager_id)
+                        J_HIRE_explore_object(villager_id, Resource.gold, VILLAGER_LOS, 50, CLOCKWIZE)
         #endregion
         ##region ___after 5 seconds place a TC___
-        #tc_location = Point(0,0)
+        if game_time() > BUILD_TC_TIME:
+            tc_location = Point()
+            tc_location = get_best_nomad_tc_location()
+            disable_self()
+        
         #tc_location = get_best_nomad_tc_location()
         #up_set_target_point(tc_location)
         #
