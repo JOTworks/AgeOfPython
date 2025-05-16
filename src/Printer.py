@@ -138,10 +138,11 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                         next_expr_str = str(next_expr.value)
                     else:
                         next_expr_str = str(next_expr.id)
-                    logger.warning(f"TypeOp missmatch {expr.string} {next_expr_str}, line {next_expr.end_lineno}")
                 
                     if next_expr_str == "15900": #todo: get rid of this magic number
                         return expr.string
+                    else:
+                        logger.warning(f"TypeOp missmatch {expr.string} {next_expr_str}, line {next_expr.end_lineno}")
                 return prefix.string
             return prefix.string + expr.string
         

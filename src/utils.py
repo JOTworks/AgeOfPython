@@ -7,6 +7,8 @@ import scraper.aoe2scriptEnums
 from scraper.aoe2scriptFunctions import function_list, AOE2VarType
 from MyLogging import logger
 
+TEMP_SUPBSTRING = "-temp"
+
 def get_function_list_typeOp():
     function_list_typeOp = {}
     for function, args in function_list.items():
@@ -143,8 +145,10 @@ def get_list_from_return(value_returns):
         tp_return = tp_return.elts
     
     else: #todo: maybe make throw error if not a type that is part of the scraper import
+        if not isinstance(value_returns, ast.Name):
+            logger.error(f"Unknown return type {type(value_returns)}")
         tp_return = [tp_return]
-        logger.error(f"Unknown return type {type(value_returns)}")
+        
     return tp_return
 
 def get_enum_classes():
