@@ -120,7 +120,6 @@ __Eco__
 3.
 '''
 
-
 VILLAGER_LOS = Constant(4)
 DA_MILITIA_LOS = Constant(6)
 STARTING_VILL_COUNT = Constant(3)
@@ -130,7 +129,7 @@ FALSE = Constant(0)
 TRUE = Constant(1)
 EMPLOYED = Constant(1)
 UNEMPLOYED = Constant(0)
-BUILD_TC_TIME = Constant(15)
+BUILD_TC_TIME = Constant(30)
 
 i = Integer(0)
 ##region Round Counters
@@ -170,16 +169,77 @@ i = Integer(0)
 #===========================#
 #| RESROUCE MANAGER CLASS  |#
 #===========================#
-R_gold_pile_count = Integer()
+MINE_LIMIT = Constant(10)
+R_gold_mine_count = Integer(0)
 R_gold_total_count = Integer()
-R_gold_location = Array(Integer, 10)
+R_gold_location = Array(Point, 10)
 R_gold_ammount = Array(Integer, 10)
-R_stone_location = Array(Integer, 10)
+R_stone_mine_count = Integer(0)
+R_stone_total_count = Integer()
+R_stone_location = Array(Point, 10)
 R_stone_ammount = Array(Integer, 10)
-def R_update_resource(resource:Resource):
-    #get all resoruces
+
+def R_add_new_mine(resource:Resource, location:Point) -> Integer:
+    global TRUE, FALSE, MINE_LIMIT
+    global R_gold_mine_count, R_gold_total_count, R_gold_location, R_gold_ammount
+    global R_stone_mine_count, R_stone_total_count, R_stone_location, R_stone_ammount
+    if resource == Resource.gold:
+        if R_gold_mine_count >= MINE_LIMIT:
+            #up_chat_data_to_all("ER:R_add_new_mine:mineLimit%d",MINE_LIMIT)
+            return FALSE
+        #!See if either one works
+        R_gold_location[R_gold_mine_count] = location
+        R_gold_mine_count += 1
+        up_chat_data_to_all("added Gold mine #%d",R_gold_mine_count)
+        return TRUE
+
+    if resource == Resource.stone:
+        if R_stone_mine_count >= MINE_LIMIT:
+            #up_chat_data_to_all("ER:R_add_new_mine:mineLimit%d",MINE_LIMIT)
+            return FALSE
+        #!See if either one works
+        R_stone_location[R_stone_mine_count] = location
+        R_stone_mine_count += 1
+        up_chat_data_to_all("added Stone mine #%d",R_stone_mine_count)
+        return TRUE
+        
+    return FALSE
+
+def R_update_mines(resource:Resource):
+    global TRUE, FALSE, MINE_LIMIT
+    global R_gold_mine_count, R_gold_total_count, R_gold_location, R_gold_ammount
+    global R_stone_mine_count, R_stone_total_count, R_stone_location, R_stone_ammount
+
+    if resource == Resource.wood or resource == Resource.food:
+        up_chat_data_to_all("ER:R_update_mines:%d",resource)
+    temp_state = State()
+    up_full_reset_search()
+    up_filter_range(-1,-1,-1,-1)
+    up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
+    up_find_resource(resource, 240)
+    up_get_search_state(temp_state)
     
     #filter out groups that are close to each target point
+    for i in range(temp_state.RemoteList):
+        tile_id = Integer()
+        tile_loc = Point()
+        up_set_target_object(SearchSource.search_remote, i)
+        up_get_object_data(ObjectData.object_data_id, tile_id)
+        tile_loc = up_get_object_Point()
+
+        temp_mine_loc = Point()
+        part_of_existing_mine = FALSE
+        for j in range(MINE_LIMIT):
+            if resource == Resource.gold:
+                temp_mine_loc = R_gold_location[j]
+            if resource == Resource.stone:
+                temp_mine_loc = R_stone_location[j]
+           
+            if up_point_distance(tile_loc, temp_mine_loc) < 4:
+                part_of_existing_mine = TRUE
+
+        if part_of_existing_mine == FALSE:
+            R_add_new_mine(resource, tile_loc)
 
 #===========================#
 #|   JOB MANAGER CLASS     |#
@@ -298,24 +358,119 @@ def J_FIRE_explore_object(explorer_id:Integer) -> Integer:
             J_explore_object_direction[i] = -1
             disable_timer(J_explore_object_timers[i])
             return UNEMPLOYED
-        up_chat_data_to_all("%d did not have the explorer job", explorer_id)
-        return UNEMPLOYED
+    up_chat_data_to_all("%d did not have the explorer job", explorer_id)
+    return UNEMPLOYED
 
-J_explore_object()
+def J_FIRE_ALL_explore_object():
+    chat_to_all("in J_FIRE_explore_object")
+    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
+    for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
+        array_explorer_id = J_explore_object_ids[i]
+        up_chat_data_to_all("%d is FIRED from explore object", array_explorer_id)
+        J_explore_object_ids[i] = -1
+        J_explore_object_things[i] = -1
+        J_explore_object_tiles_away[i] = -1
+        J_explore_object_direction[i] = -1
+        disable_timer(J_explore_object_timers[i])
+
 ##__________explore_terrain__________#
 #def J_explore_terrain(explorer_id, terrain:Terrain, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
 #    terrain_type_at_point = Integer()
 #    terrain_id_at_point = Integer()
 #    up_get_point_terrain(terrain_type_at_point, terrain_id_at_point)
 ##__________push_deer__________#
-#J_deer_push_hunter = Array(3)
-#J_deer_push_pray = Array(3)
-#def J_push_deer(hunter_id, deer_id) -> Integer:
-#    return #return 0 if J full
-#def J_HIRE_push_deer(hunter_id, deer_id) -> Integer:
-#    pass
-#def J_FIRE_push_deer(hunter_id) -> Integer:
-#   pass
+DEER_PUSH_ARRAY_LENGTH = Constant(3)
+J_deer_push_hunter = Array(Integer, 3)
+J_deer_push_pray = Array(Integer, 3)
+
+deer_id = Integer()
+hunter_id = Integer()
+deer_search_state = State()
+
+SHOOT_DEER_DIST = 5
+LURE_DEER_DIST = 50
+VIL_SHOOT_DEER_COUNT = 4
+p_home = Point()
+p_home_100 = Point()
+
+def J_push_deer():
+    global p_home, p_home_100, DEER_PUSH_ARRAY_LENGTH, SHOOT_DEER_DIST, LURE_DEER_DIST, VIL_SHOOT_DEER_COUNT
+    global J_deer_push_hunter, J_deer_push_pray, deer_search_state
+    deer_hp = Integer()
+    deer_id = Integer()
+    deer_point = Point()
+    point_next_to_deer = Point()
+
+    #pushing Deer
+    for i in range(DEER_PUSH_ARRAY_LENGTH):
+        deer_id = J_deer_push_pray[i]
+        hunter_id = J_deer_push_hunter[i]
+
+        if up_set_target_by_id(deer_id):
+            up_full_reset_search()
+            up_get_object_data(ObjectData.object_data_hitpoints, deer_hp)
+            deer_point = up_get_object_Point()
+        else:
+            J_FIRE_push_deer(hunter_id)
+
+        if deer_hp > 0: #if the deer is still alive
+            point_next_to_deer = deer_point
+            up_lerp_tiles(point_next_to_deer, p_home_100, -75) #move point one-quarter tile away from tc so the scout will be behind the deer
+            up_full_reset_search()
+            up_add_object_by_id(SearchSource.search_local, hunter_id)
+            SN.target_point_adjustment = 6 #set to enable precise targetting
+            up_target_point(point_next_to_deer, DUCAction.action_move, _, AttackStance.stance_no_attack)
+            SN.target_point_adjustment = 0 #reset
+        else:
+            J_FIRE_push_deer(hunter_id)
+
+    #shooting Deer
+    up_full_reset_search()
+    up_set_target_point(p_home)
+    up_filter_distance(-1, SHOOT_DEER_DIST)
+    SN.focus_player_number = 0
+    up_find_remote(ClassId.prey_animal_class, 5)
+    up_remove_objects(SearchSource.search_remote, ObjectData.object_data_carry, compareOp.less_than, 120) #remove dead live deer
+    up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
+    up_remove_objects(SearchSource.search_remote, ObjectData.object_data_index, compareOp.greater_than, 0) #only closest
+    up_get_search_state(deer_search_state)
+    if deer_search_state.RemoteIndex >= 1: #deer found
+        chat_to_all("Kill Deer")
+        up_set_target_point(p_home)
+        up_find_local(ClassId.villager_class, 20)
+        up_clean_search(SearchSource.search_local, ObjectData.object_data_distance, SearchOrder.search_order_asc)
+        up_remove_objects(SearchSource.search_local, ObjectData.object_data_action) == ActionId.actionid_build
+        up_remove_objects(SearchSource.search_local, ObjectData.object_data_dropsite) == BuildingId.lumber_camp
+        up_remove_objects(SearchSource.search_local, ObjectData.object_data_index) > VIL_SHOOT_DEER_COUNT
+        up_target_objects(0,_,_,_)
+
+def J_HIRE_push_deer(hunter_id, deer_id) -> Integer:
+    global p_home, p_home_100, DEER_PUSH_ARRAY_LENGTH, SHOOT_DEER_DIST, LURE_DEER_DIST, VIL_SHOOT_DEER_COUNT
+    global J_deer_push_hunter, J_deer_push_pray, deer_search_state
+    for i in range(DEER_PUSH_ARRAY_LENGTH):
+        array_hunter_id = J_deer_push_hunter[i]
+        if array_hunter_id == -1:
+            up_chat_data_to_all("%d is HIRED to Push Deer", hunter_id)
+            J_deer_push_hunter[i] = hunter_id
+            J_deer_push_pray[i] = deer_id
+            return EMPLOYED
+    up_chat_data_to_all("%d did not have Push Deer open", hunter_id)
+    return UNEMPLOYED
+
+def J_FIRE_push_deer(hunter_id) -> Integer:
+    chat_to_all("in J_FIRE_push_deer")
+    global p_home, p_home_100, DEER_PUSH_ARRAY_LENGTH, SHOOT_DEER_DIST, LURE_DEER_DIST, VIL_SHOOT_DEER_COUNT
+    global J_deer_push_hunter, J_deer_push_pray, deer_search_state
+    for i in range(DEER_PUSH_ARRAY_LENGTH): #J_EXPLORE_OBJECT_ARRAY_SIZE
+        array_hunter_id = J_deer_push_hunter[i]
+        if array_hunter_id == hunter_id:
+            up_chat_data_to_all("%d is FIRED from explore object", hunter_id)
+            J_deer_push_hunter[i] = -1
+            J_deer_push_pray[i] = -1
+            return UNEMPLOYED
+    up_chat_data_to_all("%d did not have the explorer job", hunter_id)
+    return UNEMPLOYED
+
 ##__________lure_boar__________#
 #def J_lure_boar(hunter_id, bore_id) -> Integer:
 #    return #return 0 if J full
@@ -328,6 +483,33 @@ J_explore_object()
 #    #if there is one:
 #        return EMPLOYED_AS_HEARDABLE_COLLECTOR
 
+#------------DEER LURE-------------#
+
+
+#search for deer around the town center and pick the closest one
+up_full_reset_search()
+up_set_target_point(p_home)
+up_filter_distance(-1, LURE_DEER_DIST)
+SN.focus_player_number = 0
+up_find_remote(ClassId.prey_animal_class,40) #find 40 deer Max
+up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
+#todo: will need to remove deer already being pushed
+up_remove_objects(SearchSource.search_remote, ObjectData.object_data_index, compareOp.greater_than, 0) #only closest
+up_get_search_state(deer_search_state) #check how many deer were found
+
+if deer_search_state.RemoteIndex >= 1:
+    up_set_target_object(SearchSource.search_remote, 0)
+    up_get_object_data(ObjectData.object_data_id, deer_id) #get the id of the deer
+    
+    up_full_reset_search()
+    up_find_local(UnitId.militiaman, 10)
+    up_set_target_object(SearchSource.search_local, 0)
+    up_get_object_data(ObjectData.object_data_id, hunter_id)
+    is_employed = J_get_employment_status(hunter_id)
+    if not is_employed:
+        J_HIRE_push_deer(hunter_id, deer_id)
+    
+#==END======SHEEP CLAIM AND DEER LURE=======#
 
 def get_closest_unit_id(unit_type:UnitId, point:Point, count:Integer = 0) -> Integer:
   chat_to_all("in get_closest_unit_id")
@@ -346,32 +528,50 @@ def get_closest_resource_point(resource:Resource, point:Point) -> (Integer, Inte
   #chat_to_all("in get_closest_resource_point")
 
   temp_point = Point()
+  temp_int = Integer()
   temp_state = State()
   up_full_reset_search()
-  up_filter_range(-1,-1,0,100)
   up_set_target_point(point)
 
   if resource == Resource.wood:
+    up_filter_range(-1,-1,0,10)
     up_filter_status(ObjectStatus.status_ready, ObjectList.list_active)
+    up_find_resource(resource, 240)
   else:
+    up_filter_range(-1,-1,0,100)
     up_filter_status(ObjectStatus.status_resource, ObjectList.list_active)
-  up_find_resource(resource, 240)
+    up_find_resource(resource, 240)
+  
   up_get_search_state(temp_state)
-
   up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
   
-  up_set_target_object(SearchSource.search_remote, 0)
-  up_get_point(PositionType.position_object, temp_point)
-  #up_chat_data_to_all("gold.x: %d", temp_point.x)
-  #up_chat_data_to_all("gold.y: %d", temp_point.y)
-  return temp_point.x, temp_point.y
+  if temp_state.RemoteList > 0:
+    up_set_target_object(SearchSource.search_remote, 0)
+    up_get_point(PositionType.position_object, temp_point)
+    return temp_point.x, temp_point.y
+    
+  temp_int = -1
+  return temp_int, temp_int
 
 def get_best_nomad_tc_location() -> Point:
+    # After X seconds place TC next to wood line when found
+    # (Gold+Hunt -> Gold -> Berry -> hunt -> stone)
     chat_to_all("in get_best_nomad_tc_location")
     global J_explore_object_ids
-    for i in range(10):
-        point = Point()
-    return point #return (0,0) #todo: make this work
+    global R_stone_location, R_gold_location, R_gold_mine_count
+    global map_center_point
+
+    if R_gold_mine_count > 0:
+        for i in range(R_gold_mine_count):
+            gold_loc = Point()
+            wood_loc = Point()
+            gold_loc = R_gold_location[i]
+            wood_loc = get_closest_resource_point(Resource.wood, gold_loc)
+            if wood_loc.x != -1:
+                chat_to_all("found wood&gold TC location")
+                return wood_loc
+
+    return map_center_point
 
 def up_get_object_Point() -> (Integer, Integer):
     #chat_to_all("in up_get_object_Point")
@@ -444,10 +644,25 @@ if True:
     chat_to_all("Setters Ran!")
     disable_self()
 
+if building_type_count(BuildingId.town_center) > 0:
+    up_full_reset_search()
+    up_find_local(BuildingId.town_center, 1)
+    up_set_target_object(SearchSource.search_local, 0)
+    up_get_point(PositionType.position_object, p_home)
+    up_copy_point(p_home_100, p_home) #need to multiply by 100 for precise
+    p_home_100.x = p_home_100.x * 100
+    p_home_100.y = p_home_100.y * 100
+    chat_to_all("set TC location")
+    disable_self()
 
 #===========================#
 #|        Dark Age         |#
 #===========================#
+
+#class running functions
+J_explore_object()
+R_update_mines(Resource.gold)
+R_update_mines(Resource.stone)
 
 if current_age() == Age.dark_age:
 
@@ -459,7 +674,7 @@ if current_age() == Age.dark_age:
             up_full_reset_search()
             up_find_local(ClassId.villager_class, STARTING_VILL_COUNT)
             chat_to_all("walking to center")
-            up_target_point(map_center_point, DUCAction.action_move, _, AttackStance.stance_no_attack)
+            up_target_point(map_center_point, DUCAction.action_move,_, AttackStance.stance_no_attack)
             up_send_flare(map_center_point)
             disable_self()
         #endregion
@@ -485,8 +700,13 @@ if current_age() == Age.dark_age:
         #endregion
         ##region ___after 5 seconds place a TC___
         if game_time() > BUILD_TC_TIME:
+            J_FIRE_ALL_explore_object()
             tc_location = Point()
             tc_location = get_best_nomad_tc_location()
+            up_set_target_point(tc_location)
+            up_build(PlacementType.place_point,_,BuildingId.town_center)
+            up_build(PlacementType.place_point,_,BuildingId.barracks)
+            up_build(PlacementType.place_point,_,BuildingId.house)
             disable_self()
         
         #tc_location = get_best_nomad_tc_location()
