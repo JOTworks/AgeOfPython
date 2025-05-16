@@ -24,7 +24,7 @@ def main(file_name, arguments):
     # *----PARSING----*#
     myParser = Parser(file_name, ai_folder)
     trees = myParser.parse()
-    if "p" in arguments or "v" in arguments:
+    if arguments.parcer or arguments.verbose:
         print_bordered("Parsed Main tree")
         print(ast.dump(trees.main_tree, indent=4))
         print_bordered("Parsed Func tree")
@@ -46,17 +46,17 @@ def main(file_name, arguments):
 
     # *----COMPILING----*#
     compiler = Compiler()
-    verbose_compiler = True if "vv" in arguments or "cv" in arguments else False
+    verbose_compiler = True if arguments.everything_verbose or arguments.compile_verbose else False
     combined_tree, memory = compiler.compile(trees, verbose_compiler)
 
-    if "c" in arguments or "v" in arguments:
+    if arguments.compile or arguments.verbose:
         print_bordered("Combined Tree")
         print(ast.dump((combined_tree), indent=4))
         print(f"Compiling completed in {time() - last_time:.2f} seconds")
         last_time = time()
     # *----PRINTING----*#
     myPrinter = Printer(trees.const_tree, combined_tree)
-    if "t" in arguments:
+    if arguments.test:
         myPrinter.print_all(TEST=True)  # currently makes it not go to numbers
     else:
         myPrinter.print_all(TEST=False)
@@ -68,7 +68,7 @@ def main(file_name, arguments):
             f.write(myPrinter.no_color_final_string)
         open(ai_file_path, "w").close()
 
-    if "r" in arguments or "v" in arguments:
+    if arguments.printer or arguments.verbose:
         print(myPrinter.final_string)
         nonTestPrinter = Printer(trees.const_tree, combined_tree)
         nonTestPrinter.print_all(TEST=False)

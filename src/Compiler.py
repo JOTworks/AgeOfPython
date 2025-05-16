@@ -694,13 +694,13 @@ class CompileTR(compilerTransformer):
             raise Exception(
                 f"dont compare 2 constants {node.left.value} and {node.comparators[0].value}. just reduce"
             )
-        elif left_type is Variable and right_type in (ast.Constant, Variable):
+        elif left_type is Variable and right_type in (ast.Constant, Variable, EnumNode):
             compare_comand = Command(
                 AOE2FUNC.up_compare_goal,
                 [node.left, ast_to_aoe(type(node.ops[0]), compareOp), node.comparators[0]],
                 node,
             )
-        elif left_type is ast.Constant and right_type is Variable:
+        elif left_type in (ast.Constant, EnumNode) and right_type is Variable:
             compare_comand = Command(
                 AOE2FUNC.up_compare_goal,
                 [
