@@ -877,7 +877,7 @@ class CompileTR(compilerTransformer):
             #ARRAYS #todo: optimization, add for i in array: and make it just add element_size each time when accessing
             if hasattr(node_2, 'slice') and node_2.slice is not None:
                 if type(node_2.slice) in [Variable, str]: #getting array element
-                    modify_commands += self.create_set_array_ptr_commands(node_2)
+                    modify_commands += self.create_set_array_ptr_commands(node_2, right_offset_index)
                     modify_commands.append( Command( #todo: double check you can use the same variable for both sides of up_get_indirect_goal, you can but may not want to for optimizations later
                         AOE2FUNC.up_get_indirect_goal,
                         [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), Variable({'id':ARRAY_RETURN_REG,'offset_index':None})],
@@ -889,7 +889,7 @@ class CompileTR(compilerTransformer):
                 if type(node_1.slice) in [Variable, str]: #setting array element
                     if type(op) is not ast.Eq:
                         raise Exception(f"cannot use {op} on Array asignments, line {node_1.lineno}")
-                    modify_commands += self.create_set_array_ptr_commands(node_1)
+                    modify_commands += self.create_set_array_ptr_commands(node_1, left_offset_index)
                     modify_func = AOE2FUNC.up_set_indirect_goal
                     left = Variable({'id':ARRAY_RETURN_PTR,'offset_index':None})
 
@@ -901,9 +901,9 @@ class CompileTR(compilerTransformer):
 
         return modify_commands
 
-    def create_set_array_ptr_commands(self, node):
-        if node.offset_index is None:
-            offset = self.const_constructor(0)
+    def create_set_array_ptr_commands(self, node, offset_index):
+        if node.offset_index is not None:
+            raise Exception(f"need to add code here, but currenlty array nodes dont have offset_indexes?, line {node.lineno}")
         if hasattr(node.slice, 'slice') and node.slice.slice is not None:
             raise Exception(f"slicing not supprted in slices, line {node.lineno}")
         if node.offset_index and self.get_var_type(node.offset_index) not in [Integer, Register]:
@@ -913,7 +913,7 @@ class CompileTR(compilerTransformer):
         node_copy = Variable({ #todo: copy() would be better but cannot get it to work
             "id": node.id,
             "ctx": node.ctx,
-            "offset_index": node.offset_index,
+            "offset_index": None,
             "lineno": node.lineno,
             "end_lineno": node.end_lineno,
             "col_offset": node.col_offset,
@@ -928,7 +928,7 @@ class CompileTR(compilerTransformer):
         #add offset
         modify_commands.append( Command(
                 AOE2FUNC.up_modify_goal,
-                [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.add, offset],
+                [Variable({'id':ARRAY_RETURN_PTR,'offset_index':None}), mathOp.add, ast.Constant(offset_index)],
                 node,
             ))
         #calculate slice
@@ -953,7 +953,12 @@ class CompileTR(compilerTransformer):
     def get_array_element_size(self, node):
         if not self.is_array(node):
             raise Exception(f"get_array_element_size only works on arrays, not {self.get_var_type(node)}, line {node.lineno}")
-        return 1
+        name = node.var_name()
+        if name in self.variable_array_types:
+            return self.variable_array_types[name].length
+        else:
+            raise Exception(f"array {name} not in variable_array_types, line {node.lineno}")
+
 
     def set_array_var_type(self, var_name, var_type):
         cleaned_var_type = None
