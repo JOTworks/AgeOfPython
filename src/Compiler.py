@@ -8,7 +8,7 @@ from scraper import aoe2scriptFunctions as aoe2scriptFunctions
 from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
 from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT, FUNC_RETURN_LENGTH, ARRAY_RETURN_PTR, FUNC_RETURN_ARRAY, ARRAY_OFFSET
 from copy import copy, deepcopy
-from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return
+from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return, TEMP_SUPBSTRING
 from utils_display import print_bordered
 from MyLogging import logger
 
@@ -135,7 +135,7 @@ class AstToCustomTR(compilerTransformer):
 
         else: #incorrect number of args
             if compareOp.__name__ in parameters:
-                logger.error(f"{func_name} is proably using drop compareOp syntax, line {lineno}")
+                logger.warning(f"{func_name} is proably using drop compareOp syntax, line {lineno}")
                 return args
             else:
                 if len(parameters) - len(args) != default_params_in_function:
@@ -391,10 +391,6 @@ class AlocateAllMemory(compilerTransformer):
         return node
 
     def visit_Variable(self, node):
-        if node.var_name() == FUNC_RET_REG:
-            logger.warning("FUNC_RET_REG is not a variable")
-        single_slice = node.slice if hasattr(node, "slice") else None
-        
         if node.id in self.const_dict:
             node.as_const = True
             node.memory_location = self.const_dict[node.id]
@@ -406,6 +402,14 @@ class AlocateAllMemory(compilerTransformer):
             node.memory_name = self.memory.get_name_at_location(node.memory_location)
             return node
         
+        if TEMP_SUPBSTRING in node.id:
+            #! we need to have in this node they name of the node it was coppied for. then we can look for that nodes type and coppy it here
+            logger.error("temp Vars should know there type")
+        
+        single_slice = node.slice if hasattr(node, "slice") else None
+        if type(single_slice) is Variable:
+            single_slice = None #this is becuase the get function for memory should return the array start location
+
         if not (location := self.memory.get(node.id,node.offset_index, slice=single_slice)):
             logger.error(f"we are doing strict typing. you need to initialize {node.id}")
             self.memory.malloc(node.id, Integer)
@@ -418,7 +422,7 @@ class AlocateAllMemory(compilerTransformer):
 class CompileTR(compilerTransformer):
     def __init__(self, command_names, func_def_dict, temp_var_prefix, variable_type_dict = {}, variable_array_types = {}, variable_array_lengths = {}):
         super().__init__()
-        self.temp_var_prefix = str(temp_var_prefix) + "temp"
+        self.temp_var_prefix = str(temp_var_prefix) + TEMP_SUPBSTRING
         self.command_names = command_names
         self.parent_map = {}
         self.variable_types = variable_type_dict
@@ -690,13 +694,13 @@ class CompileTR(compilerTransformer):
             raise Exception(
                 f"dont compare 2 constants {node.left.value} and {node.comparators[0].value}. just reduce"
             )
-        elif left_type is Variable and right_type in (ast.Constant, Variable):
+        elif left_type is Variable and right_type in (ast.Constant, Variable, EnumNode):
             compare_comand = Command(
                 AOE2FUNC.up_compare_goal,
                 [node.left, ast_to_aoe(type(node.ops[0]), compareOp), node.comparators[0]],
                 node,
             )
-        elif left_type is ast.Constant and right_type is Variable:
+        elif left_type in (ast.Constant, EnumNode) and right_type is Variable:
             compare_comand = Command(
                 AOE2FUNC.up_compare_goal,
                 [

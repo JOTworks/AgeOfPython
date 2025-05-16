@@ -155,17 +155,22 @@ class Memory:
         raise Exception(f"could not find {reg_number} in {self._used_memory}")
 
     def get(self, var_name, abstracted_offset=None, slice=None):
-        if type(slice) is ast.Constant:
+        
+        if slice is None:
+            pass
+        elif type(slice) is ast.Constant:
             slice = slice.value
-        if slice is not None and type(slice) is not int:
-            logger.warning(f"slice is not an int, using {type(slice)}")
+        elif type(slice) is int:
+            pass
+        else:
+            logger.error(f"slice is not an int, using {type(slice)}")
             slice = None
         try:
             stored_memory = self.used_memory_in_scope()[var_name]
         except KeyError:
             if var_name in self._timer_memory:
                 return self._timer_memory.index(var_name) + 1 #AOE2Script timer is 1 indexed")
-            logger.error(f"Variable {var_name} not found in memory")
+            logger.warning(f"Variable {var_name} not found in memory")
             return None
         offset = stored_memory.var_type.get_offset(abstracted_offset, stored_memory.length) #todo: this probably needs help to work with arrays
         if offset >= stored_memory.length:
