@@ -4,6 +4,7 @@
 
 #MAIN
 #todo: fix all the parameters for user and printing / error logging
+#todo: SOMEHOW THROW ERROR IF FILE IS OPEN AND NOT EDITED!
 
 #MEMORY
 #todo: make it actual allocation for the function return values and pointers, to get rid of magic numbers

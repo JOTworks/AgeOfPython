@@ -72,7 +72,6 @@ def main(file_name, arguments):
         print(myPrinter.final_string)
         nonTestPrinter = Printer(trees.const_tree, combined_tree)
         nonTestPrinter.print_all(TEST=False)
-        print(nonTestPrinter.non_readable_final_string)
     print(f"Printing completed in {time() - last_time:.2f} seconds")
     last_time = time()
 
