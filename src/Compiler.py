@@ -24,19 +24,19 @@ def new_do_nothing():
 
 
 class compilerTransformer(ast.NodeTransformer):
-    def generic_visit(self, node):
-        try:
-            return super().generic_visit(node)
-        except Exception as e:
-            if hasattr(node, "lineno"):
-                line = node.lineno
-            elif hasattr(node, "end_lineno"):
-                line = node.end_lineno
-            else:
-                line = "No Line"
-            print(f"Exception: {type(self).__name__} | Node:{type(node).__name__} | Line:{line}" )
-            
-            raise Exception(e)
+    #def generic_visit(self, node):
+    #    try:
+    #        return super().generic_visit(node)
+    #    except Exception as e:
+    #        if hasattr(node, "lineno"):
+    #            line = node.lineno
+    #        elif hasattr(node, "end_lineno"):
+    #            line = node.end_lineno
+    #        else:
+    #            line = "No Line"
+    #        print(f"Exception: {type(self).__name__} | Node:{type(node).__name__} | Line:{line}" )
+    #        
+    #        raise Exception(e)
 
     def p_visit(self, node, tree_name="tree", vv=False):
         if vv:
@@ -417,7 +417,6 @@ class AlocateAllMemory(compilerTransformer):
             return node
         
         if TEMP_SUPBSTRING in node.id:
-            #! we need to have in this node they name of the node it was coppied for. then we can look for that nodes type and coppy it here
             logger.error("temp Vars should know there type")
         
         single_slice = node.slice if hasattr(node, "slice") else None
@@ -1661,7 +1660,7 @@ class Compiler:
         func_compiler = CompileTR(self.command_names, func_def_dict, temp_var_prefix="F", variable_type_dict = main_compiler.get_temp_variable_type_dict() | function_param_and_constant_types, variable_array_lengths = main_compiler.variable_array_lengths, variable_array_types = main_compiler.variable_array_types)
         trees.func_tree = func_compiler.p_visit(trees.func_tree, "func_tree", vv)
         
-        temp_variable_type_dict = main_compiler.get_temp_variable_type_dict()
+        temp_variable_type_dict = main_compiler.get_temp_variable_type_dict() | func_compiler.get_temp_variable_type_dict()
         
         trees.main_tree = WrapInDefRules().p_visit(trees.main_tree, "main_tree", vv)  # optimize commands together into defrules
         trees.func_tree = WrapInDefRules().p_visit(trees.func_tree, "func_tree", vv)

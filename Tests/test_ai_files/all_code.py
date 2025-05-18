@@ -20,7 +20,17 @@ from scraper import (
     Constant,
 )
 
-i = Integer()
-for i in range(10):
-    if i == 3:
-        continue
+def foo():
+    p1 = Point()
+    p2 = Point()
+    p1 += p2
+
+
+a = Array(Point, 10)
+w = 5
+
+a[3] = (1,2)
+
+
+
+foo()
