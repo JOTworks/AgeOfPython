@@ -230,10 +230,6 @@ J_explore_object_timers = Array(Integer, 10) #J_EXPLORE_OBJECT_ARRAY_SIZE
 J_explore_object_timers[0] = 1
 J_explore_object_timers[1] = 2
 J_explore_object_timers[2] = 3
-villager_id = Integer()
-is_employed = Integer(8)
-villager_point = Point(0,0)
-closest_gold_point = Point(0,0)
 
 def J_get_employment_status(id:Integer) -> Integer:
     #chat_to_all("in J_get_employment_status")
@@ -267,29 +263,24 @@ def J_explore_object():
             #the math #todo: fix this to use specific points, i think how it is, it wont work only using tile integeres
             up_full_reset_search()
             up_set_target_by_id(explorer_id)
-            explorer_point.x, explorer_point.y = up_get_object_Point()
-            resource_point.x, resource_point.y = get_closest_resource_point(thing, explorer_point)
-            
-            dest_point.x = resource_point.x
-            dest_point.y = resource_point.y
+            explorer_point = up_get_object_Point()
+            resource_point = get_closest_resource_point(thing, explorer_point)
+            dest_point = resource_point
             
             up_lerp_tiles(dest_point, explorer_point, tiles_away)
            
 
             #translate reletive
             #prime_point = resource_point - dest_point #todo:we want to be able to do this
-            prime_point.x = resource_point.x
-            prime_point.y = resource_point.y
-            prime_point.x -= dest_point.x
-            prime_point.y -= dest_point.y
+            prime_point = resource_point
+            prime_point -= dest_point
             #rotate 90
             temp = Integer()
             temp = prime_point.x
             prime_point.x = prime_point.y
             prime_point.y = temp * -1
             #translate back
-            dest_point.x += prime_point.x
-            dest_point.y += prime_point.y
+            dest_point += prime_point
 
             up_full_reset_search()
             up_add_object_by_id(SearchSource.search_local, explorer_id)
@@ -658,6 +649,7 @@ if deer_search_state.RemoteIndex > 0:
             for i in range(deer_search_state.LocalList):
                 up_set_target_object(SearchSource.search_local, i)
                 up_get_object_data(ObjectData.object_data_id, hunter_id)
+                is_employed = Integer()
                 is_employed = J_get_employment_status(hunter_id)
                 if is_employed == UNEMPLOYED and already_hired_once == 0:
                     J_HIRE_push_deer(hunter_id, deer_to_hunt)
@@ -697,14 +689,16 @@ if current_age() == Age.dark_age:
                 up_find_local(ClassId.villager_class, STARTING_VILL_COUNT)
 
                 up_set_target_object(SearchSource.search_local, i)
+                villager_id = Integer()
                 up_get_object_data(ObjectData.object_data_id, villager_id)
-
                 is_employed = J_get_employment_status(villager_id)
                 #up_chat_data_to_all("employed: %d",is_employed)
                 
                 if is_employed == UNEMPLOYED:
-                    villager_point.x, villager_point.y  = up_get_object_Point()
-                    closest_gold_point.x, closest_gold_point.y = get_closest_resource_point(Resource.gold, villager_point)
+                    villager_point = Point()
+                    villager_point = up_get_object_Point()
+                    closest_gold_point = Point()
+                    closest_gold_point = get_closest_resource_point(Resource.gold, villager_point)
                     if up_point_distance(villager_point, closest_gold_point) <= VILLAGER_LOS:
                         up_chat_data_to_all("HIRE!: %d",villager_id)
                         J_HIRE_explore_object(villager_id, Resource.gold, VILLAGER_LOS, 50, CLOCKWIZE)
