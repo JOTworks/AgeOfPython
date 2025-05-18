@@ -16,17 +16,7 @@ class Strenum(Enum):
 
 _ = "DEFAULT VALUE" # default value for all optional enums
 class AOE2VarType():
-    @classmethod
-    def get_offset(cls, abstracted_offset, lenth):
-        if abstracted_offset is None:
-            return 0
-        offset = cls.params_to_offet.get(abstracted_offset)
-        if offset is None:#todo: remove this at some point
-            offset = cls.params_to_offet.get(int(abstracted_offset))
-        if offset is None:
-            raise Exception(f"Offset {abstracted_offset} not found in {cls.params_to_offet}")
-        else:
-            return offset
+    pass
 
 class Array(AOE2VarType):
 
@@ -41,11 +31,7 @@ class Array(AOE2VarType):
             raise Exception(f"Array type {type} is not valid")
         self._length = length
         self.type = type
-    
-    @classmethod
-    def get_offset(cls, abstracted_offset, length):
-        if abstracted_offset is None:
-            return 0
+
         
         #needs to come through as 0, and later we will use  command to add the offest dynamicly
         if type(abstracted_offset).__name__ == "Variable": 
@@ -101,9 +87,6 @@ class Constant(AOE2VarType):
     length = 1
     def __init__(self, value):
         self.value = value
-    @classmethod
-    def get_offset(cls, abstracted_offset, length):
-        raise Exception(f"Constant do not have offsets or memory locations {abstracted_offset=}")
 
 class Timer(AOE2VarType):
     params_to_offet = {

@@ -45,8 +45,23 @@ class StoredMemory:
         if self.length > 1:
             reg_str += f"-{self.start + self.length - 1}"
         out_string = f"{self.var_type.__name__ if hasattr(self.var_type,'__name__') else self.var_type.name}" + reg_str
-
         return out_string
+    
+    def get_offset(self, abstracted_offset):
+        if self.var_type is Constant:
+            raise Exception(f"Constant do not have offsets or memory locations {abstracted_offset=}")
+
+        if abstracted_offset is None:
+            return 0
+        offset = self.var_type.params_to_offet.get(abstracted_offset, None)
+        if offset is None:#todo: remove this at some point
+            offset = self.var_type.params_to_offet.get(int(abstracted_offset), None)
+        if offset is None:
+            raise Exception(f"Offset {abstracted_offset} not in {self.name}:{self.var_type.__name__}:{self.var_type.params_to_offet}")
+        
+        return offset
+        
+        
     
 
 
@@ -172,7 +187,7 @@ class Memory:
                 return self._timer_memory.index(var_name) + 1 #AOE2Script timer is 1 indexed")
             logger.warning(f"Variable {var_name} not found in memory")
             return None
-        offset = stored_memory.var_type.get_offset(abstracted_offset, stored_memory.length) #todo: this probably needs help to work with arrays
+        offset = stored_memory.get_offset(abstracted_offset)
         if offset >= stored_memory.length:
             raise Exception(f"Out of index error {offset}>{var_name} len")
         array_offset = slice * stored_memory.length if slice else 0

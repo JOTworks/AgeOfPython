@@ -1,3 +1,10 @@
+#BAD BUGS
+#todo: allow Array to be assigned touples, currenlty just uses first slice no matter what get_offset() may be culprit
+#! a = Array(Point, 10)
+#! w = 5
+#! a[w] = (1,2)
+#! a[5] = (1,2)
+
 #SCRAPER
 #todo: fix scrping to pull all *s, make sure nothing is missing
 #todo: make it a 1 button run
