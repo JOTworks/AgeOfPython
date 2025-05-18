@@ -49,7 +49,7 @@ class StoredMemory:
     
     def get_offset(self, abstracted_offset):
         if self.var_type is Constant:
-            raise Exception(f"Constant do not have offsets or memory locations {abstracted_offset=}")
+            raise Exception(f"{abstracted_offset} not in {self.name}:{self.var_type.__name__}:CONSTANT HAS NONE")
 
         if abstracted_offset is None:
             return 0
