@@ -24,19 +24,19 @@ def new_do_nothing():
 
 
 class compilerTransformer(ast.NodeTransformer):
-    #def generic_visit(self, node):
-    #    try:
-    #        return super().generic_visit(node)
-    #    except Exception as e:
-    #        if hasattr(node, "lineno"):
-    #            line = node.lineno
-    #        elif hasattr(node, "end_lineno"):
-    #            line = node.end_lineno
-    #        else:
-    #            line = "No Line"
-    #        print(f"Exception: {type(self).__name__} | Node:{type(node).__name__} | Line:{line}" )
-    #        
-    #        raise Exception(e)
+    def generic_visit(self, node):
+        try:
+            return super().generic_visit(node)
+        except Exception as e:
+            if hasattr(node, "lineno"):
+                line = node.lineno
+            elif hasattr(node, "end_lineno"):
+                line = node.end_lineno
+            else:
+                line = "No Line"
+            print(f"Exception: {type(self).__name__} | Node:{type(node).__name__} | Line:{line}" )
+            
+            raise Exception(e)
 
     def p_visit(self, node, tree_name="tree", vv=False):
         if vv:
