@@ -22,7 +22,8 @@ from scraper import (
   ObjectId, ObjectData, ObjectStatus, ObjectList,
   ClassId, UnitId, BuildingId, Resource, Terrain,
   SearchSource, PositionType, PlacementType, Age,
-  TechId, DUCAction, AttackStance, SN,
+  TechId, DUCAction, AttackStance, SN, SearchOrder,
+  compareOp, ActionId,
   #FUNCTIONS
   up_get_object_data, up_get_object_target_data, up_get_point,
   up_get_search_state, up_set_target_object, up_set_target_point,
@@ -32,7 +33,9 @@ from scraper import (
   up_build, current_age, up_can_train, up_train, up_can_research, up_research,
   build, housing_headroom, population_headroom, building_type_count,
   up_lerp_tiles, up_set_target_by_id, up_target_point, building_type_count_total,
-  chat_to_all, up_send_flare, up_filter_range, up_add_object_by_id
+  chat_to_all, up_send_flare, up_filter_range, up_add_object_by_id, 
+  up_filter_distance, up_find_remote, up_remove_objects, up_clean_search,
+  up_can_build, up_pending_objects, up_copy_point, game_time,up_target_objects 
 )
 '''
 building killing idea:
@@ -130,41 +133,8 @@ TRUE = Constant(1)
 EMPLOYED = Constant(1)
 UNEMPLOYED = Constant(0)
 BUILD_TC_TIME = Constant(30)
-
 i = Integer(0)
-##region Round Counters
-#if True:
-#    round_counter = 0
-#    disable_self()
-#every_2 = FALSE
-#every_4 = FALSE
-#every_8 = FALSE
-#every_16 = FALSE
-#every_32 = FALSE
-#every_64 = FALSE
-#every_128 = FALSE
-#every_256 = FALSE
-#reset_every = FALSE
-#round_counter += 1 #round_counter goes from 1 - 256
-#if round_counter % 2 == 0:
-#    every_2 = TRUE
-#if round_counter % 4 == 0:
-#    every_4 = TRUE
-#if round_counter % 8 == 0:
-#    every_8 = TRUE
-#if round_counter % 16 == 0:
-#    every_16 = TRUE
-#if round_counter % 32 == 0:
-#    every_32 = TRUE
-#if round_counter % 64 == 0:
-#    every_64 = TRUE
-#if round_counter % 128 == 0:
-#    every_128 = TRUE
-#if round_counter % 256 == 0:
-#    every_256 = TRUE
-#if round_counter >= 256:
-#    round_counter = 0
-##endregion
+
 #======================================================  CLASSES  ===========================================================#
 #===========================#
 #| RESROUCE MANAGER CLASS  |#
@@ -286,14 +256,13 @@ def J_explore_object():
     resource_point = Point()
     dest_point = Point()
     prime_point = Point()
-    normalized_point = Point()
     for i in range(3): #J_EXPLORE_OBJECT_ARRAY_SIZE
 
         explorer_id = J_explore_object_ids[i]
         if explorer_id != -1:
             thing = J_explore_object_things[i]
             tiles_away = J_explore_object_tiles_away[i]
-            explore_direction = J_explore_object_direction[i]
+            #explore_direction = J_explore_object_direction[i] NOT USED YET
             explorer_timer = J_explore_object_timers[i]
             #the math #todo: fix this to use specific points, i think how it is, it wont work only using tile integeres
             up_full_reset_search()
@@ -515,7 +484,7 @@ def get_closest_unit_id(unit_type:UnitId, point:Point, count:Integer = 0) -> Int
   up_get_object_data(ObjectData.object_data_id, temp_int)
   return temp_int
 
-def get_closest_resource_point(resource:Resource, point:Point) -> (Integer, Integer):
+def get_closest_resource_point(resource:Resource, point:Point) -> (Integer, Integer): # type: ignore
   #chat_to_all("in get_closest_resource_point")
 
   temp_point = Point()
@@ -564,7 +533,7 @@ def get_best_nomad_tc_location() -> Point:
 
     return map_center_point
 
-def up_get_object_Point() -> (Integer, Integer):
+def up_get_object_Point() -> (Integer, Integer): # type: ignore
     #chat_to_all("in up_get_object_Point")
     temp_point = Point()
     up_get_object_data(ObjectData.object_data_point_x, temp_point.x)
