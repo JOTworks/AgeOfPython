@@ -24,6 +24,20 @@ def new_do_nothing():
 
 
 class compilerTransformer(ast.NodeTransformer):
+    def generic_visit(self, node):
+        try:
+            return super().generic_visit(node)
+        except Exception as e:
+            if hasattr(node, "lineno"):
+                line = node.lineno
+            elif hasattr(node, "end_lineno"):
+                line = node.end_lineno
+            else:
+                line = "No Line"
+            print(f"Exception: {type(self).__name__} | Node:{type(node).__name__} | Line:{line}" )
+            
+            raise Exception(e)
+
     def p_visit(self, node, tree_name="tree", vv=False):
         if vv:
             print_bordered(f"{tree_name} after {type(self)}")
@@ -78,7 +92,7 @@ class AstToCustomTR(compilerTransformer):
         if is_variable:
             args = {
                 "id": id_n,
-                "ctx": node.ctx,
+                "ctx": node.ctx if hasattr(node, "ctx") else None,
                 "offset_index": offset_index,
                 "lineno": node.lineno,
                 "end_lineno": node.end_lineno,
@@ -433,6 +447,7 @@ class CompileTR(compilerTransformer):
         self.current_func_def = None
         self.aoe2_var_types = get_aoe2_var_types()
         self.array_return_offset = 0
+        self.loop_stack = []
 
     
     def get_temp_variable_type_dict(self):
@@ -559,8 +574,35 @@ class CompileTR(compilerTransformer):
             None  # remove to keep printer from printing it from test and from the body
         )
         return node
+    
+    def visit_Continue(self, node):
+        #continue would simply jump to incrementer
+        #break would jump to one minus test
+        if len(self.loop_stack) == 0:
+            raise Exception(f"break outside of loop, line {node.lineno}")
+        node = DefRule(
+            Command(AOE2FUNC.true, [], None),
+            [new_jump(JumpType.jump_continue)],
+            node,
+            comment="Continue " + str(node.lineno),
+        )
+        return node
+    
+    def visit_Break(self, node):
+        #continue would simply jump to incrementer
+        #break would jump to one minus test
+        if len(self.loop_stack) == 0:
+            raise Exception(f"break outside of loop, line {node.lineno}")
+        node = DefRule(
+            Command(AOE2FUNC.true, [], None),
+            [new_jump(JumpType.jump_break)],
+            node,
+            comment="Break " + str(node.lineno),
+        )
+        return node
 
     def visit_For(self, node, parent, in_field, in_node):
+        self.loop_stack.append(node)
         """
         jump to end automaticaly, then jump to beggining if conditions are true
         same as if, only remove the one jump that skips the conditional
@@ -615,7 +657,7 @@ class CompileTR(compilerTransformer):
             None,
             comment="FOR inc " + str(node.lineno),
         )
-
+        
         node.body = (
             [
                 init,
@@ -627,6 +669,7 @@ class CompileTR(compilerTransformer):
                 test,
             ]
         )
+        self.loop_stack.pop()
         return node
 
     def const_constructor(self, value):
@@ -765,7 +808,6 @@ class CompileTR(compilerTransformer):
 
     def create_modify_commands(self, node_1, op, node_2, reset_array_offset=True):
         #! NEED TO FINIISH ASIGNMENTS
-        #!#!#!#!#!#!#!# todo: implment array variables like myArray[i] as an example
         #todo: implemet constructors taking args, in visit_Assign (make it a one time asign with disable_rule()
         if reset_array_offset:
             self.array_return_offset = 0
@@ -1324,6 +1366,7 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
     def __init__(self, func_def_dict, rule_count):
         self.rule_count = rule_count
         self.func_def_dict = func_def_dict
+        self.loop_stack = []
 
     def replace_calculate_global_jump(self, node):
         for subnode in node.body:
@@ -1373,6 +1416,16 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
                 if type(node) is not ast.If:
                     raise Exception(f"jump_to_else must only be in if statments, not {type(node)}")
                 command.set_arg(i, ast.Constant(self.get_first_defrule_num(node.orelse)))
+
+            elif jump is JumpType.jump_break: #break would jump to one minus test
+                if len(self.loop_stack) == 0:
+                    raise Exception(f"jump_break must be in a For loop, not {type(node)}")
+                command.set_arg(i, ast.Constant(self.loop_stack[-1].last_defrule + 1))
+
+            elif jump is JumpType.jump_continue: #continue would simply jump to incrementer
+                if len(self.loop_stack) == 0:
+                    raise Exception(f"jump_break must be in a For loop, not {type(node)}")
+                command.set_arg(i, ast.Constant(self.loop_stack[-1].last_defrule - 1))
             else:
                 command.set_arg(i, ast.Constant(-1))
                 raise Exception(f"{jump} not implemented yet")
@@ -1401,8 +1454,12 @@ class ReplaceAllJumpStatementsTransformer(compilerTransformer):
         return self.replace_jump(node)
     
     def visit_For(self, node):
+        self.loop_stack.append(node)
         self.generic_visit(node)
-        return self.replace_jump(node)
+        result = self.replace_jump(node)
+        self.loop_stack.pop()
+        return result
+        
 
     def visit_While(self, node):
         self.generic_visit(node)

@@ -19,6 +19,8 @@ class JumpType(Enum):
     jump_back_to_after_call = 8
     last_rule_in_file = 9
     jump_to_else = 10
+    jump_break = 11
+    jump_continue = 12
 
 class FuncModule(ast.Module): 
     def __init__(self, name: str, args: list = [], node=None):

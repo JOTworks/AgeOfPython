@@ -13,7 +13,6 @@
 #todo: BUG if you do x = func() and x is not constructed it will just not give it a value... no error
 #todo: fixe compare op enums in function (nnot suing shortcut)
 #todo: fix variable compare to enum. expecialy with == even if other is disable
-#todo: asigning and using points and objects differntly from ints
 #todo: get nested binOp expressions working
 #todo: get expressions working in conditionals
 

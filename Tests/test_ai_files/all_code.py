@@ -20,10 +20,7 @@ from scraper import (
     Constant,
 )
 
-locs = Array(Point, 4)
-
-r = 2
-p = Point()
-p = (3,4)
-
-locs[r] = p
+i = Integer()
+for i in range(10):
+    if i == 3:
+        continue
