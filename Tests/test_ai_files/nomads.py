@@ -35,7 +35,8 @@ from scraper import (
   up_lerp_tiles, up_set_target_by_id, up_target_point, building_type_count_total,
   chat_to_all, up_send_flare, up_filter_range, up_add_object_by_id, 
   up_filter_distance, up_find_remote, up_remove_objects, up_clean_search,
-  up_can_build, up_pending_objects, up_copy_point, game_time,up_target_objects 
+  up_can_build, up_pending_objects, up_copy_point, game_time,up_target_objects,
+  unit_type_count
 )
 '''
 building killing idea:
@@ -198,6 +199,7 @@ def R_update_mines(resource:Resource):
         tile_loc = up_get_object_Point()
 
         temp_mine_loc = Point()
+        part_of_existing_mine = Integer()
         part_of_existing_mine = FALSE
         for j in range(MINE_LIMIT):
             if resource == Resource.gold:
@@ -342,6 +344,7 @@ def J_FIRE_ALL_explore_object():
         disable_timer(J_explore_object_timers[i])
 
 ##__________explore_terrain__________#
+
 #def J_explore_terrain(explorer_id, terrain:Terrain, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
 #    terrain_type_at_point = Integer()
 #    terrain_id_at_point = Integer()
@@ -390,7 +393,6 @@ def J_push_deer():
                 flare_point = Point()
                 flare_point.x = point_next_to_deer.x / 100
                 flare_point.y = point_next_to_deer.y / 100
-                up_send_flare(flare_point)
                 up_full_reset_search()
                 up_add_object_by_id(SearchSource.search_local, hunter_id)
                 SN.target_point_adjustment = 6 #set to enable precise targetting
@@ -462,6 +464,12 @@ def J_FIRE_push_deer(hunter_id:Integer) -> Integer:
 
 
 #======================================================  Functions  ===========================================================#
+def set_gather_percent(wood:Integer, food:Integer, gold:Integer, stone:Integer):
+    SN.wood_gatherer_percentage = wood
+    SN.food_gatherer_percentage = food
+    SN.gold_gatherer_percentage = gold
+    SN.stone_gatherer_percentage = stone
+
 def get_closest_unit_id(unit_type:UnitId, point:Point, count:Integer = 0) -> Integer:
   chat_to_all("in get_closest_unit_id")
   #will return unit id of closest unit, but will still set the active list with count you want
@@ -613,6 +621,156 @@ if building_type_count(BuildingId.town_center) > 0:
     disable_self()
 
 #=====================================  Actual Code  ===================================================
+
+#-----testing explore coast code-----"
+terrain_test_point = map_center_point
+last_point = Point()
+cur_point = Point()
+temp_terrain_point = Point()
+terrain_id = Integer()
+
+
+if True:
+    #set last_point
+    up_chat_data_to_all("cetner x:%d",map_center_point.x)
+    up_chat_data_to_all("cetner y:%d",map_center_point.y)
+    for i in range(60):
+        terrain_test_point.x -= 1
+        up_get_point_terrain(terrain_test_point, terrain_id)
+        if terrain_id == Terrain.terrain_water_beach:
+            last_point = terrain_test_point
+            up_chat_data_to_all("last_point SET:%d",terrain_id)
+    
+    #set cur_point
+    for i in range(-1,2):
+        for j in range(-1,2):
+            temp_terrain_point = last_point
+            temp_terrain_point.x += i
+            temp_terrain_point.y += j
+            up_chat_data_to_all("terr x:%d",temp_terrain_point.x)
+            up_chat_data_to_all("terr y:%d",temp_terrain_point.y)
+            up_get_point_terrain(temp_terrain_point, terrain_id)
+            up_chat_data_to_all("terrain:%d",terrain_id)
+            if temp_terrain_point != last_point:
+                if up_point_terrain(temp_terrain_point) == Terrain.terrain_water_beach:
+                    cur_point = temp_terrain_point
+                    up_chat_data_to_all("cur_point SET:%d",terrain_id)
+    disable_self()
+
+if True:
+    up_chat_data_to_all("last x:%d",last_point.x)
+    up_chat_data_to_all("last y:%d",last_point.y)
+    up_chat_data_to_all("curr x:%d",cur_point.x)
+    up_chat_data_to_all("curr y:%d",cur_point.y)
+    disable_self()
+
+DIAGNAL = Constant(1)
+ORTHOGENAL = Constant(2)
+total_finds = Integer()
+def get_next_point(last_point:Point, cur_point:Point, terrain:Terrain) -> Point:
+    #checks the 5 tiles directly forward, 2 angled forward, and 2 sideways for more terrain
+    
+    global DIAGNAL, ORTHOGENAL, total_finds
+    delta_direction = Integer()
+    delta = Point()
+    delta = cur_point - last_point
+    if delta.x > 1:
+        up_chat_data_to_all("D.x: %d", delta.x)
+    if delta.y > 1:
+        up_chat_data_to_all("Y.x: %d", delta.y)
+
+    delta_direction = ORTHOGENAL
+    if delta.x != 0 and delta.y !=0:
+        delta_direction = DIAGNAL        
+
+    if delta_direction == DIAGNAL:
+        new_possible_curr_point = cur_point + delta
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x += delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.y += delta.y
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x += delta.x
+        new_possible_curr_point.y -= delta.y
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x -= delta.x
+        new_possible_curr_point.y += delta.y
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+
+    if delta_direction == ORTHOGENAL:
+        new_possible_curr_point = cur_point + delta
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point + delta
+        new_possible_curr_point.x += delta.y
+        new_possible_curr_point.y += delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point + delta
+        new_possible_curr_point.x -= delta.y
+        new_possible_curr_point.y -= delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x += delta.y
+        new_possible_curr_point.y += delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x -= delta.y
+        new_possible_curr_point.y -= delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+
+
+    #chat_to_all("get_next_point found no point!")
+    error_point = Point()
+    error_point.x = -1
+    error_point.y = -1
+    return error_point
+
+new_point = Point()
+if True:
+    for i in range(5):
+        new_point = get_next_point(last_point, cur_point, Terrain.terrain_water_beach)
+        if new_point.x != -1:
+            last_point = cur_point
+            cur_point = new_point
+    up_send_flare(cur_point)
+
+
+
+
+
+
+
 #------deer stuff-------#
 #search for deer around the town center and pick the closest one
 up_full_reset_search()
@@ -669,6 +827,7 @@ R_update_mines(Resource.stone)
 
 
 if current_age() == Age.dark_age:
+
 
     #=========find TC Location=========#
     if building_type_count_total(BuildingId.town_center) == 0:
@@ -775,6 +934,9 @@ if current_age() == Age.dark_age:
     ##endregion
 
     #==========Economy==========#
+    if True:
+        set_gather_percent(10,70,20,0)
+        disable_self()
     #region ___control Mule Card and build___
     #build a mule card and place it next to gold
     #endregion
@@ -784,7 +946,7 @@ if current_age() == Age.dark_age:
     #switch between food and wood based on something?
     #endregion
     #region ___decide when to feudal___
-    #try_research(TechId.feudal_age)
+    try_research(TechId.feudal_age)
     #endregion
 
     ##==========Defensive==========#
@@ -793,7 +955,7 @@ if current_age() == Age.dark_age:
     ##region ___bring malitia back if there is shinanigans___
     ##endregion
     #pass
-'''
+
 #=============================#
 #|        Feudal Age         |#
 #=============================#
@@ -853,7 +1015,7 @@ if current_age() == Age.castle_age:
     #1. docks and fish traps
     #2. balancing larger ecomony
     #3.
-'''
+
 #=============================#
 #|       Basic stuff         |#
 #=============================#
@@ -861,12 +1023,16 @@ if (housing_headroom() < 3
     and population_headroom() > 0 
     and building_type_count(BuildingId.town_center) > 0
 ): #to not build house while searching for TC on nomad
-    chat_to_all("trying to build a house")
     try_build(BuildingId.house)
 
 if building_type_count(BuildingId.barracks) < 1:
     try_build(BuildingId.barracks)
 
-try_train(UnitId.villager)
-try_train(UnitId.militiaman)
+if building_type_count(BuildingId.mule_cart) < 1:
+    try_build(BuildingId.mule_cart)
+
+if unit_type_count(UnitId.villager) < 20:
+    try_train(UnitId.villager)
+if unit_type_count(UnitId.militiaman) < 5:
+    try_train(UnitId.militiaman)
 
