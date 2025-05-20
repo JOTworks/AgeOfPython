@@ -20,17 +20,9 @@ from scraper import (
     Constant,
 )
 
-def foo():
-    p1 = Point()
-    p2 = Point()
-    p1 += p2
+ARRAY_LENGTH = Constant(10)
+
+myArray = Array(Point, ARRAY_LENGTH)
 
 
-a = Array(Point, 10)
-w = 5
-
-a[3] = (1,2)
-
-
-
-foo()
+myArray2 = Array(Integer, 2)

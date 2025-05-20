@@ -231,9 +231,9 @@ class Printer:
         visitor.add_def_consts()
         
         self.final_string = ('').join(visitor.final_list)
-        #print(self.non_readable_final_string)
-        #pprint(visitor.time_tracker)
-        #pprint(visitor.call_tracker)
+        print(self.non_readable_final_string)
+        pprint(visitor.time_tracker)
+        pprint(visitor.call_tracker)
         return self.final_string
 
 

@@ -758,7 +758,7 @@ class CompileTR(compilerTransformer):
             )
         return compare_comand
 
-    def check_type_compatible(list_vars_1, list_vars_2, lineno = "unknown"):
+    def check_type_compatible(list_vars_1, list_vars_2, lineno = "unknown"): #todo: scurrently not used anywhere
         if len(list_vars_1) != len(list_vars_2):
             raise Exception(
                 f"var lists are not the same length {len(list_vars_1)} and {len(list_vars_2)}, line {lineno}"
@@ -1195,7 +1195,13 @@ class CompileTR(compilerTransformer):
             if node.value.func.id.name is Array.__name__:
                 if len(node.value.args) != 2:
                     raise Exception(f"array constructor must have 2 args, not {len(node.value.args)}, line {node.lineno}")
-                self.variable_array_lengths[target.var_name()] = node.value.args[1].value #!add 2 checks to make sure you initilize an array correctly
+                if type(node.value.args[1]) is Variable:
+                    if const_value := self.variable_types.get(node.value.args[1].id, None) is Constant:
+                        self.variable_array_lengths[target.var_name()] = const_value
+                elif type(node.value.args[1]) is ast.Constant:  
+                    self.variable_array_lengths[target.var_name()] = node.value.args[1].value #!add 2 checks to make sure you initilize an array correctly
+                else:
+                    raise Exception(f"array constructor second arg must be a Variable of a Constant or a Constant, not {type(node.value.args[1])}, line {node.lineno}")
                 self.set_array_var_type(target.var_name(), node.value.args[0].id)
                 #todo:fix array initilization
             else: #asignments for non array constructors that take arms
