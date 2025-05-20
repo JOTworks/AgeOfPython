@@ -185,6 +185,8 @@ class Command(ast.Call):
                             JumpType.jump_to_func,
                             JumpType.set_return_pointer,
                             JumpType.jump_to_else,
+                            JumpType.jump_break,
+                            JumpType.jump_continue,
                         ]:
                             type_op = typeOp.constant
                         else:

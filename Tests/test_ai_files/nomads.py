@@ -134,6 +134,7 @@ TRUE = Constant(1)
 EMPLOYED = Constant(1)
 UNEMPLOYED = Constant(0)
 BUILD_TC_TIME = Constant(30)
+my_player_number = Integer(1)
 i = Integer(0)
 
 #======================================================  CLASSES  ===========================================================#
@@ -464,6 +465,52 @@ def J_FIRE_push_deer(hunter_id:Integer) -> Integer:
 
 
 #======================================================  Functions  ===========================================================#
+
+def build_at_point(start_point:Point) -> Integer:
+    global TRUE, FALSE
+    original_point = start_point
+    radius = Integer(0)
+    dx = Integer()
+    dy = Integer()
+    abs_dx = Integer()
+    radius = 0
+    point1 = Point()
+    point2 = Point()
+    z = Integer()
+    zz = Integer()
+    i = Integer()
+    for z in range(6): #number of rings to check
+        dx = radius * -1
+        for zz in range(100):
+            if dx <= radius:
+                break
+            if dx < 0:
+                abs_dx = dx * -1
+            else:
+                abs_dx = dx
+            dy = radius - abs_dx
+
+            # Top point in ring
+            point1.x = start_point.x + dx
+            point1.y = start_point.y + dy
+            if up_can_build_line(_,point1,BuildingId.town_center_foundation):
+                up_build_line(point1, point1, BuildingId.town_center_foundation)
+                return TRUE
+
+            # Bottom point in ring, avoid duplicate when dy == 0
+            if dy != 0:
+                point2 = start_point.x + dx
+                point2 = start_point.y - dy
+                if up_can_build_line(_,point2,BuildingId.town_center_foundation):
+                    up_build_line(point2, point2, BuildingId.town_center_foundation)
+                    return TRUE
+            dx += 1
+        radius += 1
+    up_set_target_point(original_point)
+    up_build(PlacementType.place_point,_,BuildingId.town_center_foundation)
+    return FALSE
+
+
 def set_gather_percent(wood:Integer, food:Integer, gold:Integer, stone:Integer):
     SN.wood_gatherer_percentage = wood
     SN.food_gatherer_percentage = food
@@ -528,7 +575,8 @@ def get_best_nomad_tc_location() -> Point:
             wood_loc = get_closest_resource_point(Resource.wood, gold_loc)
             if wood_loc.x != -1:
                 chat_to_all("found wood&gold TC location")
-                return gold_loc #wood_loc
+                up_lerp_percent(wood_loc, gold_loc, 50)
+                return wood_loc #half way between gold and wood with the lerp
 
     return map_center_point
 
@@ -779,7 +827,7 @@ up_filter_distance(-1, LURE_DEER_DIST)
 SN.focus_player_number = 0
 up_find_remote(ClassId.prey_animal_class,40) #find 40 deer Max
 up_remove_objects(SearchSource.search_remote, ObjectData.object_data_carry) < 70 #remove chickens
-up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
+up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_desc)
 up_get_search_state(deer_search_state) #check how many deer were found
 
 if deer_search_state.RemoteIndex > 0:
@@ -868,8 +916,7 @@ if current_age() == Age.dark_age:
                 J_FIRE_ALL_explore_object()
                 tc_location = Point()
                 tc_location = get_best_nomad_tc_location()
-                up_set_target_point(tc_location)
-                up_build(PlacementType.place_point,_,BuildingId.town_center)
+                build_at_point(tc_location)
                 disable_self()
 
             #if True:
