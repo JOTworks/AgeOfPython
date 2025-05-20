@@ -1,19 +1,3 @@
-#THINGS TO DO in compiler
-#todo: make arrays work with items of lenght > 1
-#todo: implement struct object types
-#todo: make objects asign to each other nicely, including touple asignments
-
-#not really needed
-#todo: implement default values for functions
-#todo: get boolians working (currrently using the coments)
-
-#THINGS TO CODE in this AI
-#todo: make a system of units having jobs and prios exec.
-    #job name aka enum
-    #job prioirity
-    #way to lookup if a unit is busy
-    #job return values for if the job is full or things like that
-
 from scraper import *
 from scraper import (
   #OBJECT TYPES
@@ -23,7 +7,7 @@ from scraper import (
   ClassId, UnitId, BuildingId, Resource, Terrain,
   SearchSource, PositionType, PlacementType, Age,
   TechId, DUCAction, AttackStance, SN, SearchOrder,
-  compareOp, ActionId,
+  compareOp, ActionId, ResearchState,
   #FUNCTIONS
   up_get_object_data, up_get_object_target_data, up_get_point,
   up_get_search_state, up_set_target_object, up_set_target_point,
@@ -36,7 +20,10 @@ from scraper import (
   chat_to_all, up_send_flare, up_filter_range, up_add_object_by_id, 
   up_filter_distance, up_find_remote, up_remove_objects, up_clean_search,
   up_can_build, up_pending_objects, up_copy_point, game_time,up_target_objects,
-  unit_type_count
+  unit_type_count, food_amount, up_find_status_local, up_research_status, wood_amount,
+  up_point_terrain, up_can_build_line, up_build_line, up_lerp_percent, idle_farm_count
+
+  
 )
 '''
 building killing idea:
@@ -137,6 +124,64 @@ BUILD_TC_TIME = Constant(30)
 my_player_number = Integer(1)
 i = Integer(0)
 
+#===================================SETTERS======================================
+if True:
+    map_center_point = Point(0,0)
+    up_get_point(PositionType.position_center, map_center_point)
+    SN.placement_zone_size=4
+    SN.percent_civilian_gatherers=0
+    SN.wood_gatherer_percentage=0
+    SN.food_gatherer_percentage=0
+    SN.stone_gatherer_percentage=0
+    SN.gold_gatherer_percentage=0
+    SN.cap_civilian_gatherers=0
+    SN.maximum_food_drop_distance=10
+    SN.maximum_gold_drop_distance=10
+    SN.maximum_hunt_drop_distance=20
+    SN.maximum_stone_drop_distance=10
+    SN.maximum_wood_drop_distance=10
+    # SN.isable_villager_garrison=3
+    SN.percent_civilian_explorers=0
+    SN.minimum_civilian_explorers=0
+    SN.cap_civilian_explorers=0
+    SN.total_number_explorers=0
+    SN.number_explore_groups=0
+    SN.percent_civilian_builders=0
+    SN.initial_exploration_required=0
+    SN.disable_defend_groups=1
+    SN.disable_attack_groups=1 
+    SN.enable_new_building_system = 1
+    SN.cap_civilian_builders = 200
+    SN.percent_civilian_builders = 100
+    SN.disable_builder_assistance = 0
+    SN.consecutive_idle_unit_limit = 1
+    SN.do_not_scale_for_difficulty_level = 1
+    SN.enable_boar_hunting = 1
+    SN.enable_offensive_priority = 1
+    SN.enable_patrol_attack = 1
+    SN.initial_exploration_required = 0
+    SN.maximum_fish_boat_drop_distance = 30
+    SN.maximum_food_drop_distance = 20
+    SN.maximum_gold_drop_distance = 20
+    SN.maximum_hunt_drop_distance = 30
+    SN.maximum_stone_drop_distance = 20
+    SN.scale_minimum_attack_group_size = 0
+    SN.task_ungrouped_soldiers = 0
+    SN.allow_civilian_defense = 1
+    SN.allow_civilian_offense = 1
+    SN.percent_attack_soldiers = 95
+    SN.number_attack_groups = 0
+    SN.maximum_town_size = 255
+    SN.number_civilian_militia = 0
+    SN.enable_new_building_system = 1 #I added this for stone mining
+    SN.mill_max_distance = 50
+    SN.camp_max_distance = 300
+    SN.zero_priority_distance = 255
+    SN.cap_civilian_explorers = 0
+    SN.number_explore_groups = 0
+    chat_to_all("Setters Ran!")
+    disable_self()
+
 #======================================================  CLASSES  ===========================================================#
 #===========================#
 #| RESROUCE MANAGER CLASS  |#
@@ -144,12 +189,12 @@ i = Integer(0)
 MINE_LIMIT = Constant(10)
 R_gold_mine_count = Integer(0)
 R_gold_total_count = Integer()
-R_gold_location = Array(Point, 10)
-R_gold_ammount = Array(Integer, 10)
+R_gold_location = Array(Point, MINE_LIMIT)
+R_gold_ammount = Array(Integer, MINE_LIMIT)
 R_stone_mine_count = Integer(0)
 R_stone_total_count = Integer()
-R_stone_location = Array(Point, 10)
-R_stone_ammount = Array(Integer, 10)
+R_stone_location = Array(Point, MINE_LIMIT)
+R_stone_ammount = Array(Integer, MINE_LIMIT)
 
 def R_add_new_mine(resource:Resource, location:Point) -> Integer:
     global TRUE, FALSE, MINE_LIMIT
@@ -221,48 +266,76 @@ def R_update_mines(resource:Resource):
 #all functions dealing with jobs will be in this class
 #only functions in this class should access these veriables
 #have an asign job function, a remove job function, and a do job function
-J_DEER_PUSH_ARRAY_LENGTH = Constant(3)
-#__________explore_object__________#
 
-J_EXPLORE_OBJECT_ARRAY_SIZE = Constant(10)
-J_explore_object_ids = Array(Integer, 10) #J_EXPLORE_OBJECT_ARRAY_SIZE
-J_explore_object_things = Array(Integer, 10) #J_EXPLORE_OBJECT_ARRAY_SIZE
-J_explore_object_tiles_away = Array(Integer, 10) #J_EXPLORE_OBJECT_ARRAY_SIZE
-J_explore_object_direction = Array(Integer, 10) #J_EXPLORE_OBJECT_ARRAY_SIZE #ClOCKWIZE or COUNTER_CLOCKWIZE
-J_explore_object_timers = Array(Integer, 10) #J_EXPLORE_OBJECT_ARRAY_SIZE
-J_explore_object_timers[0] = 1
-J_explore_object_timers[1] = 2
-J_explore_object_timers[2] = 3
+#explore_object
+J_EXPLORE_OBJECT_ARRAY_SIZE = Constant(3)
+J_explore_object_ids = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE)
+J_explore_object_things = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE) 
+J_explore_object_tiles_away = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE) 
+J_explore_object_direction = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE) #ClOCKWIZE or COUNTER_CLOCKWIZE
+
+#deer_push
+J_DEER_PUSH_ARRAY_LENGTH = Constant(3)
+J_deer_push_hunter = Array(Integer, J_DEER_PUSH_ARRAY_LENGTH)
+J_deer_push_pray = Array(Integer, J_DEER_PUSH_ARRAY_LENGTH)
+deer_id = Integer()
+hunter_id = Integer()
+deer_search_state = State()
+
+SHOOT_DEER_DIST = 2
+LURE_DEER_DIST = 50
+VIL_SHOOT_DEER_COUNT = 4
+p_home = Point()
+p_home_100 = Point()
+
 
 def J_get_employment_status(id:Integer) -> Integer:
     #chat_to_all("in J_get_employment_status")
-    global J_explore_object_ids, J_deer_push_hunter, EMPLOYED, UNEMPLOYED
-    array_explorer_id = Integer()
+    global J_explore_object_ids, J_deer_push_hunter, EMPLOYED, UNEMPLOYED, J_EXPLORE_OBJECT_ARRAY_SIZE, J_DEER_PUSH_ARRAY_LENGTH
+    i = Integer()
     array_hunter_id = Integer()
-    for i in range(10):
+    array_explorer_id = Integer()
+    for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
         array_explorer_id = J_explore_object_ids[i]
         if array_explorer_id == id:
             return EMPLOYED
-    for i in range(3):
+    for i in range(J_DEER_PUSH_ARRAY_LENGTH):
         array_hunter_id = J_deer_push_hunter[i]
         if array_hunter_id == id:
             return EMPLOYED
     return UNEMPLOYED
 
+def J_get_unemployed_id(unit_type:UnitId) -> Integer:
+    global J_explore_object_ids, J_deer_push_hunter, EMPLOYED, UNEMPLOYED
+    unemployed_state = State()
+    unit_id = Integer()
+    up_full_reset_search()
+    up_find_local(unit_type, 100)
+    up_get_search_state(unemployed_state)
+    for i in range(unemployed_state.LocalIndex):
+        up_set_target_object(SearchSource.search_local, i)
+        up_get_object_data(ObjectData.object_data_id, unit_id)
+        is_employed = J_get_employment_status(unit_id)
+        if is_employed == UNEMPLOYED:
+            return unit_id
+    return -1
+
+
+
+#__________explore_object__________#
+
 def J_explore_object():
-    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
+    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, EMPLOYED, UNEMPLOYED
     explorer_point = Point()
     resource_point = Point()
     dest_point = Point()
     prime_point = Point()
-    for i in range(3): #J_EXPLORE_OBJECT_ARRAY_SIZE
+    for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
 
         explorer_id = J_explore_object_ids[i]
         if explorer_id != -1:
             thing = J_explore_object_things[i]
             tiles_away = J_explore_object_tiles_away[i]
-            #explore_direction = J_explore_object_direction[i] NOT USED YET
-            explorer_timer = J_explore_object_timers[i]
             #the math #todo: fix this to use specific points, i think how it is, it wont work only using tile integeres
             up_full_reset_search()
             up_set_target_by_id(explorer_id)
@@ -290,11 +363,8 @@ def J_explore_object():
             
             up_target_point(dest_point, DUCAction.action_move, _, _)
 
-            if timer_triggered(explorer_timer):
-                J_FIRE_explore_object(explorer_id)
-
 def J_HIRE_explore_object(explorer_id:Integer, thing:ObjectId, tiles_away:Integer, explore_duration:Integer = 50, explore_direction:Integer = CLOCKWIZE) -> Integer:
-    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers
+    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction
     global EMPLOYED, UNEMPLOYED, J_EXPLORE_OBJECT_ARRAY_SIZE
     for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
         array_explorer_id = J_explore_object_ids[i]
@@ -304,7 +374,7 @@ def J_HIRE_explore_object(explorer_id:Integer, thing:ObjectId, tiles_away:Intege
             J_explore_object_things[i] = thing
             J_explore_object_tiles_away[i] = tiles_away
             J_explore_object_direction[i] = explore_direction
-            enable_timer(J_explore_object_timers[i], explore_duration)
+
             t = J_explore_object_ids[0]
             up_chat_data_to_all("A0: %d",t)
             t = J_explore_object_ids[1]
@@ -318,8 +388,8 @@ def J_HIRE_explore_object(explorer_id:Integer, thing:ObjectId, tiles_away:Intege
 
 def J_FIRE_explore_object(explorer_id:Integer) -> Integer:
     chat_to_all("in J_FIRE_explore_object")
-    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
-    for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
+    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, EMPLOYED, UNEMPLOYED
+    for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
         array_explorer_id = J_explore_object_ids[i]
         if array_explorer_id == explorer_id:
             up_chat_data_to_all("%d is FIRED from explore object", explorer_id)
@@ -327,43 +397,161 @@ def J_FIRE_explore_object(explorer_id:Integer) -> Integer:
             J_explore_object_things[i] = -1
             J_explore_object_tiles_away[i] = -1
             J_explore_object_direction[i] = -1
-            disable_timer(J_explore_object_timers[i])
             return UNEMPLOYED
     up_chat_data_to_all("%d did not have the explorer job", explorer_id)
     return UNEMPLOYED
 
 def J_FIRE_ALL_explore_object():
     chat_to_all("in J_FIRE_explore_object")
-    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, J_explore_object_timers, EMPLOYED, UNEMPLOYED
-    for i in range(10): #J_EXPLORE_OBJECT_ARRAY_SIZE
+    global J_explore_object_ids, J_explore_object_things, J_explore_object_tiles_away, J_explore_object_direction, EMPLOYED, UNEMPLOYED
+    for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
         array_explorer_id = J_explore_object_ids[i]
         up_chat_data_to_all("%d is FIRED from explore object", array_explorer_id)
         J_explore_object_ids[i] = -1
         J_explore_object_things[i] = -1
         J_explore_object_tiles_away[i] = -1
         J_explore_object_direction[i] = -1
-        disable_timer(J_explore_object_timers[i])
 
 ##__________explore_terrain__________#
 
-#def J_explore_terrain(explorer_id, terrain:Terrain, tiles_away, explore_duration = 50, explore_direction = CLOCKWIZE) -> (Integer, Integer):
-#    terrain_type_at_point = Integer()
-#    terrain_id_at_point = Integer()
-#    up_get_point_terrain(terrain_type_at_point, terrain_id_at_point)
+def get_next_point(last_point:Point, cur_point:Point, terrain:Terrain) -> Point:
+    #checks the 5 tiles directly forward, 2 angled forward, and 2 sideways for more terrain
+    
+    global DIAGNAL, ORTHOGENAL, total_finds
+    delta_direction = Integer()
+    delta = Point()
+    delta = cur_point - last_point
+    if delta.x > 1:
+        up_chat_data_to_all("D.x: %d", delta.x)
+    if delta.y > 1:
+        up_chat_data_to_all("Y.x: %d", delta.y)
+
+    delta_direction = ORTHOGENAL
+    if delta.x != 0 and delta.y !=0:
+        delta_direction = DIAGNAL        
+
+    if delta_direction == DIAGNAL:
+        new_possible_curr_point = cur_point + delta
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x += delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.y += delta.y
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x += delta.x
+        new_possible_curr_point.y -= delta.y
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x -= delta.x
+        new_possible_curr_point.y += delta.y
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+
+    if delta_direction == ORTHOGENAL:
+        new_possible_curr_point = cur_point + delta
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point + delta
+        new_possible_curr_point.x += delta.y
+        new_possible_curr_point.y += delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point + delta
+        new_possible_curr_point.x -= delta.y
+        new_possible_curr_point.y -= delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x += delta.y
+        new_possible_curr_point.y += delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+        
+        new_possible_curr_point = cur_point
+        new_possible_curr_point.x -= delta.y
+        new_possible_curr_point.y -= delta.x
+        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
+            total_finds += 1
+            return new_possible_curr_point
+
+
+    #chat_to_all("get_next_point found no point!")
+    error_point = Point()
+    error_point.x = -1
+    error_point.y = -1
+    return error_point
+
+terrain_test_point = map_center_point
+last_point = Point()
+cur_point = Point()
+temp_terrain_point = Point()
+terrain_id = Integer()
+
+
+if True:
+    #set last_point
+    up_chat_data_to_all("cetner x:%d",map_center_point.x)
+    up_chat_data_to_all("cetner y:%d",map_center_point.y)
+    for i in range(60):
+        terrain_test_point.x -= 1
+        up_get_point_terrain(terrain_test_point, terrain_id)
+        if terrain_id == Terrain.terrain_water_beach:
+            last_point = terrain_test_point
+            up_chat_data_to_all("last_point SET:%d",terrain_id)
+    
+    #set cur_point
+    for i in range(-1,2):
+        for j in range(-1,2):
+            temp_terrain_point = last_point
+            temp_terrain_point.x += i
+            temp_terrain_point.y += j
+            up_chat_data_to_all("terr x:%d",temp_terrain_point.x)
+            up_chat_data_to_all("terr y:%d",temp_terrain_point.y)
+            up_get_point_terrain(temp_terrain_point, terrain_id)
+            up_chat_data_to_all("terrain:%d",terrain_id)
+            if temp_terrain_point != last_point:
+                if up_point_terrain(temp_terrain_point) == Terrain.terrain_water_beach:
+                    cur_point = temp_terrain_point
+                    up_chat_data_to_all("cur_point SET:%d",terrain_id)
+    disable_self()
+
+DIAGNAL = Constant(1)
+ORTHOGENAL = Constant(2)
+total_finds = Integer()
+
+
+new_point = Point()
+if True:
+    for i in range(5):
+        new_point = get_next_point(last_point, cur_point, Terrain.terrain_water_beach)
+        if new_point.x != -1:
+            last_point = cur_point
+            cur_point = new_point
+    up_send_flare(cur_point)
+
 ##__________push_deer__________#
-
-J_deer_push_hunter = Array(Integer, 3)
-J_deer_push_pray = Array(Integer, 3)
-
-deer_id = Integer()
-hunter_id = Integer()
-deer_search_state = State()
-
-SHOOT_DEER_DIST = 2
-LURE_DEER_DIST = 50
-VIL_SHOOT_DEER_COUNT = 4
-p_home = Point()
-p_home_100 = Point()
 
 def J_push_deer():
     global p_home, p_home_100, J_DEER_PUSH_ARRAY_LENGTH, SHOOT_DEER_DIST, LURE_DEER_DIST, VIL_SHOOT_DEER_COUNT
@@ -437,17 +625,16 @@ def J_HIRE_push_deer(hunter_id:Integer, deer_id:Integer) -> Integer:
     return UNEMPLOYED
 
 def J_FIRE_push_deer(hunter_id:Integer) -> Integer:
-    chat_to_all("in J_FIRE_push_deer")
     global p_home, p_home_100, J_DEER_PUSH_ARRAY_LENGTH, SHOOT_DEER_DIST, LURE_DEER_DIST, VIL_SHOOT_DEER_COUNT
     global J_deer_push_hunter, J_deer_push_pray, deer_search_state, UNEMPLOYED, EMPLOYED
     for i in range(J_DEER_PUSH_ARRAY_LENGTH): #J_EXPLORE_OBJECT_ARRAY_SIZE
         array_hunter_id = J_deer_push_hunter[i]
         if array_hunter_id == hunter_id:
-            up_chat_data_to_all("%d is FIRED from explore object", hunter_id)
+            up_chat_data_to_all("%d is FIRED from Push Deer", hunter_id)
             J_deer_push_hunter[i] = -1
             J_deer_push_pray[i] = -1
             return UNEMPLOYED
-    up_chat_data_to_all("%d did not have the explorer job", hunter_id)
+    up_chat_data_to_all("%d did not have the Push Deer job", hunter_id)
     return UNEMPLOYED
 
 ##__________lure_boar__________#
@@ -477,17 +664,14 @@ def build_at_point(start_point:Point) -> Integer:
     point1 = Point()
     point2 = Point()
     z = Integer()
-    zz = Integer()
-    i = Integer()
     for z in range(6): #number of rings to check
         dx = radius * -1
-        for zz in range(100):
-            if dx <= radius:
-                break
+        while dx <= radius:
+            abs_dx = dx
             if dx < 0:
                 abs_dx = dx * -1
-            else:
-                abs_dx = dx
+
+                
             dy = radius - abs_dx
 
             # Top point in ring
@@ -495,19 +679,25 @@ def build_at_point(start_point:Point) -> Integer:
             point1.y = start_point.y + dy
             if up_can_build_line(_,point1,BuildingId.town_center_foundation):
                 up_build_line(point1, point1, BuildingId.town_center_foundation)
+                up_chat_data_to_all("found place to build!: %d",point1.x)
+                up_chat_data_to_all("found place to build!: %d",point1.y)
                 return TRUE
 
             # Bottom point in ring, avoid duplicate when dy == 0
             if dy != 0:
-                point2 = start_point.x + dx
-                point2 = start_point.y - dy
+                point2.x = start_point.x + dx
+                point2.y = start_point.y - dy
                 if up_can_build_line(_,point2,BuildingId.town_center_foundation):
                     up_build_line(point2, point2, BuildingId.town_center_foundation)
+                    up_chat_data_to_all("found place to build!: %d",point2.x)
+                    up_chat_data_to_all("found place to build!: %d",point2.y)
                     return TRUE
             dx += 1
         radius += 1
+    up_chat_data_to_all("just use original spot: %d",original_point.x)
+    up_chat_data_to_all("just use original spot: %d",original_point.y)
     up_set_target_point(original_point)
-    up_build(PlacementType.place_point,_,BuildingId.town_center_foundation)
+    up_build(PlacementType.place_point,_,BuildingId.town_center)
     return FALSE
 
 
@@ -598,65 +788,8 @@ def try_research(tech_id:TechId):
 def try_build(building:BuildingId):
     if up_can_build(_, building) and up_pending_objects(building) < 1:
         up_build(_,_,building)
-#===================================SETTERS======================================
-if True:
-    map_center_point = Point(0,0)
-    up_get_point(PositionType.position_center, map_center_point)
-    SN.placement_zone_size=20
-    SN.percent_civilian_gatherers=0
-    SN.wood_gatherer_percentage=0
-    SN.food_gatherer_percentage=0
-    SN.stone_gatherer_percentage=0
-    SN.gold_gatherer_percentage=0
-    SN.cap_civilian_gatherers=0
-    SN.maximum_food_drop_distance=10
-    SN.maximum_gold_drop_distance=10
-    SN.maximum_hunt_drop_distance=20
-    SN.maximum_stone_drop_distance=10
-    SN.maximum_wood_drop_distance=10
-    # SN.isable_villager_garrison=3
-    SN.percent_civilian_explorers=0
-    SN.minimum_civilian_explorers=0
-    SN.cap_civilian_explorers=0
-    SN.total_number_explorers=0
-    SN.number_explore_groups=0
-    SN.percent_civilian_builders=0
-    SN.initial_exploration_required=0
-    SN.disable_defend_groups=1
-    SN.disable_attack_groups=1 
-    SN.enable_new_building_system = 1
 
-    SN.cap_civilian_builders = 200
-    SN.percent_civilian_builders = 100
-    SN.disable_builder_assistance = 0
-    SN.consecutive_idle_unit_limit = 1
-    SN.do_not_scale_for_difficulty_level = 1
-    SN.enable_boar_hunting = 1
-    SN.enable_offensive_priority = 1
-    SN.enable_patrol_attack = 1
-    SN.initial_exploration_required = 0
-    SN.maximum_fish_boat_drop_distance = 30
-    SN.maximum_food_drop_distance = 20
-    SN.maximum_gold_drop_distance = 20
-    SN.maximum_hunt_drop_distance = 30
-    SN.maximum_stone_drop_distance = 20
-    SN.scale_minimum_attack_group_size = 0
-    SN.task_ungrouped_soldiers = 0
-    SN.allow_civilian_defense = 1
-    SN.allow_civilian_offense = 1
-    SN.percent_attack_soldiers = 95
-    SN.number_attack_groups = 0
-    SN.maximum_town_size = 255
-    SN.number_civilian_militia = 0
-    SN.enable_new_building_system = 1 #I added this for stone mining
-    SN.mill_max_distance = 50
-    SN.camp_max_distance = 300
-    SN.zero_priority_distance = 255
-    SN.cap_civilian_explorers = 0
-    SN.number_explore_groups = 0
-    chat_to_all("Setters Ran!")
-    disable_self()
-
+#setters
 if building_type_count(BuildingId.town_center) > 0:
     up_full_reset_search()
     up_find_local(BuildingId.town_center, 1)
@@ -669,150 +802,6 @@ if building_type_count(BuildingId.town_center) > 0:
     disable_self()
 
 #=====================================  Actual Code  ===================================================
-
-#-----testing explore coast code-----"
-terrain_test_point = map_center_point
-last_point = Point()
-cur_point = Point()
-temp_terrain_point = Point()
-terrain_id = Integer()
-
-
-if True:
-    #set last_point
-    up_chat_data_to_all("cetner x:%d",map_center_point.x)
-    up_chat_data_to_all("cetner y:%d",map_center_point.y)
-    for i in range(60):
-        terrain_test_point.x -= 1
-        up_get_point_terrain(terrain_test_point, terrain_id)
-        if terrain_id == Terrain.terrain_water_beach:
-            last_point = terrain_test_point
-            up_chat_data_to_all("last_point SET:%d",terrain_id)
-    
-    #set cur_point
-    for i in range(-1,2):
-        for j in range(-1,2):
-            temp_terrain_point = last_point
-            temp_terrain_point.x += i
-            temp_terrain_point.y += j
-            up_chat_data_to_all("terr x:%d",temp_terrain_point.x)
-            up_chat_data_to_all("terr y:%d",temp_terrain_point.y)
-            up_get_point_terrain(temp_terrain_point, terrain_id)
-            up_chat_data_to_all("terrain:%d",terrain_id)
-            if temp_terrain_point != last_point:
-                if up_point_terrain(temp_terrain_point) == Terrain.terrain_water_beach:
-                    cur_point = temp_terrain_point
-                    up_chat_data_to_all("cur_point SET:%d",terrain_id)
-    disable_self()
-
-if True:
-    up_chat_data_to_all("last x:%d",last_point.x)
-    up_chat_data_to_all("last y:%d",last_point.y)
-    up_chat_data_to_all("curr x:%d",cur_point.x)
-    up_chat_data_to_all("curr y:%d",cur_point.y)
-    disable_self()
-
-DIAGNAL = Constant(1)
-ORTHOGENAL = Constant(2)
-total_finds = Integer()
-def get_next_point(last_point:Point, cur_point:Point, terrain:Terrain) -> Point:
-    #checks the 5 tiles directly forward, 2 angled forward, and 2 sideways for more terrain
-    
-    global DIAGNAL, ORTHOGENAL, total_finds
-    delta_direction = Integer()
-    delta = Point()
-    delta = cur_point - last_point
-    if delta.x > 1:
-        up_chat_data_to_all("D.x: %d", delta.x)
-    if delta.y > 1:
-        up_chat_data_to_all("Y.x: %d", delta.y)
-
-    delta_direction = ORTHOGENAL
-    if delta.x != 0 and delta.y !=0:
-        delta_direction = DIAGNAL        
-
-    if delta_direction == DIAGNAL:
-        new_possible_curr_point = cur_point + delta
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-        
-        new_possible_curr_point = cur_point
-        new_possible_curr_point.x += delta.x
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-        
-        new_possible_curr_point = cur_point
-        new_possible_curr_point.y += delta.y
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-        
-        new_possible_curr_point = cur_point
-        new_possible_curr_point.x += delta.x
-        new_possible_curr_point.y -= delta.y
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-        
-        new_possible_curr_point = cur_point
-        new_possible_curr_point.x -= delta.x
-        new_possible_curr_point.y += delta.y
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-
-    if delta_direction == ORTHOGENAL:
-        new_possible_curr_point = cur_point + delta
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-        
-        new_possible_curr_point = cur_point + delta
-        new_possible_curr_point.x += delta.y
-        new_possible_curr_point.y += delta.x
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-        
-        new_possible_curr_point = cur_point + delta
-        new_possible_curr_point.x -= delta.y
-        new_possible_curr_point.y -= delta.x
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-        
-        new_possible_curr_point = cur_point
-        new_possible_curr_point.x += delta.y
-        new_possible_curr_point.y += delta.x
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-        
-        new_possible_curr_point = cur_point
-        new_possible_curr_point.x -= delta.y
-        new_possible_curr_point.y -= delta.x
-        if up_point_terrain(new_possible_curr_point) == Terrain.terrain_water_beach:
-            total_finds += 1
-            return new_possible_curr_point
-
-
-    #chat_to_all("get_next_point found no point!")
-    error_point = Point()
-    error_point.x = -1
-    error_point.y = -1
-    return error_point
-
-new_point = Point()
-if True:
-    for i in range(5):
-        new_point = get_next_point(last_point, cur_point, Terrain.terrain_water_beach)
-        if new_point.x != -1:
-            last_point = cur_point
-            cur_point = new_point
-    up_send_flare(cur_point)
-
 
 
 
@@ -833,7 +822,6 @@ up_get_search_state(deer_search_state) #check how many deer were found
 if deer_search_state.RemoteIndex > 0:
     deer_to_hunt = Integer()
     deer_already_hunted = Integer()
-    already_hired_once = Integer()
     deer_to_hunt = -1
     for i in range(deer_search_state.RemoteIndex): # get unhunted deer
         up_set_target_object(SearchSource.search_remote, i)
@@ -843,29 +831,29 @@ if deer_search_state.RemoteIndex > 0:
             array_deer_id = J_deer_push_pray[j]
             if deer_id == array_deer_id:
                 deer_already_hunted = TRUE
+                break
         if deer_already_hunted == FALSE:
             deer_to_hunt = deer_id
+            break
     
-    if deer_to_hunt != -1:
+    is_employed = Integer()
+    if deer_to_hunt != -1: #get milita to hunt the deer
         up_find_local(UnitId.militiaman, 10)
         up_get_search_state(deer_search_state)
-        
-        already_hired_once = 0
-        if deer_search_state.LocalList > 0:
-            for i in range(deer_search_state.LocalList):
-                up_set_target_object(SearchSource.search_local, i)
-                up_get_object_data(ObjectData.object_data_id, hunter_id)
-                is_employed = Integer()
-                is_employed = J_get_employment_status(hunter_id)
-                if is_employed == UNEMPLOYED and already_hired_once == 0:
-                    J_HIRE_push_deer(hunter_id, deer_to_hunt)
-                    already_hired_once = 1
+        for j in range(deer_search_state.LocalList):
+            up_set_target_object(SearchSource.search_local, j)
+            up_get_object_data(ObjectData.object_data_id, hunter_id)
+            is_employed = J_get_employment_status(hunter_id)
+            if is_employed == UNEMPLOYED:
+                J_HIRE_push_deer(hunter_id, deer_to_hunt)
+                break
                     
 
 
 #===========================#
 #|        Dark Age         |#
 #===========================#
+
 
 #class running functions
 J_explore_object()
@@ -912,41 +900,47 @@ if current_age() == Age.dark_age:
         #endregion
         ##region ___after 5 seconds place a TC___
         if game_time() > BUILD_TC_TIME:
-            if True:
+            if True: #place TC
                 J_FIRE_ALL_explore_object()
                 tc_location = Point()
                 tc_location = get_best_nomad_tc_location()
+                chat_to_all("try building a TC_location")
                 build_at_point(tc_location)
                 disable_self()
 
-            #if True:
-            #    vil_point = Point()
-            #    chat_to_all("Try Build House")
-            #    up_full_reset_search()
-            #    up_find_local(ClassId.villager_class, 2)
-            #    up_set_target_object(SearchSource.search_local, 0)
-            #    vil_point = up_get_object_Point()
-            #    up_send_flare(vil_point)
-            #    up_build_line(vil_point,vil_point,BuildingId.house)
-            #    
-            #    chat_to_all("Try Build Baracks")
-            #    up_set_target_object(SearchSource.search_local, 1)
-            #    vil_point = up_get_object_Point()
-            #    up_send_flare(vil_point)
-            #    up_build_line(vil_point,vil_point,BuildingId.barracks)
-            #    disable_self()
+    if building_type_count_total(BuildingId.town_center) == 1: #task all villegers to build TC
+        tc_search_state = State()
+        test_flare_point = Point()
+        chat_to_all("TASK VILLIGERS TO BUILD TC")
+        up_full_reset_search()
+        up_filter_status(ObjectStatus.status_pending, ObjectList.list_active)
+        up_find_status_local(ObjectId.town_center_foundation,1)
+        up_set_target_object(SearchSource.search_local,0)
+        up_full_reset_search()
+        up_find_local(ClassId.villager_class, STARTING_VILL_COUNT)
+        up_target_objects(1,_,_,_)
+        up_send_flare(test_flare_point)
+        disable_self()
+
+    #if True:
+    #    vil_point = Point()
+    #    chat_to_all("Try Build House")
+    #    up_full_reset_search()
+    #    up_find_local(ClassId.villager_class, 2)
+    #    up_set_target_object(SearchSource.search_local, 0)
+    #    vil_point = up_get_object_Point()
+    #    up_send_flare(vil_point)
+    #    up_build_line(vil_point,vil_point,BuildingId.house)
+    #    
+    #    chat_to_all("Try Build Baracks")
+    #    up_set_target_object(SearchSource.search_local, 1)
+    #    vil_point = up_get_object_Point()
+    #    up_send_flare(vil_point)
+    #    up_build_line(vil_point,vil_point,BuildingId.barracks)
+    #    disable_self()
 
 
             
-        
-        #tc_location = get_best_nomad_tc_location()
-        #up_set_target_point(tc_location)
-        #
-        ##todo:how do I make all 3 of these build by differnt closest villiagers? 
-        #up_build(PlacementType.place_point,_,BuildingId.town_center) 
-        #up_build(BuildingId.house) 
-        #up_build(BuildingId.barracks)
-        ##endregion
 
     ##==========Exploring==========#
     ##region ___control livestock to explore and go to TC___
@@ -981,9 +975,31 @@ if current_age() == Age.dark_age:
     ##endregion
 
     #==========Economy==========#
-    if True:
-        set_gather_percent(10,70,20,0)
+    if True: # setters
+        DA_wood_needed = 85 #160 start with enought for a house, barrack, TC. need 160 for mulecart + 4 more hourses
+        set_gather_percent(20,80,0,0)
         disable_self()
+
+    if up_research_status(TechId.feudal_age) < ResearchState.research_pending:
+        if building_type_count_total(BuildingId.house) >= 5:
+            DA_wood_needed -= 25
+            disable_self()
+
+        if building_type_count_total(BuildingId.mule_cart) >= 1:
+            DA_wood_needed -= 65
+            disable_self()
+
+        if wood_amount() < DA_wood_needed:
+            set_gather_percent(20,80,0,0)
+        else:
+            set_gather_percent(10,90,0,0)
+
+    if up_research_status(TechId.feudal_age) == ResearchState.research_pending:
+        set_gather_percent(10,40,50,0)
+        
+
+    
+    
     #region ___control Mule Card and build___
     #build a mule card and place it next to gold
     #endregion
@@ -1010,6 +1026,7 @@ if current_age() == Age.feudal_age:
 
     #__kill buildings__
     #1. train malitia on the way up
+    
     try_research(TechId.ri_man_at_arms)
     try_research(TechId.ri_long_swordsman)
     try_research(TechId.ri_arson)
@@ -1075,11 +1092,15 @@ if (housing_headroom() < 3
 if building_type_count(BuildingId.barracks) < 1:
     try_build(BuildingId.barracks)
 
-if building_type_count(BuildingId.mule_cart) < 1:
+if building_type_count(BuildingId.mule_cart) < 1 and food_amount() > 300:
     try_build(BuildingId.mule_cart)
 
 if unit_type_count(UnitId.villager) < 20:
     try_train(UnitId.villager)
-if unit_type_count(UnitId.militiaman) < 5:
+if unit_type_count(UnitId.militiaman) < 5 and food_amount() > 100:
+    try_train(UnitId.militiaman)
+if unit_type_count(UnitId.militiaman) < 25 and food_amount() > 100 and up_research_status(TechId.feudal_age) >= ResearchState.research_pending:
     try_train(UnitId.militiaman)
 
+if current_age() > Age.dark_age and wood_amount() > 100 and idle_farm_count() == 0:
+    try_build(BuildingId.farm)
