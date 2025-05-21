@@ -23,7 +23,6 @@ from scraper import (
   unit_type_count, food_amount, up_find_status_local, up_research_status, wood_amount,
   up_point_terrain, up_can_build_line, up_build_line, up_lerp_percent, idle_farm_count
 
-  
 )
 '''
 building killing idea:
@@ -111,6 +110,14 @@ __Eco__
 3.
 '''
 
+#===================================PARAMETERS=====================================
+BUILD_TC_TIME = Constant(30)
+J_EXPLORE_OBJECT_ARRAY_SIZE = Constant(10)
+J_DEER_PUSH_ARRAY_LENGTH = Constant(10)
+SHOOT_DEER_DIST = 2
+LURE_DEER_DIST = 50
+VIL_SHOOT_DEER_COUNT = 4
+#===================================CONSTANTS======================================
 VILLAGER_LOS = Constant(4)
 DA_MILITIA_LOS = Constant(6)
 STARTING_VILL_COUNT = Constant(3)
@@ -120,15 +127,14 @@ FALSE = Constant(0)
 TRUE = Constant(1)
 EMPLOYED = Constant(1)
 UNEMPLOYED = Constant(0)
-BUILD_TC_TIME = Constant(30)
 my_player_number = Integer(1)
-i = Integer(0)
 
 #===================================SETTERS======================================
 if True:
     map_center_point = Point(0,0)
+    i = Integer(0)
     up_get_point(PositionType.position_center, map_center_point)
-    SN.placement_zone_size=4
+    SN.placement_zone_size=7
     SN.percent_civilian_gatherers=0
     SN.wood_gatherer_percentage=0
     SN.food_gatherer_percentage=0
@@ -268,26 +274,20 @@ def R_update_mines(resource:Resource):
 #have an asign job function, a remove job function, and a do job function
 
 #explore_object
-J_EXPLORE_OBJECT_ARRAY_SIZE = Constant(3)
 J_explore_object_ids = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE)
 J_explore_object_things = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE) 
 J_explore_object_tiles_away = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE) 
 J_explore_object_direction = Array(Integer, J_EXPLORE_OBJECT_ARRAY_SIZE) #ClOCKWIZE or COUNTER_CLOCKWIZE
-
 #deer_push
-J_DEER_PUSH_ARRAY_LENGTH = Constant(3)
 J_deer_push_hunter = Array(Integer, J_DEER_PUSH_ARRAY_LENGTH)
 J_deer_push_pray = Array(Integer, J_DEER_PUSH_ARRAY_LENGTH)
 deer_id = Integer()
 hunter_id = Integer()
 deer_search_state = State()
-
-SHOOT_DEER_DIST = 2
-LURE_DEER_DIST = 50
-VIL_SHOOT_DEER_COUNT = 4
 p_home = Point()
 p_home_100 = Point()
 
+#_________helper functions_________#
 
 def J_get_employment_status(id:Integer) -> Integer:
     #chat_to_all("in J_get_employment_status")
@@ -319,8 +319,6 @@ def J_get_unemployed_id(unit_type:UnitId) -> Integer:
         if is_employed == UNEMPLOYED:
             return unit_id
     return -1
-
-
 
 #__________explore_object__________#
 
@@ -412,7 +410,7 @@ def J_FIRE_ALL_explore_object():
         J_explore_object_tiles_away[i] = -1
         J_explore_object_direction[i] = -1
 
-##__________explore_terrain__________#
+##__________explore_terrain__________# WIP
 
 def get_next_point(last_point:Point, cur_point:Point, terrain:Terrain) -> Point:
     #checks the 5 tiles directly forward, 2 angled forward, and 2 sideways for more terrain
@@ -509,7 +507,6 @@ cur_point = Point()
 temp_terrain_point = Point()
 terrain_id = Integer()
 
-
 if True:
     #set last_point
     up_chat_data_to_all("cetner x:%d",map_center_point.x)
@@ -541,7 +538,6 @@ DIAGNAL = Constant(1)
 ORTHOGENAL = Constant(2)
 total_finds = Integer()
 
-
 new_point = Point()
 if True:
     for i in range(5):
@@ -549,13 +545,17 @@ if True:
         if new_point.x != -1:
             last_point = cur_point
             cur_point = new_point
-    up_send_flare(cur_point)
+    #up_send_flare(cur_point)
 
 ##__________push_deer__________#
-
+HIT_DEER_COUNTER_TOTAL = Constant(15)
 def J_push_deer():
     global p_home, p_home_100, J_DEER_PUSH_ARRAY_LENGTH, SHOOT_DEER_DIST, LURE_DEER_DIST, VIL_SHOOT_DEER_COUNT
     global J_deer_push_hunter, J_deer_push_pray, deer_search_state
+    hit_deer_counter = Integer(0)
+    hit_deer_counter += 1
+    if hit_deer_counter >= 15:
+        hit_deer_counter = 0
     deer_hp = Integer()
     deer_id = Integer()
     deer_point = Point()
@@ -575,18 +575,21 @@ def J_push_deer():
             else:
                 J_FIRE_push_deer(hunter_id)
 
+            
             if deer_hp > 0: #if the deer is still alive
-                point_next_to_deer = deer_point
-                up_lerp_tiles(point_next_to_deer, p_home_100, -75) #move point one-quarter tile away from tc so the scout will be behind the deer
+                if hit_deer_counter == 0: #once every HIT_DEER_COUNTER_TOTAL times, Attach deer instead of push. this keep from getting stuck on woodlines
+                    up_add_object_by_id(SearchSource.search_local, hunter_id)
+                    up_target_objects(1,_,_,AttackStance.stance_aggressive)
 
-                flare_point = Point()
-                flare_point.x = point_next_to_deer.x / 100
-                flare_point.y = point_next_to_deer.y / 100
-                up_full_reset_search()
-                up_add_object_by_id(SearchSource.search_local, hunter_id)
-                SN.target_point_adjustment = 6 #set to enable precise targetting
-                up_target_point(point_next_to_deer, DUCAction.action_move, _, AttackStance.stance_no_attack)
-                SN.target_point_adjustment = 0 #reset
+                if hit_deer_counter != 0:
+                    point_next_to_deer = deer_point
+                    up_lerp_tiles(point_next_to_deer, p_home_100, -75) #move point one-quarter tile away from tc so the scout will be behind the deer
+
+                    up_full_reset_search()
+                    up_add_object_by_id(SearchSource.search_local, hunter_id)
+                    SN.target_point_adjustment = 6 #set to enable precise targetting
+                    up_target_point(point_next_to_deer, DUCAction.action_move, _, AttackStance.stance_no_attack)
+                    SN.target_point_adjustment = 0 #reset
             else:
                 J_FIRE_push_deer(hunter_id)
 
@@ -640,6 +643,7 @@ def J_FIRE_push_deer(hunter_id:Integer) -> Integer:
 ##__________lure_boar__________#
 #def J_lure_boar(hunter_id, bore_id) -> Integer:
 #    return #return 0 if J full
+
 ##__________collect_heardables__________#
 ##def J_collect_headables(hearder_id, distance = 10) -> Integer:
 #    #find heardables within distance of hearder_id
@@ -653,7 +657,30 @@ def J_FIRE_push_deer(hunter_id:Integer) -> Integer:
 
 #======================================================  Functions  ===========================================================#
 
-def build_at_point(start_point:Point) -> Integer:
+def build_around_tc(building:BuildingId, radius:Integer) -> Integer:
+    global tc_location
+    place_point = Point()
+    if tc_location.x == -1:
+        chat_to_all("E: tc_location not set, cannot build_around_tc")
+        return -1
+    place_point = tc_location + (radius, radius)
+    if up_can_build_line(_, place_point, building):
+        up_build_line(place_point,place_point, building)
+        return 1
+    place_point = tc_location - (radius, radius)
+    if up_can_build_line(_, place_point, building):
+        up_build_line(place_point,place_point, building)
+        return 1
+    place_point = tc_location + (radius, radius)
+    if up_can_build_line(_, place_point, building):
+        up_build_line(place_point,place_point, building)
+        return 1
+    place_point = tc_location - (radius, radius)
+    if up_can_build_line(_, place_point, building):
+        up_build_line(place_point,place_point, building)
+        return 1
+
+def build_at_point(start_point:Point, Building:BuildingId) -> Integer:
     global TRUE, FALSE
     original_point = start_point
     radius = Integer(0)
@@ -670,36 +697,27 @@ def build_at_point(start_point:Point) -> Integer:
             abs_dx = dx
             if dx < 0:
                 abs_dx = dx * -1
-
-                
             dy = radius - abs_dx
 
             # Top point in ring
             point1.x = start_point.x + dx
             point1.y = start_point.y + dy
-            if up_can_build_line(_,point1,BuildingId.town_center_foundation):
-                up_build_line(point1, point1, BuildingId.town_center_foundation)
-                up_chat_data_to_all("found place to build!: %d",point1.x)
-                up_chat_data_to_all("found place to build!: %d",point1.y)
+            if up_can_build_line(_,point1,Building):
+                up_build_line(point1, point1, Building)
                 return TRUE
 
             # Bottom point in ring, avoid duplicate when dy == 0
             if dy != 0:
                 point2.x = start_point.x + dx
                 point2.y = start_point.y - dy
-                if up_can_build_line(_,point2,BuildingId.town_center_foundation):
-                    up_build_line(point2, point2, BuildingId.town_center_foundation)
-                    up_chat_data_to_all("found place to build!: %d",point2.x)
-                    up_chat_data_to_all("found place to build!: %d",point2.y)
+                if up_can_build_line(_,point2,Building):
+                    up_build_line(point2, point2, Building)
                     return TRUE
             dx += 1
         radius += 1
-    up_chat_data_to_all("just use original spot: %d",original_point.x)
-    up_chat_data_to_all("just use original spot: %d",original_point.y)
     up_set_target_point(original_point)
-    up_build(PlacementType.place_point,_,BuildingId.town_center)
+    up_build(PlacementType.place_point,_,Building)
     return FALSE
-
 
 def set_gather_percent(wood:Integer, food:Integer, gold:Integer, stone:Integer):
     SN.wood_gatherer_percentage = wood
@@ -802,66 +820,16 @@ if building_type_count(BuildingId.town_center) > 0:
     disable_self()
 
 #=====================================  Actual Code  ===================================================
-
-
-
-
-
-
-#------deer stuff-------#
-#search for deer around the town center and pick the closest one
-up_full_reset_search()
-up_set_target_point(p_home)
-up_filter_distance(-1, LURE_DEER_DIST)
-SN.focus_player_number = 0
-up_find_remote(ClassId.prey_animal_class,40) #find 40 deer Max
-up_remove_objects(SearchSource.search_remote, ObjectData.object_data_carry) < 70 #remove chickens
-up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_desc)
-up_get_search_state(deer_search_state) #check how many deer were found
-
-if deer_search_state.RemoteIndex > 0:
-    deer_to_hunt = Integer()
-    deer_already_hunted = Integer()
-    deer_to_hunt = -1
-    for i in range(deer_search_state.RemoteIndex): # get unhunted deer
-        up_set_target_object(SearchSource.search_remote, i)
-        up_get_object_data(ObjectData.object_data_id, deer_id)
-        deer_already_hunted = FALSE
-        for j in range(J_DEER_PUSH_ARRAY_LENGTH):
-            array_deer_id = J_deer_push_pray[j]
-            if deer_id == array_deer_id:
-                deer_already_hunted = TRUE
-                break
-        if deer_already_hunted == FALSE:
-            deer_to_hunt = deer_id
-            break
-    
-    is_employed = Integer()
-    if deer_to_hunt != -1: #get milita to hunt the deer
-        up_find_local(UnitId.militiaman, 10)
-        up_get_search_state(deer_search_state)
-        for j in range(deer_search_state.LocalList):
-            up_set_target_object(SearchSource.search_local, j)
-            up_get_object_data(ObjectData.object_data_id, hunter_id)
-            is_employed = J_get_employment_status(hunter_id)
-            if is_employed == UNEMPLOYED:
-                J_HIRE_push_deer(hunter_id, deer_to_hunt)
-                break
-                    
-
-
-#===========================#
-#|        Dark Age         |#
-#===========================#
-
-
-#class running functions
+#class running functions calls
 J_explore_object()
 J_push_deer()
 R_update_mines(Resource.gold)
 R_update_mines(Resource.stone)
 
 
+#===========================#
+#|        Dark Age         |#
+#===========================#
 if current_age() == Age.dark_age:
 
 
@@ -905,74 +873,52 @@ if current_age() == Age.dark_age:
                 tc_location = Point()
                 tc_location = get_best_nomad_tc_location()
                 chat_to_all("try building a TC_location")
-                build_at_point(tc_location)
+                build_at_point(tc_location, BuildingId.town_center_foundation)
                 disable_self()
 
     if building_type_count_total(BuildingId.town_center) == 1: #task all villegers to build TC
         tc_search_state = State()
-        test_flare_point = Point()
         chat_to_all("TASK VILLIGERS TO BUILD TC")
+        #TC to target object
         up_full_reset_search()
         up_filter_status(ObjectStatus.status_pending, ObjectList.list_active)
         up_find_status_local(ObjectId.town_center_foundation,1)
         up_set_target_object(SearchSource.search_local,0)
+        #Task viligers to TC
         up_full_reset_search()
         up_find_local(ClassId.villager_class, STARTING_VILL_COUNT)
         up_target_objects(1,_,_,_)
-        up_send_flare(test_flare_point)
+        #set farthest villager from TC to target object
+        up_clean_search(SearchSource.search_local, ObjectData.object_data_distance, SearchOrder.search_order_desc)
+        up_get_search_state(tc_search_state)
+        up_chat_data_to_all("number of vils 3:",tc_search_state.LocalIndex)
+        up_remove_objects(SearchSource.search_local, ObjectData.object_data_index, compareOp.greater_than, 0) #only farthest
+        up_chat_data_to_all("number of vils 1:",tc_search_state.LocalIndex)
+        up_set_target_object(SearchSource.search_local,0)
+        #use farthest vil point to flare and build barracks
+        farthest_villager_id = Integer()
+        up_get_object_data(ObjectData.object_data_id, farthest_villager_id)
+        farthest_villager_point = Point()
+        farthest_villager_point = up_get_object_Point()
+        build_at_point(farthest_villager_point, BuildingId.barracks)
         disable_self()
 
-    #if True:
-    #    vil_point = Point()
-    #    chat_to_all("Try Build House")
-    #    up_full_reset_search()
-    #    up_find_local(ClassId.villager_class, 2)
-    #    up_set_target_object(SearchSource.search_local, 0)
-    #    vil_point = up_get_object_Point()
-    #    up_send_flare(vil_point)
-    #    up_build_line(vil_point,vil_point,BuildingId.house)
-    #    
-    #    chat_to_all("Try Build Baracks")
-    #    up_set_target_object(SearchSource.search_local, 1)
-    #    vil_point = up_get_object_Point()
-    #    up_send_flare(vil_point)
-    #    up_build_line(vil_point,vil_point,BuildingId.barracks)
-    #    disable_self()
-
-
-            
+    if building_type_count_total(BuildingId.town_center) == 1 and building_type_count_total(BuildingId.barracks) == 1:
+        barracks_point = Point()
+        up_full_reset_search()
+        up_filter_status(ObjectStatus.status_pending, ObjectList.list_active)
+        up_find_status_local(ObjectId.barracks,1)
+        up_set_target_object(SearchSource.search_local,0)
+        barracks_point = up_get_object_Point()
+        up_set_target_point(barracks_point)
+        up_full_reset_search()
+        up_filter_distance(-1,10)
+        up_find_local(ClassId.villager_class, 1)
+        up_target_objects(1,_,_,_)
+        disable_self()
 
     ##==========Exploring==========#
-    ##region ___control livestock to explore and go to TC___
-    #up_full_reset_search()
-    #up_find_local(ClassId.livestock_class, 20)
-    #up_clean_search()#remove non-idle units
-    #up_target_point(tc_location, DUCAction.action_move, _, _)
-    ##scout around TC with them at some point
-    ##endregion
-    ##region ___control Malitia to explore and bring in herdable and hunt___
-    #if can_train(UnitId.militiaman):
-    #    train(UnitId.militiaman)
-    #    train(UnitId.militiaman)
-    #    disable_self()
-    #
-    #magellan_malitia_id = Integer()
-    #hunter_malitia_id = Integer()
-    ##set the 2 malitia to specific ID varialbes
-    #
-    #J_collect_headables(magellan_malitia_id, 8)
-    #   
-    #J_explore_terrain(magellan_malitia_id, Terrain.terrain_water, DA_MILITIA_LOS)
-    #if deer_within_20:#deer within 40 tiles of TC
-    #    deer_id = get_closest_unit_id(ClassId.prey_animal_class, tc_location)
-    #    J_push_deer(hunter_malitia_id, deer_id)
-    #elif Bore_within_40:
-    #   boar_id = get_closest_unit_id(ClassId.predator_animal_class, tc_location)
-    #   J_lure_bore(hunter_malitia_id, boar_id)
-    #elif deer_within_40:
-    #    deer_id = get_closest_unit_id(ClassId.prey_animal_class, tc_location)
-    #    J_push_deer(hunter_malitia_id, deer_id)
-    ##endregion
+   
 
     #==========Economy==========#
     if True: # setters
@@ -1043,7 +989,7 @@ if current_age() == Age.feudal_age:
     #5. if no docks, build fishingships, if not build mill and farms last case canario
     #
     #__defence__
-    try_research(TechId.ri_pikeman)
+    #try_research(TechId.ri_pikeman)
     #1. build second baracks, pikemen if i see lots of scouts
     #2. pikeman guard logic
     #3. wall in base logic
@@ -1087,7 +1033,10 @@ if (housing_headroom() < 3
     and population_headroom() > 0 
     and building_type_count(BuildingId.town_center) > 0
 ): #to not build house while searching for TC on nomad
-    try_build(BuildingId.house)
+    success = Integer()
+    success = build_around_tc(BuildingId.house, 10)
+    if success != 1:
+        try_build(BuildingId.house)
 
 if building_type_count(BuildingId.barracks) < 1:
     try_build(BuildingId.barracks)
@@ -1104,3 +1053,42 @@ if unit_type_count(UnitId.militiaman) < 25 and food_amount() > 100 and up_resear
 
 if current_age() > Age.dark_age and wood_amount() > 100 and idle_farm_count() == 0:
     try_build(BuildingId.farm)
+
+#----finding deer and militia to Hire as Deer Pushers---#
+up_full_reset_search()
+up_set_target_point(p_home)
+up_filter_distance(-1, LURE_DEER_DIST)
+SN.focus_player_number = 0
+up_find_remote(ClassId.prey_animal_class,40) #find 40 deer Max
+up_remove_objects(SearchSource.search_remote, ObjectData.object_data_carry) < 70 #remove chickens
+up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc)
+up_get_search_state(deer_search_state) #check how many deer were found
+
+if deer_search_state.RemoteIndex > 0:
+    deer_to_hunt = Integer()
+    deer_already_hunted = Integer()
+    deer_to_hunt = -1
+    for i in range(deer_search_state.RemoteIndex): # get unhunted deer
+        up_set_target_object(SearchSource.search_remote, i)
+        up_get_object_data(ObjectData.object_data_id, deer_id)
+        deer_already_hunted = FALSE
+        for j in range(J_DEER_PUSH_ARRAY_LENGTH):
+            array_deer_id = J_deer_push_pray[j]
+            if deer_id == array_deer_id:
+                deer_already_hunted = TRUE
+                break
+        if deer_already_hunted == FALSE:
+            deer_to_hunt = deer_id
+            break
+    
+    is_employed = Integer()
+    if deer_to_hunt != -1: #get milita to hunt the deer
+        up_find_local(UnitId.militiaman, 10)
+        up_get_search_state(deer_search_state)
+        for j in range(deer_search_state.LocalList):
+            up_set_target_object(SearchSource.search_local, j)
+            up_get_object_data(ObjectData.object_data_id, hunter_id)
+            is_employed = J_get_employment_status(hunter_id)
+            if is_employed == UNEMPLOYED:
+                J_HIRE_push_deer(hunter_id, deer_to_hunt)
+                break
