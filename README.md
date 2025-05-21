@@ -69,7 +69,9 @@ CURRENTLY IN ALPHA ... Functional, but missing features, and limmited error hand
 You can write in Python, and it will compile your code into AOE2Script.
 No more defrules, all commands look like normal functions.
 
-the purpose of this project is to improve redablility and reusiblility so you can write and debug bigger and better AIs
+Another main feature is that it Scrapes from https://airef.github.io/ So there is autocomplete and infromation on commands and parameter types.
+
+the purpose of this project is to improve redablility and reusiblility so you can write and debug AIs faster and better
 It includes functions, loops, nested if statements, Arrays ect.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -212,7 +214,7 @@ SN.placement_zone_size = 7 #used to look like this -> (up-modify-sn sn-placement
 <!-- ROADMAP -->
 ## Roadmap
 
-### Alpha Release
+### Pre Release
 
 - [X] Add object types:
     - [X] Point
@@ -222,12 +224,12 @@ SN.placement_zone_size = 7 #used to look like this -> (up-modify-sn sn-placement
 - [X] implement disable-self in if statments
 
 
-### Beta Release
-- [ ] add loops:
-    - [ ] while loop
-    - [ ] for loop
-- [ ] add functions
-- [ ] Add simplified conditional expressions
+### Alpha Release
+- [X] add loops:
+    - [X] while loop
+    - [X] for loop
+- [X] add functions
+- [X] Add simplified conditional expressions
 - [ ] Add better errors and comments to track user bugs
 - [ ] Add test casses:
     - [ ] parser
@@ -237,10 +239,10 @@ SN.placement_zone_size = 7 #used to look like this -> (up-modify-sn sn-placement
     - [ ] printer
 
 
-### Full Release
+### Beta Release
 - [ ] Robust functions:
     - [ ] Add default values
-    - [ ] Add return values
+    - [X] Add return values
 - [ ] optimize rule usage
     - [ ] compine close truesy rules
     - [ ] remove jump rules on flat ifs & loops
@@ -248,9 +250,8 @@ SN.placement_zone_size = 7 #used to look like this -> (up-modify-sn sn-placement
     - [ ] refactor out struct init asignment of +0
 - [ ] optimize goal usage
     - [ ] dealocate when out of scope
-- [ ] add predefined ai numbers
-- [ ] Add printout of rule number and goal useage
-- [ ] Add backwards compatability
+- [X] add predefined ai numbers
+- [X] Add printout of rule number and goal useage
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
