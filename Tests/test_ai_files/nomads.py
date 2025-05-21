@@ -117,6 +117,7 @@ J_DEER_PUSH_ARRAY_LENGTH = Constant(10)
 SHOOT_DEER_DIST = 2
 LURE_DEER_DIST = 50
 VIL_SHOOT_DEER_COUNT = 4
+HIT_DEER_COUNTER_TOTAL = Constant(15)
 #===================================CONSTANTS======================================
 VILLAGER_LOS = Constant(4)
 DA_MILITIA_LOS = Constant(6)
@@ -548,7 +549,7 @@ if True:
     #up_send_flare(cur_point)
 
 ##__________push_deer__________#
-HIT_DEER_COUNTER_TOTAL = Constant(15)
+
 def J_push_deer():
     global p_home, p_home_100, J_DEER_PUSH_ARRAY_LENGTH, SHOOT_DEER_DIST, LURE_DEER_DIST, VIL_SHOOT_DEER_COUNT
     global J_deer_push_hunter, J_deer_push_pray, deer_search_state
@@ -644,16 +645,51 @@ def J_FIRE_push_deer(hunter_id:Integer) -> Integer:
 #def J_lure_boar(hunter_id, bore_id) -> Integer:
 #    return #return 0 if J full
 
-##__________collect_heardables__________#
-##def J_collect_headables(hearder_id, distance = 10) -> Integer:
-#    #find heardables within distance of hearder_id
-#    #move to the closest one
-#    #if there is none:
-#        return UNEMPLOYED
-#    #if there is one:
-#        return EMPLOYED_AS_HEARDABLE_COLLECTOR
+#__________collect_heardables__________#
 
+def J_sheperd():
+    pass
+    up_get_point(PositionType.position_object, sheep_point)
+        up_bound_point(sheep_point, sheep_point) #be sure the point is on the map
+        up_find_local(LineId.scout_cavalry_line, 1) #add the scout to the local list
+        up_target_point(sheep_point, DUCAction.action_move, -1, AttackStance.stance_no_attack) #target the position of the sheep
+        chat_to_player(PlayerNumber.my_player_number, "Move") #todo: add my_plyaer_number
+        up_set_timer(t_sheep_claim, 4)
+        g_sheep_claim = 1
 
+    if g_sheep_claim == 1 and up_timer_status(t_sheep_claim) == TimerState.timer_triggered: #reset the scout once the timer runs out (means the above rule hasn't fired, which means there are no more sheep nearby)
+        chat_to_player(PlayerNumber.my_player_number, "Reset scout")
+        up_set_timer(t_sheep_claim, -1)
+        g_sheep_claim = 2
+        up_reset_scouts() #reset everything
+
+    # fire shepard on complete and rehire if there is another sheep close by
+    # fire if sheep dies
+
+def J_HIRE_sheperd():
+    pass
+    #store the variables needed
+
+def J_FIRE_sheperd():
+    pass
+
+if current_age() == Age.dark_age:
+    up_full_reset_search()
+    up_set_target_point(tc_location)
+    SN.focus_player_number = 0 #to find gaia, need to focus player 0
+    up_find_remote(ClassId.livestock_class, 5) #try to add one sheep to the remote list #todo: livestock_class is 958
+    up_get_search_state(deer_search_state) #to set up the check
+
+    if deer_search_state.RemoteIndex > 0: #found a sheep last rule
+        sheep_id = Integer
+        hearder_id = Integer
+        up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc) #use closest sheep
+        up_set_target_object(SearchSource.search_remote, 0) #get the position as above
+        up_get_object_data(ObjectData.object_data_id, sheep_id)
+        
+        hearder_id = J_get_unemployed_id(UnitId.militiaman)
+        if hearder_id != -1:
+            J_HIRE_sheperd(hearder_id, sheep_id)
 
 #======================================================  Functions  ===========================================================#
 

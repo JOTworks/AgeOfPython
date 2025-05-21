@@ -64,26 +64,24 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-CURRENTLY IN ALPHA ... main branch will always be funcional but still missing some basic features
+CURRENTLY IN ALPHA ... Functional, but missing features, and limmited error handling
 
-writing with aoeScript defrules and using goals and dealing with the 30 character command names can be dificult. 
-Exspecialy it can be dificult reading what others have written (that is including your past self in others)
+You can write in Python, and it will compile your code into AOE2Script.
+No more defrules, all commands look like normal functions.
 
-the purpose of this project is mainly to improve redablility so you can write and debug bigger and better AIs
-Along with redability are actual improvements like functions, nested if statements, Point structs ect.
+the purpose of this project is to improve redablility and reusiblility so you can write and debug bigger and better AIs
+It includes functions, loops, nested if statements, Arrays ect.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
 
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
 
-
 ### Prerequisites
 
-For now you will need python and pip to run the project untill i create builds.
+For now you will need to know how to code in both python and aoe2script.
 
 ### Installation
 
@@ -94,6 +92,8 @@ _Clone this into the folder C:\Program Files (x86)\Steam\steamapps\common\AoE2DE
    git clone https://github.com/JOTworks/AgeOfPython.git
    ```
 
+2. install python and all the dependencies
+
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
@@ -101,11 +101,11 @@ _Clone this into the folder C:\Program Files (x86)\Steam\steamapps\common\AoE2DE
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-To use this project create a .aop file in the AgeOfPython folder. that is your base ai code.
+Create a .aop file in the AgeOfPython folder. that is your base python ai code.
 when you run that file it will create the .per and .ai files in the ia\ folder for you.
-run it with the python command like so if you are in the AgeOfPython folder
+Run it with the python command like so if you are in the AgeOfPython folder
    ```sh
-   py src/Main.py yourAiName.aop
+   python .\src\Main.py -f yourAiName.py
    ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -114,40 +114,97 @@ run it with the python command like so if you are in the AgeOfPython folder
 ## Supported Python
 
 ### If statemnts
-if statments can only have conditions in them like defrules currently
+if statments can do basic comparisons and any operators. if there is to complex of an expression, break it out before the if statment
 ```
-if(command arg)(command arg arg):
-  (command)
+if command(arg) and command(arg,arg):
+  x = 1
+```
+
+### For and While loops
+you can do loops! and nest them, it makes readibility ver nice for algerithms
+```
+#set current_point
+for i in range(-1,2):
+    for j in range(-1,2):
+        temp_point = last_point
+        temp_point += (i, J)
+        up_get_point_terrain(temp_point, terrain_id)
+
+        if temp_point != last_point and up_point_terrain(temp_terraitemp_pointn_point) == Terrain.terrain_water_beach:
+          current_point = temp_point
 ```
 
 ### Asigning
-asignign variables currently only supports 2 in an expression so
+Unlike Python, this is A strongly typed language. Once a varilabe has a type it will raise an error is another is used.
+to avoid confussion and the most bugs, use constructors on varaible. (sometimes this works without, but not for returning values of a function for exmaple)
 ```
-x = 0
-x = 1 + 3
-x = y + z
+x = Integer()
+tc_location = Point()
+tc_location = State()
+my_array = (Point, 12) # (type, length)
+
 ```
-but do not use more then 2, or use any parenthesis
+
+if you add values into the constructor they will be asigned first pass of the code, and will then be disabled with a disable_self()
+Note that all variables (goals) are set to -1 when aoe2 starts
+```
+x = Integer(10)
+tc_location = Point(0,0)
+```
+
+asignign variables supports arrays and AOP class attributes
+```
+x = y + 3 * 2
+myArray[i] = 37
+my_point.x = 3
+my_point = (3,2)
+x = y = z = 1
+```
+
+However do not add array slices inside array slices, and nest other asignemnts at your own risk
+```
+my_rray[other_array[r]] = 37
+```
 
 ### Functions
-you can define a function like you would in python.
-<br>
-all functions pass by reference and all veriables created in a function are scoped only to that function
-<br>
-under the hood it currently places this code everywhere you call the function so it greatly increases rule count. But i plan to refactor it to use jump commads before anyone reaches the 10k rule limit.
-<br>
-you cannot have default value or returns.
+Functions require strong typeing for their parameter types and return types. you can notate that like in python, but now it is required.
+this function bellow takes a buildingId and will try to build that building, returning 1 on success and 0 on failer. (you cannot use function returns in conditionals)
 ```
-def set_gather_percent(v_food, v_wood, v_gold, v_stone):
-  (set-strategic-number sn-food-gatherer-percentage v_food)
-  (set-strategic-number sn-wood-gatherer-percentage v_wood)
-  (set-strategic-number sn-gold-gatherer-percentage v_gold)
-  (set-strategic-number sn-stone-gatherer-percentage v_stone)
+def try_build(building:BuildingId) -> Integer:
+    if up_can_build(_, building) and up_pending_objects(building) < 1:
+        up_build(_,_,building)
+        return 1
+    return 0
+```
+<br>
+all functions pass by value and all variables in the function are only in their own scope. Note that it is the same variable for every call of the function, so if you do not set the varible it will have the value for the last call. If you need a variable from ouside the funtion you can use global to access it. otherwize it will create a new function scoped veriable.
+```
+def build_around_tc(building:BuildingId, radius:Integer) -> Integer:
+    global tc_location
+    place_point = Point()
+    if tc_location.x == -1:
+        chat_to_all("E: tc_location not set, cannot build_around_tc")
+        return -1
+    (truncated)
+```
+<br>
+aoe2script Commands now look like functions, as you have seen above. but they are not the same!
+if you use an aoe2script command it will work like it does in the original langauge. I have just added things for conveineince bellow.
+
+<br><br>
+if the command ends with CompareOp and value, you can pull that outside of the function. (effectivly it is still in the function and can't take complex input)
+```
+building_type_count_total(BuildingId.house) >= 5
 ```
 
-example calling the function above.
+g: and c: are removed, as I deal with all of the allocation of memory, so you can ignore that and it will be added in dynamicly
 ```
-set_gather_percent(fuedal_food_percent, fuedal_wood_percent, 0, 0)
+up_filter_distance(10, my_max)  #used to look like this -> (up-filter-distance c: 10 g: my_max)
+```
+
+Strategic numbers can be asigned in shorthand
+```
+SN.placement_zone_size = 7 #used to look like this -> (up-modify-sn sn-placement_zone_size c:= 7)
 ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
