@@ -1,13 +1,13 @@
 from scraper import *
 from scraper import (
   #OBJECT TYPES
-  Point, Constant, State, Integer, Array, _,
+  Point, Constant, State, Integer, Array, Timer, _,
   #ENUMS
   ObjectId, ObjectData, ObjectStatus, ObjectList,
   ClassId, UnitId, BuildingId, Resource, Terrain,
   SearchSource, PositionType, PlacementType, Age,
   TechId, DUCAction, AttackStance, SN, SearchOrder,
-  compareOp, ActionId, ResearchState,
+  compareOp, ActionId, ResearchState, TimerState,
   #FUNCTIONS
   up_get_object_data, up_get_object_target_data, up_get_point,
   up_get_search_state, up_set_target_object, up_set_target_point,
@@ -21,7 +21,8 @@ from scraper import (
   up_filter_distance, up_find_remote, up_remove_objects, up_clean_search,
   up_can_build, up_pending_objects, up_copy_point, game_time,up_target_objects,
   unit_type_count, food_amount, up_find_status_local, up_research_status, wood_amount,
-  up_point_terrain, up_can_build_line, up_build_line, up_lerp_percent, idle_farm_count
+  up_point_terrain, up_can_build_line, up_build_line, up_lerp_percent, idle_farm_count,
+  up_timer_status, military_population, attack_now,
 
 )
 '''
@@ -114,6 +115,8 @@ __Eco__
 BUILD_TC_TIME = Constant(30)
 J_EXPLORE_OBJECT_ARRAY_SIZE = Constant(10)
 J_DEER_PUSH_ARRAY_LENGTH = Constant(10)
+J_SHEPERD_ARRAY_SIZE = Constant(1)
+MINE_LIMIT = Constant(10)
 SHOOT_DEER_DIST = 2
 LURE_DEER_DIST = 50
 VIL_SHOOT_DEER_COUNT = 4
@@ -129,12 +132,21 @@ TRUE = Constant(1)
 EMPLOYED = Constant(1)
 UNEMPLOYED = Constant(0)
 my_player_number = Integer(1)
+enemy_player_number = Integer(2)
 
 #===================================SETTERS======================================
 if True:
     map_center_point = Point(0,0)
+    map_west_corner = Point(0,0)
+    map_east_corner = Point()
     i = Integer(0)
     up_get_point(PositionType.position_center, map_center_point)
+    up_get_point(PositionType.position_map_size, map_east_corner)
+    map_east_corner.x -= 1
+    map_east_corner.y -= 1
+    map_north_corner = Point(map_east_corner.x,0)
+    map_south_corner = Point(0,map_east_corner.y)
+
     SN.placement_zone_size=7
     SN.percent_civilian_gatherers=0
     SN.wood_gatherer_percentage=0
@@ -186,14 +198,37 @@ if True:
     SN.zero_priority_distance = 255
     SN.cap_civilian_explorers = 0
     SN.number_explore_groups = 0
+    SN.minimum_attack_group_size = 10
     chat_to_all("Setters Ran!")
     disable_self()
+
+#=================================================  HELPER FUNCTIONS  ======================================================#
+
+def target_point(local_id:Integer, point:Point):
+    up_full_reset_search()
+    up_add_object_by_id(SearchSource.search_local, local_id)
+    up_set_target_point(p_home)
+    up_target_point(point,_,_,_)
+
+def target_id(local_id:Integer, remote_id:Integer):
+    up_full_reset_search()
+    up_add_object_by_id(SearchSource.search_local, local_id)
+    up_add_object_by_id(SearchSource.search_remote, remote_id)
+    up_target_objects(0,_,_,_)     
+
+def up_get_object_Point() -> (Integer, Integer): # type: ignore
+    #chat_to_all("in up_get_object_Point")
+    temp_point = Point()
+    up_get_object_data(ObjectData.object_data_point_x, temp_point.x)
+    up_get_object_data(ObjectData.object_data_point_y, temp_point.y)
+    return temp_point.x, temp_point.y
+
 
 #======================================================  CLASSES  ===========================================================#
 #===========================#
 #| RESROUCE MANAGER CLASS  |#
 #===========================#
-MINE_LIMIT = Constant(10)
+
 R_gold_mine_count = Integer(0)
 R_gold_total_count = Integer()
 R_gold_location = Array(Point, MINE_LIMIT)
@@ -287,22 +322,35 @@ hunter_id = Integer()
 deer_search_state = State()
 p_home = Point()
 p_home_100 = Point()
+#sheperd
+J_sheperd_ids = Array(Integer, J_SHEPERD_ARRAY_SIZE)
+#explore map
+J_EXPLORE_MAP_ARRAY_SIZE = Constant(10)
+J_explore_map_ids = Array(Integer, J_EXPLORE_MAP_ARRAY_SIZE)
+J_explore_map_target_point = Array(Point, J_EXPLORE_MAP_ARRAY_SIZE)
+J_explore_map_type = Array(Integer, J_EXPLORE_MAP_ARRAY_SIZE)
+EXPLORE_TYPE_SIMPLE = Constant(1)
+EXPLORE_TYPE_CORNERS = Constant(2)
 
 #_________helper functions_________#
 
 def J_get_employment_status(id:Integer) -> Integer:
     #chat_to_all("in J_get_employment_status")
-    global J_explore_object_ids, J_deer_push_hunter, EMPLOYED, UNEMPLOYED, J_EXPLORE_OBJECT_ARRAY_SIZE, J_DEER_PUSH_ARRAY_LENGTH
+    global J_explore_object_ids, J_deer_push_hunter, J_explore_map_ids
+    global EMPLOYED, UNEMPLOYED, J_EXPLORE_OBJECT_ARRAY_SIZE, J_DEER_PUSH_ARRAY_LENGTH, J_EXPLORE_MAP_ARRAY_SIZE
     i = Integer()
-    array_hunter_id = Integer()
-    array_explorer_id = Integer()
+    array_id = Integer()
     for i in range(J_EXPLORE_OBJECT_ARRAY_SIZE):
-        array_explorer_id = J_explore_object_ids[i]
-        if array_explorer_id == id:
+        array_id = J_explore_object_ids[i]
+        if array_id == id:
             return EMPLOYED
     for i in range(J_DEER_PUSH_ARRAY_LENGTH):
-        array_hunter_id = J_deer_push_hunter[i]
-        if array_hunter_id == id:
+        array_id = J_deer_push_hunter[i]
+        if array_id == id:
+            return EMPLOYED
+    for i in range(J_EXPLORE_MAP_ARRAY_SIZE):
+        array_id = J_explore_map_ids[i]
+        if array_id == id:
             return EMPLOYED
     return UNEMPLOYED
 
@@ -344,7 +392,6 @@ def J_explore_object():
             
             up_lerp_tiles(dest_point, explorer_point, tiles_away)
            
-
             #translate reletive
             #prime_point = resource_point - dest_point #todo:we want to be able to do this
             prime_point = resource_point
@@ -410,6 +457,160 @@ def J_FIRE_ALL_explore_object():
         J_explore_object_things[i] = -1
         J_explore_object_tiles_away[i] = -1
         J_explore_object_direction[i] = -1
+
+
+##__________explore_map__________# WIP
+
+def J_FIRE_explore_map(explorer_id:Integer) -> Integer:
+    global J_explore_map_ids, J_explore_map_type, J_explore_map_target_point
+    global UNEMPLOYED, EMPLOYED, J_EXPLORE_MAP_ARRAY_SIZE
+    for i in range(J_EXPLORE_MAP_ARRAY_SIZE): #J_EXPLORE_OBJECT_ARRAY_SIZE
+        array_explore_id = J_explore_map_ids[i]
+        if array_explore_id == explorer_id:
+            up_chat_data_to_all("%d is FIRED from explore_map", explorer_id)
+            J_explore_map_ids[i] = -1
+            J_explore_map_target_point[i] = (-1, -1)
+            J_explore_map_type[i] = -1
+            return UNEMPLOYED
+    up_chat_data_to_all("%d did not have the explore_map job", explorer_id)
+    return UNEMPLOYED
+
+def J_HIRE_explore_map(explorer_id:Integer, explore_type:Integer) -> Integer:
+    global J_explore_map_ids, J_explore_map_type, J_explore_map_target_point
+    global UNEMPLOYED, EMPLOYED, J_EXPLORE_MAP_ARRAY_SIZE
+    for i in range(J_EXPLORE_MAP_ARRAY_SIZE):
+        array_explorer_id = J_explore_map_ids[i]
+        if array_explorer_id == -1:
+            up_chat_data_to_all("%d is HIRED to explore_map", explorer_id)
+            up_chat_data_to_all("%d explore_type", explore_type)
+            J_explore_map_ids[i] = explorer_id
+            J_explore_map_type[i] = explore_type
+            
+            return EMPLOYED
+    up_chat_data_to_all("%d did not have explore_map open", explorer_id)
+    return UNEMPLOYED
+
+def next_spiral_point(center_x:Integer, center_y:Integer, current_x:Integer, current_y:Integer, ring_width:Integer) -> Point:
+    # Compute current radius from center (Manhattan-style)
+    dx = Integer()
+    dy = Integer()
+    return_point = Point()
+    dx = current_x - center_x
+    dy = current_y - center_y
+    
+    #absolute value
+    abs_dx = dx
+    if dx < 0: 
+        abs_dx = dx * -1 
+        
+    abs_dy = dy
+    if dy < 0: 
+        abs_dy = dy * -1
+
+    current_radius = abs_dx + abs_dy
+
+    # Find the next position in current ring
+    step = ring_width  # The spacing between each spiral "ring"
+    dx = current_x - center_x
+    dy = current_y - center_y
+
+    # Case: just starting at center
+    if current_radius == 0:
+        center_x = center_x + step
+        return_point = (center_x, center_y)
+        return return_point  # Start the first ring
+
+    # Generate next point in the ring perimeter
+    # Traverse ring perimeter clockwise: right -> up -> left -> down -> back to start
+    neg_dx = dx * -1
+    neg_dy = dy * -1
+    if dx >= 0 and dy < dx and dy >= neg_dx:
+        dy += step  # go up
+    elif dy >= 0 and neg_dy < dx and dx <= dy:
+        dx -= step  # go left
+    elif dx <= 0 and dy > dx and dy <= neg_dx:
+        dy -= step  # go down
+    elif dy <= 0 and dx < dy and dy < neg_dx:
+        dx += step  # go right
+    elif True:
+        # We've finished the current ring — go to next ring start (right of center)
+        current_radius += step
+        dx = current_radius
+        dy = 0
+
+    center_x += dx
+    center_y += dy
+    return_point = (center_x, center_y)
+    return return_point
+
+def J_explore_map_corners(j_explore_index:Integer) -> Integer:
+    global J_explore_map_ids, J_explore_map_type, J_explore_map_target_point
+    global map_west_corner, map_north_corner, map_east_corner, map_south_corner
+
+    if True:
+        TIME_FOR_ONE_SIDE = map_east_corner.x / 3
+        WEST_C = 0
+        NORTH_C = TIME_FOR_ONE_SIDE
+        EAST_C = TIME_FOR_ONE_SIDE * 2
+        SOUTH_C = TIME_FOR_ONE_SIDE * 3
+        END_C = TIME_FOR_ONE_SIDE * 4
+        disable_self()
+
+    explorer_id = Integer()
+    fake_corner_timer = Integer(-1)
+    fake_corner_timer += 1
+    if fake_corner_timer > END_C:
+        fake_corner_timer = 0
+    
+    if fake_corner_timer >= WEST_C and fake_corner_timer < NORTH_C:
+        explorer_id = J_explore_map_ids[j_explore_index]
+        target_point(explorer_id, map_west_corner)
+    
+    if fake_corner_timer == NORTH_C and fake_corner_timer < EAST_C:
+        explorer_id = J_explore_map_ids[j_explore_index]
+        target_point(explorer_id, map_north_corner)
+
+    if fake_corner_timer == EAST_C and fake_corner_timer < SOUTH_C:
+        explorer_id = J_explore_map_ids[j_explore_index]
+        target_point(explorer_id, map_east_corner)
+
+    if fake_corner_timer == SOUTH_C and fake_corner_timer < END_C:
+        explorer_id = J_explore_map_ids[j_explore_index]
+        target_point(explorer_id, map_south_corner)
+    
+
+
+def J_explore_map_simple(J_explore_index:Integer) -> Integer:
+    global J_explore_map_ids, J_explore_map_type, J_explore_map_target_point
+    explorer_point = Point()
+    explorer_target_point = Point()
+    next_point = Point()
+    explorer_id = Integer()
+    explorer_id = J_explore_map_ids[J_explore_index]
+    explorer_target_point = J_explore_map_target_point[J_explore_index]
+    target_id(explorer_id)
+    explorer_point = up_get_object_Point()
+    if up_point_explored(explorer_target_point) == ExploredState.explored_no:
+        target_point(explorer_id, explorer_target_point)
+        return 1
+    next_point = explorer_point
+    for i in range(16):
+        next_point = next_spiral_point(explorer_point.x,explorer_point.y,next_point.x,next_point.y,3)
+        if up_point_explored(next_point) == ExploredState.explored_no:
+            target_point(explorer_id, explorer_target_point)
+            return 1
+    J_FIRE_explore_map(explorer_id)
+
+def J_explore_map():
+    global J_explore_map_ids, J_explore_map_type, J_explore_map_target_point, J_EXPLORE_MAP_ARRAY_SIZE, EXPLORE_TYPE_SIMPLE, EXPLORE_TYPE_CORNERS
+    explore_type = Integer()
+    for i in range(J_EXPLORE_MAP_ARRAY_SIZE):
+        explore_type = J_explore_map_type[i]
+        if explore_type == EXPLORE_TYPE_SIMPLE:
+            J_explore_map_simple(i)
+        elif explore_type == EXPLORE_TYPE_CORNERS:
+            J_explore_map_corners(i)
+
 
 ##__________explore_terrain__________# WIP
 
@@ -546,13 +747,15 @@ if True:
         if new_point.x != -1:
             last_point = cur_point
             cur_point = new_point
-    #up_send_flare(cur_point)
+    up_send_flare(cur_point)
+
 
 ##__________push_deer__________#
 
 def J_push_deer():
     global p_home, p_home_100, J_DEER_PUSH_ARRAY_LENGTH, SHOOT_DEER_DIST, LURE_DEER_DIST, VIL_SHOOT_DEER_COUNT
-    global J_deer_push_hunter, J_deer_push_pray, deer_search_state
+    global J_deer_push_hunter, J_deer_push_pray
+    deer_search_state = State()
     hit_deer_counter = Integer(0)
     hit_deer_counter += 1
     if hit_deer_counter >= 15:
@@ -579,6 +782,13 @@ def J_push_deer():
             
             if deer_hp > 0: #if the deer is still alive
                 if hit_deer_counter == 0: #once every HIT_DEER_COUNTER_TOTAL times, Attach deer instead of push. this keep from getting stuck on woodlines
+                    #up_full_reset_search()
+                    #up_filter_distance(-1,3)
+                    #up_filter_status(ObjectStatus.status_ready, ObjectList.list_active)
+                    #up_find_resource(Resource.wood,10)
+                    #up_get_search_state(deer_search_state)
+                    #up_chat_data_to_all("trees neer deer %d", deer_search_state.RemoteList)
+                    #if deer_search_state.RemoteList >= 10:
                     up_add_object_by_id(SearchSource.search_local, hunter_id)
                     up_target_objects(1,_,_,AttackStance.stance_aggressive)
 
@@ -648,50 +858,41 @@ def J_FIRE_push_deer(hunter_id:Integer) -> Integer:
 #__________collect_heardables__________#
 
 def J_sheperd():
-    pass
-    up_get_point(PositionType.position_object, sheep_point)
-        up_bound_point(sheep_point, sheep_point) #be sure the point is on the map
-        up_find_local(LineId.scout_cavalry_line, 1) #add the scout to the local list
-        up_target_point(sheep_point, DUCAction.action_move, -1, AttackStance.stance_no_attack) #target the position of the sheep
-        chat_to_player(PlayerNumber.my_player_number, "Move") #todo: add my_plyaer_number
-        up_set_timer(t_sheep_claim, 4)
-        g_sheep_claim = 1
+    global deer_search_state
+    for i in range(J_SHEPERD_ARRAY_SIZE):
+        up_full_reset_search()
+        up_set_target_point(tc_location)
+        SN.focus_player_number = 0 #to find gaia, need to focus player 0
+        up_find_remote(ClassId.livestock_class, 5) #try to add one sheep to the remote list #todo: livestock_class is 958
+        up_get_search_state(deer_search_state) #to set up the check
 
-    if g_sheep_claim == 1 and up_timer_status(t_sheep_claim) == TimerState.timer_triggered: #reset the scout once the timer runs out (means the above rule hasn't fired, which means there are no more sheep nearby)
-        chat_to_player(PlayerNumber.my_player_number, "Reset scout")
-        up_set_timer(t_sheep_claim, -1)
-        g_sheep_claim = 2
-        up_reset_scouts() #reset everything
+        if deer_search_state.RemoteIndex > 0: #found a sheep last rule
+            sheep_id = Integer()
+            hearder_id = Integer()
+            up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc) #use closest sheep
+            up_set_target_object(SearchSource.search_remote, 0) #get the position as above
+            up_get_object_data(ObjectData.object_data_id, sheep_id)
+            
+            hearder_id = J_get_unemployed_id(UnitId.militiaman)
+            if hearder_id != -1:
+                J_HIRE_sheperd(hearder_id, sheep_id)
+    # i need to task the shepard to move to the sheep and call it good.
+    
+    #also need to add the arrays
 
     # fire shepard on complete and rehire if there is another sheep close by
     # fire if sheep dies
 
-def J_HIRE_sheperd():
+def J_HIRE_sheperd(hearder_id:Integer, sheep_id:Integer):
     pass
     #store the variables needed
 
 def J_FIRE_sheperd():
     pass
-
-if current_age() == Age.dark_age:
-    up_full_reset_search()
-    up_set_target_point(tc_location)
-    SN.focus_player_number = 0 #to find gaia, need to focus player 0
-    up_find_remote(ClassId.livestock_class, 5) #try to add one sheep to the remote list #todo: livestock_class is 958
-    up_get_search_state(deer_search_state) #to set up the check
-
-    if deer_search_state.RemoteIndex > 0: #found a sheep last rule
-        sheep_id = Integer
-        hearder_id = Integer
-        up_clean_search(SearchSource.search_remote, ObjectData.object_data_distance, SearchOrder.search_order_asc) #use closest sheep
-        up_set_target_object(SearchSource.search_remote, 0) #get the position as above
-        up_get_object_data(ObjectData.object_data_id, sheep_id)
-        
-        hearder_id = J_get_unemployed_id(UnitId.militiaman)
-        if hearder_id != -1:
-            J_HIRE_sheperd(hearder_id, sheep_id)
+    
 
 #======================================================  Functions  ===========================================================#
+
 
 def build_around_tc(building:BuildingId, radius:Integer) -> Integer:
     global tc_location
@@ -824,12 +1025,6 @@ def get_best_nomad_tc_location() -> Point:
 
     return map_center_point
 
-def up_get_object_Point() -> (Integer, Integer): # type: ignore
-    #chat_to_all("in up_get_object_Point")
-    temp_point = Point()
-    up_get_object_data(ObjectData.object_data_point_x, temp_point.x)
-    up_get_object_data(ObjectData.object_data_point_y, temp_point.y)
-    return temp_point.x, temp_point.y
 
 def try_train(unit:UnitId):
     if up_can_train(unit):
@@ -839,9 +1034,11 @@ def try_research(tech_id:TechId):
     if up_can_research(tech_id):
         up_research(tech_id)
 
-def try_build(building:BuildingId):
+def try_build(building:BuildingId) -> Integer:
     if up_can_build(_, building) and up_pending_objects(building) < 1:
         up_build(_,_,building)
+        return 1
+    return 0
 
 #setters
 if building_type_count(BuildingId.town_center) > 0:
@@ -859,6 +1056,8 @@ if building_type_count(BuildingId.town_center) > 0:
 #class running functions calls
 J_explore_object()
 J_push_deer()
+J_sheperd()
+J_explore_map()
 R_update_mines(Resource.gold)
 R_update_mines(Resource.stone)
 
@@ -1077,11 +1276,19 @@ if (housing_headroom() < 3
 if building_type_count(BuildingId.barracks) < 1:
     try_build(BuildingId.barracks)
 
-if building_type_count(BuildingId.mule_cart) < 1 and food_amount() > 300:
-    try_build(BuildingId.mule_cart)
+if wood_amount() > 300 and current_age() > Age.dark_age:
+    try_build(BuildingId.barracks)
 
-if unit_type_count(UnitId.villager) < 20:
+#if building_type_count(BuildingId.mule_cart) < 1 and food_amount() > 300:
+#    try_build(BuildingId.mule_cart)
+
+if building_type_count(BuildingId.mill) < 1 and resource_found(Resource.food):
+    try_build(BuildingId.mill)
+
+if unit_type_count(UnitId.villager) < 20 or current_age() > Age.dark_age:
     try_train(UnitId.villager)
+
+
 if unit_type_count(UnitId.militiaman) < 5 and food_amount() > 100:
     try_train(UnitId.militiaman)
 if unit_type_count(UnitId.militiaman) < 25 and food_amount() > 100 and up_research_status(TechId.feudal_age) >= ResearchState.research_pending:
@@ -1090,10 +1297,31 @@ if unit_type_count(UnitId.militiaman) < 25 and food_amount() > 100 and up_resear
 if current_age() > Age.dark_age and wood_amount() > 100 and idle_farm_count() == 0:
     try_build(BuildingId.farm)
 
+t_attack_timer = Timer()
+if (
+    current_age() >= Age.feudal_age
+    and research_completed(TechId.ri_long_swordsman)
+    and up_timer_status(t_attack_timer) != TimerState.timer_running 
+    and military_population() > 10
+):
+    attack_now()
+    chat_to_all("attack!")
+    enable_timer(t_attack_timer, 60)
+    SN.disable_attack_groups=0
+    SN.number_attack_groups=1
+
+
+#----finding 1 melitia to circle the map---#
+map_corner_explorer_id = J_get_unemployed_id(UnitId.militiaman)
+if map_corner_explorer_id != -1:
+    J_HIRE_explore_map(map_corner_explorer_id, EXPLORE_TYPE_CORNERS)
+    disable_self()
+
+
 #----finding deer and militia to Hire as Deer Pushers---#
 up_full_reset_search()
 up_set_target_point(p_home)
-up_filter_distance(-1, LURE_DEER_DIST)
+up_filter_distance(8, LURE_DEER_DIST)
 SN.focus_player_number = 0
 up_find_remote(ClassId.prey_animal_class,40) #find 40 deer Max
 up_remove_objects(SearchSource.search_remote, ObjectData.object_data_carry) < 70 #remove chickens
@@ -1117,7 +1345,6 @@ if deer_search_state.RemoteIndex > 0:
             deer_to_hunt = deer_id
             break
     
-    is_employed = Integer()
     if deer_to_hunt != -1: #get milita to hunt the deer
         up_find_local(UnitId.militiaman, 10)
         up_get_search_state(deer_search_state)

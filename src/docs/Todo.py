@@ -6,6 +6,7 @@
 #! a[5] = (1,2)
 #todo: BUG if you do x = func() and x is not constructed it will just not give it a value... no error thrown
 #todo: BUG if you have a file name nomads.py and nomads_nf.py
+#todo: BUG else statments dont work in functions!
 
 
 #SCRAPER
@@ -24,6 +25,12 @@
 #todo: fix variable compare to enum. expecialy with == even if other is disable
 #todo: get nested binOp expressions working
 #todo: get expressions working in conditionals
+#todo: x < y < z is not implemented, currently have to use x < y and y < z
+#todo: abs_dx = -dx if dx < 0 else dx is not implemented, needs own lines
+#todo: abs_dx = -dx  not implemtned, needed to abs_dx = dx * -1
+#todo: return (center_x, center_y) not implemented, needed to return_point = (center_x, center_y); return return_point
+#todo: does not throw error when wood_amount() uses the compare drop but dont asctuly compare... instead it just had an AOE2 error in engine
+    
 
 #FUNCTION ISSUES
 #todo: if elses dont seem to work in functinos
