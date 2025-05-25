@@ -30,7 +30,6 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         except IndexErrors:
             raise Exception(f"defined Constant has no parameter, line {node.lineno}")
         
-
     def visit_if(self, node):
         self.call_tracker["visit_if"] += 1
         """
@@ -43,7 +42,6 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.call_tracker["visit_Return"] += 1
         for item in node.body:
             self.visit(item)
-        self.generic_visit(node) #!sus should we be going through twice?
     
     def visit_BinOp(self, node):
         self.visit(node.left)
@@ -55,7 +53,6 @@ class DefRulePrintVisitor(ast.NodeVisitor):
 
     def visit_Assign(self, node): #todo: when refactored i will need to print temp math first, function calls, then asigns
         self.call_tracker["visit_Assign"] += 1
-        self.generic_visit(node) #!sus should we be going through twice?
         for item in node.body: #currently this should be return value And assigns
             self.visit(item)
 
@@ -78,7 +75,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
             + green(str(node.defrule_num))
             + " "
             + yellow(node.comment)
-            + comment(node, self.NO_FILE)
+            #todo: add this back in as option, very unroformant: + comment(node, self.NO_FILE)
             + "\n"
         ) )
         self.time_tracker["visit_DefRule"] += time() - start
@@ -186,15 +183,12 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 else: 
                     raise Exception(f"Constants need to be an int or str, not {type(expr.value)}")
             else:
-                raise Exception(f"visit_command has not implemeted {type(expr)}")
-            
+                raise Exception(f"visit_command has not implemeted {type(expr)}") 
             
             self.final_list.append( " " + blue(expr_str) )
-        self.final_list.append( blue(")") + comment(node, self.NO_FILE) + "\n" )
+        self.final_list.append( blue(")") + "\n" ) #todo: add this back in as option, very unroformant: comment(node, self.NO_FILE)
         self.time_tracker["visit_Command"] += time() - start
         self.call_tracker["visit_Command"] += 1
-        self.generic_visit(node)
-
 
 class Printer:
     def __init__(self, const_tree, combined_tree):
