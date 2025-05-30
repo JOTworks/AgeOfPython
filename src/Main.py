@@ -14,7 +14,7 @@ from scraper import *
 from utils_display import print_bright, print_bordered, print_stats
 import argparse
 from time import time
-
+import cProfile
 
 def main(file_name, arguments):
     first_time = time()
@@ -121,4 +121,5 @@ if __name__ == "__main__":
         args.c = True
         args.r = True
 
-    main(args.filename, args)
+    cProfile.run('main(args.filename, args)')
+    #main(args.filename, args)

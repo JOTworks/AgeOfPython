@@ -159,7 +159,7 @@ class Memory:
             print_dim(f"FREE: {var_name} {var.var_type} {var.full_length} {var.start}")
             self.print_memory()
 
-    def get_name_at_location(self, reg_number):
+    def get_name_at_location(self, reg_number): #todo: this is unoptimized, make it faster
         if reg_number <= 40:
             return self._timer_memory[reg_number - 1]
         for scope, memory_dict in self._used_memory.items():
