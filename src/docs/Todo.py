@@ -8,6 +8,11 @@
 #todo: BUG if you have a file name nomads.py and nomads_nf.py
 #todo: BUG else statments dont work in functions!
 
+#OPTIMIXSTION
+# Un-Optimized custom functions: get_name_at_location, visit_Constant, get_function_list_typeOp, get_enum_classes
+# Checking type: isclass, builtins.issubclass, builtins.isinstance
+# Getting Attributes: _getmembers, builtins.getattr
+# Sorting: 'sort' of 'list' objects
 
 #SCRAPER
 #todo: fix scrping to pull all *s, make sure nothing is missing

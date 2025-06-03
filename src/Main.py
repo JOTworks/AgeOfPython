@@ -14,7 +14,7 @@ from scraper import *
 from utils_display import print_bright, print_bordered, print_stats
 import argparse
 from time import time
-
+import cProfile
 
 def main(file_name, arguments):
     first_time = time()
@@ -70,8 +70,7 @@ def main(file_name, arguments):
 
     if arguments.printer or arguments.verbose:
         print(myPrinter.final_string)
-        nonTestPrinter = Printer(trees.const_tree, combined_tree)
-        nonTestPrinter.print_all(TEST=False)
+
     print(f"Printing completed in {time() - last_time:.2f} seconds")
     last_time = time()
 
@@ -107,7 +106,6 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--printer", help="output final .per results", action="store_true")
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("-vv", "--everything_verbose", help="increase output verbosity", action="store_true")
-    
     parser.add_argument("-t", "--test", help="test that makes things not actauly save", action="store_true")
     parser.add_argument("-o", "--obfuscate", help="safe .per file in non human readable way", action="store_true")
     
@@ -123,4 +121,5 @@ if __name__ == "__main__":
         args.c = True
         args.r = True
 
-    main(args.filename, args)
+    cProfile.run('main(args.filename, args)')
+    #main(args.filename, args)
