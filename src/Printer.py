@@ -42,6 +42,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.call_tracker["visit_Return"] += 1
         for item in node.body:
             self.visit(item)
+        self.generic_visit(node)
     
     def visit_BinOp(self, node):
         self.visit(node.left)
@@ -53,6 +54,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
 
     def visit_Assign(self, node): #todo: when refactored i will need to print temp math first, function calls, then asigns
         self.call_tracker["visit_Assign"] += 1
+        self.generic_visit(node)
         for item in node.body: #currently this should be return value And assigns
             self.visit(item)
 
@@ -189,6 +191,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
         self.final_list.append( blue(")") + "\n" ) #todo: add this back in as option, very unroformant: comment(node, self.NO_FILE)
         self.time_tracker["visit_Command"] += time() - start
         self.call_tracker["visit_Command"] += 1
+        self.generic_visit(node)
 
 class Printer:
     def __init__(self, const_tree, combined_tree):
