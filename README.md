@@ -181,6 +181,7 @@ def try_build(building:BuildingId) -> Integer:
 <br>
 all functions pass by value and all variables in the function are only in their own scope. Note that it is the same variable for every call of the function, so if you do not set the varible it will have the value for the last call. If you need a variable from ouside the funtion you can use global to access it. otherwize it will create a new function scoped veriable.
 <br>
+
 ```
 def build_around_tc(building:BuildingId, radius:Integer) -> Integer:
     global tc_location
@@ -189,6 +190,7 @@ def build_around_tc(building:BuildingId, radius:Integer) -> Integer:
         chat_to_all("E: tc_location not set, cannot build_around_tc")
         return -1
 ```
+
 <br>
 aoe2script Commands now look like functions, as you have seen above. but they are not the same!
 if you use an aoe2script command it will work like it does in the original langauge. I have just added things for conveineince bellow.

@@ -1,20 +1,23 @@
-from Asserter import Asserter
-from Printer import Printer
-from Compiler import Compiler
-import sys
-from pprint import pprint
-from pathlib import Path
-from Parser import Parser
-from colorama import Fore, Back, Style
-import re
-from math import ceil, floor
+import argparse
 import ast
 from collections import namedtuple
+import cProfile
+from math import ceil, floor
+from pathlib import Path
+from pprint import pprint
+import re
+import sys
+from time import time
+
+from colorama import Fore, Back, Style
+
+from Asserter import Asserter
+from Compiler import Compiler
+from Parser import Parser
+from Printer import Printer
 from scraper import *
 from utils_display import print_bright, print_bordered, print_stats
-import argparse
-from time import time
-import cProfile
+
 
 def main(file_name, arguments):
     first_time = time()

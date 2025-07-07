@@ -1,16 +1,19 @@
 import ast
+from copy import copy, deepcopy
 import inspect
 from itertools import chain
+
 from aenum import EnumType, Enum
+
+from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
+from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT, FUNC_RETURN_LENGTH, ARRAY_RETURN_PTR, FUNC_RETURN_ARRAY, ARRAY_OFFSET
+from MyLogging import logger
 from scraper import *
 from scraper import AOE2FUNC, Integer, Constant, Array, Register
 from scraper import aoe2scriptFunctions as aoe2scriptFunctions
-from custom_ast_nodes import Command, DefRule, Variable, aoeOp, EnumNode, Constructor, JumpType, FuncModule
-from Memory import Memory, FUNC_RET_REG, ARRAY_RETURN_REG, FUNC_DEPTH_COUNT, FUNC_RETURN_LENGTH, ARRAY_RETURN_PTR, FUNC_RETURN_ARRAY, ARRAY_OFFSET
-from copy import copy, deepcopy
 from utils import ast_to_aoe, evaluate_expression, get_enum_classes, reverse_compare_op, get_aoe2_var_types, get_list_from_return, TEMP_SUPBSTRING
 from utils_display import print_bordered
-from MyLogging import logger
+
 
 reserved_function_names = [
     'range',

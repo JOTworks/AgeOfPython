@@ -1,11 +1,12 @@
 import ast
-from utils import get_enum_classes, get_function_list_typeOp
-from scraper import aoe2scriptFunctions as aoe2scriptFunctions
-from scraper import typeOp
-from Memory import FUNC_RET_REG
 from enum import Enum
-from scraper import AOE2FUNC
+
+from Memory import FUNC_RET_REG
 from MyLogging import logger
+from scraper import aoe2scriptFunctions as aoe2scriptFunctions
+from scraper import AOE2FUNC, typeOp
+from utils import get_enum_classes, get_function_list_typeOp
+
 
 class JumpType(Enum):
     last_rule_in_node = 0
