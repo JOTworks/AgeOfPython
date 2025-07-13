@@ -1,12 +1,15 @@
-from scraper import (AOE2OBJ, Point, State, Integer, Boolean, 
-AOE2VarType, aoe2scriptEnums, Array, Constant, Timer, Register)
-from sortedcontainers import SortedDict
-from utils import normalize_var_type
-from utils_display import print_bright, print_dim
-from pprint import pprint
 import ast
 import inspect
+from pprint import pprint
+
+from sortedcontainers import SortedDict
+
 from MyLogging import logger
+from scraper import (AOE2OBJ, Point, State, Integer, Boolean, 
+AOE2VarType, aoe2scriptEnums, Array, Constant, Timer, Register)
+from utils import normalize_var_type
+from utils_display import print_bright, print_dim
+
 
 #! find out where the return pts for functions is and is the 15900 still hardcoded
 

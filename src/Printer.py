@@ -1,15 +1,18 @@
 import ast
+from pprint import pprint
+import re
+from time import time
+
+from aenum import EnumType
+from colorama import Fore, Back, Style
+
 from Compiler import Command, Variable, aoeOp
+from MyLogging import logger
 from scraper import *
 from scraper import mathOp, compareOp, Strenum, typeOp
-from utils_display import read_file_as_string
-from colorama import Fore, Back, Style
-import re
-from aenum import EnumType
-from MyLogging import logger
 from utils import get_enum_classes
-from time import time
-from pprint import pprint
+from utils_display import read_file_as_string
+
 
 class DefRulePrintVisitor(ast.NodeVisitor):
     def __init__(self, final_list, const_tree = [], NO_FILE=False, TEST=True):
@@ -27,7 +30,7 @@ class DefRulePrintVisitor(ast.NodeVisitor):
                 name = node.targets[0].id
                 value = node.value.args[0].value
                 self.def_const_list.add(name + " " + str(value))
-        except IndexErrors:
+        except IndexError:
             raise Exception(f"defined Constant has no parameter, line {node.lineno}")
         
     def visit_if(self, node):

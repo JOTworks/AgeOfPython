@@ -1,11 +1,13 @@
-from scraper import *
 import ast
-import operator
-import inspect
 import enum
+import inspect
+import operator
+
+from MyLogging import logger
+from scraper import *
 import scraper.aoe2scriptEnums
 from scraper.aoe2scriptFunctions import function_list, AOE2VarType
-from MyLogging import logger
+
 
 TEMP_SUPBSTRING = "-temp"
 

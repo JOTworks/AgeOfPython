@@ -1,5 +1,7 @@
-from colorama import Fore, Back, Style
 from math import ceil, floor
+
+from colorama import Fore, Back, Style
+
 
 def print_completion_bar(percentage, bar_length=50):
     """

@@ -1,4 +1,5 @@
 import ast
+
 from scraper import Constant
 
 class Aoe2Tree:
